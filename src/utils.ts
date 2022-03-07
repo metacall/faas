@@ -1,12 +1,17 @@
+import busboy, { Busboy } from 'busboy';
+import { execSync, spawn } from 'child_process';
 import { Request, Response } from 'express';
+import * as fs from 'fs';
 import { metacall } from 'metacall';
 import os from 'os';
 import * as path from 'path';
-import * as fs from 'fs';
-import busboy, { Busboy } from 'busboy';
-import { currentFile, namearg, valueArg } from './constants';
-import clone from 'git-clone/promise';
-import crypto from 'crypto';
+import {
+	currentFile,
+	fetchBranchListBody,
+	fetchFilesFromRepoBody,
+	namearg,
+	valueArg
+} from './constants';
 
 export const callFnByName = (req: Request, res: Response): Response => {
 	if (!(req.params && req.params.name)) {
@@ -35,23 +40,62 @@ export const fetchFiles = (req: Request, res: Response): Busboy => {
 		currentFile.path = path.join(
 			os.tmpdir(),
 			'metacall',
-			`${currentFile.id as string}`
+			`${currentFile.id}`
 		);
 		res.end();
 	});
 	return req.pipe(bb);
 };
 
-export const fetchFilesFromRepo = async (
-	req: Omit<Request, 'body'> & { body: 'branch' & 'url' },
+//untested api
+export const fetchFilesFromRepo = (
+	req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
 	res: Response
-): Promise<Response> => {
+): Response => {
 	const { branch, url } = req.body;
-	const filename = `${crypto.randomBytes(4).toString('hex')}.zip`;
+	spawn(
+		`git clone --depth=1 --branch ${branch} ${url} ${path.join(
+			os.tmpdir(),
+			'metacall'
+		)}`
+	);
 
-	await clone(url, path.join(os.tmpdir(), 'metacall', filename), {
-		checkout: branch
-	});
+	const id = url.split('/')[url.split('/').length - 1].replace('.git', '');
 
-	return res.json({ id: filename });
+	currentFile['id'] = id;
+
+	return res.json({ id });
+};
+
+export const fetchBranchList = (
+	req: Omit<Request, 'body'> & { body: fetchBranchListBody },
+	res: Response
+): Response => {
+	execSync(`git remote add random ${req.body.url} ; git remote update;`);
+	const output = execSync(`git branch -r`);
+	execSync(`git remote remove random`);
+
+	//clean and prepare output
+	const data: string[] = [];
+	JSON.stringify(output.toString())
+		.split('random/')
+		.forEach(msg => {
+			if (msg.includes('\\n')) {
+				data.push(msg.split('\\n')[0]);
+			}
+		});
+
+	return res.send({ branches: data });
+};
+
+export const fetchFileList = (
+	req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
+	res: Response
+): Response => {
+	execSync(`git remote add random ${req.body.url} ; git remote update;`);
+	const output = execSync(`git ls-tree -r ${req.body.branch} --name-only`);
+	execSync(`git remote remove random`);
+
+	//clean and prepare output
+	return res.send({ files: JSON.stringify(output.toString()).split('\\n') });
 };

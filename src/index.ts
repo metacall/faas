@@ -1,6 +1,12 @@
 import express from 'express';
 import { metacall_inspect } from 'metacall';
-import { callFnByName, fetchFiles } from './utils';
+import {
+	callFnByName,
+	fetchFiles,
+	fetchFilesFromRepo,
+	fetchBranchList,
+	fetchFileList
+} from './utils';
 const app = express();
 
 app.use(express.json());
@@ -12,8 +18,10 @@ app.get('/inspect', (req, res) => {
 app.post('/call/:name', callFnByName);
 
 app.post('/api/package/create', fetchFiles);
-//TODO fetch from repository
-// app.post('/api/repository/add', fetchFilesFromRepo);
+app.post('/api/repository/add', fetchFilesFromRepo);
+
+app.post('/api/repository/branchlist', fetchBranchList);
+app.post('/api/repository/filelist', fetchFileList);
 
 //TODO load script and install their packages
 //TODO server fn via api

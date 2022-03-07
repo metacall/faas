@@ -71,7 +71,8 @@
 		"busboy": "^1.4.0",
 		"express": "^4.17.1",
 		"git-clone": "^0.2.0",
-		"metacall": "^0.4.1"
+		"metacall": "^0.4.1",
+		"metacall-protocol": "github:metacall/protocol"
 	},
 	"devDependencies": {
 		"@types/busboy": "^1.3.0",
@@ -85,6 +86,6 @@
 		"eslint-plugin-tsdoc": "^0.2.7",
 		"mocha": "^8.4.0",
 		"prettier": "^2.1.2",
-		"typescript": "^4.3.2"
+		"typescript": "^4.6.2"
 	}
 }
