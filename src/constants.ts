@@ -24,3 +24,12 @@ export type fetchFilesFromRepoBody = {
 export type fetchBranchListBody = {
 	url: 'string';
 };
+
+export type deployBody = {
+	suffix: string; //name of deployment
+	resourceType: 'Package' | 'Repository';
+	release: string; //release date
+	env: string[];
+	plan: string;
+	version: string;
+};

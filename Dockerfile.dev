@@ -24,7 +24,9 @@ WORKDIR /metacall/source
 
 COPY . .
 
-RUN metacall npm install \
+RUN apk add --update git
+
+RUN metacall npm install --no-package-lock \
 	&& metacall npm run build
 
 CMD ["dist/index.js"]
