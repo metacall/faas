@@ -27,6 +27,6 @@ COPY . .
 RUN apk add --update git
 
 RUN metacall npm install --no-package-lock \
-	&& metacall npm run build
+	&& metacall npm start
 
 CMD ["dist/index.js"]
