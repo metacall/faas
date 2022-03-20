@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { metacall } from 'metacall';
 import * as path from 'path';
+import { generatePackage, PackageError } from 'metacall-protocol/package';
 // import { Deployment, DeployStatus } from 'metacall-protocol/deployment';
 
 import {
@@ -97,12 +98,15 @@ export const deploy = (
 	req: Omit<Request, 'body'> & { body: deployBody },
 	res: Response
 ): Response => {
-	if (req.body.resourceType == 'Package') {
-		installDependencies();
-	} else {
-		calculatePackages();
-	}
-	return res.json({});
+	if (req.body.resourceType == 'Repository') {
+		calculatePackages()
+			.then(() => installDependencies())
+			.catch(error => {
+				if (error == PackageError.Empty)
+					return res.status(500).json({});
+			});
+	} else installDependencies();
+	return res.send({});
 };
 
 export const showLogs = (req: Request, res: Response): Response => {
@@ -129,6 +133,9 @@ const installDependencies = () => {
 };
 
 //check if repo contains metacall-*.json if not create and calculate runners then install dependencies
-const calculatePackages = () => {
-	return true;
+const calculatePackages = async () => {
+	const data = await generatePackage(currentFile.id);
+	if (data.error == PackageError.Empty) throw PackageError.Empty;
+	currentFile.jsons = data.jsons;
+	currentFile.runners = data.runners;
 };
