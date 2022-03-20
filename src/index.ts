@@ -5,7 +5,9 @@ import {
 	fetchFiles,
 	fetchFilesFromRepo,
 	fetchBranchList,
-	fetchFileList
+	fetchFileList,
+	showLogs,
+	deploy
 } from './utils';
 const app = express();
 
@@ -22,9 +24,11 @@ app.post('/api/repository/add', fetchFilesFromRepo);
 
 app.post('/api/repository/branchlist', fetchBranchList);
 app.post('/api/repository/filelist', fetchFileList);
-
+app.post('/api/deploy/logs', showLogs);
 //TODO load script and install their packages
-//TODO server fn via api
+app.post('/api/deploy/create', deploy);
+
+//TODO serve fn via api
 
 app.listen(9000, () => {
 	console.log('Server listening...');
