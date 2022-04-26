@@ -146,7 +146,7 @@ const calculatePackages = async () => {
 };
 
 const evalMetacall = (): MetaCallJSON[] => {
-	if (currentFile.path == undefined || currentFile.path.length == 0)
+	if (!currentFile.path)
 		return [];
 	const metacallPath: string[] = [];
 
