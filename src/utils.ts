@@ -3,10 +3,10 @@ import { execSync } from 'child_process';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { metacall } from 'metacall';
-import * as path from 'path';
+import { MetaCallJSON } from 'metacall-protocol/deployment';
 import { generatePackage, PackageError } from 'metacall-protocol/package';
+import * as path from 'path';
 // import { Deployment, DeployStatus } from 'metacall-protocol/deployment';
-
 import {
 	currentFile,
 	deployBody,
@@ -30,9 +30,14 @@ export const callFnByName = (req: Request, res: Response): Response => {
 
 export const fetchFiles = (req: Request, res: Response): Busboy => {
 	const bb = busboy({ headers: req.headers });
-	bb.on('file', (name, file) => {
+	bb.on('file', (name, file, info) => {
+		const { mimeType } = info;
+
+		if (mimeType != 'application/x-zip-compressed')
+			return res.status(401).send('Upload a zip file');
+
 		const saveTo = path.join('.', name);
-		console.log(saveTo);
+		currentFile.path = saveTo;
 		file.pipe(fs.createWriteStream(saveTo));
 	});
 
@@ -40,7 +45,6 @@ export const fetchFiles = (req: Request, res: Response): Busboy => {
 		currentFile[name] = val;
 	});
 	bb.on('close', () => {
-		currentFile.path = path.join('.', currentFile.id);
 		res.end();
 	});
 	return req.pipe(bb);
@@ -106,6 +110,7 @@ export const deploy = (
 					return res.status(500).json({});
 			});
 	} else installDependencies();
+	const metacallarr: MetaCallJSON[] = evalMetacall();
 	return res.send({});
 };
 
@@ -138,4 +143,40 @@ const calculatePackages = async () => {
 	if (data.error == PackageError.Empty) throw PackageError.Empty;
 	currentFile.jsons = data.jsons;
 	currentFile.runners = data.runners;
+};
+
+const evalMetacall = (): MetaCallJSON[] => {
+	if (!currentFile.path)
+		return [];
+	const metacallPath: string[] = [];
+
+	const files = fs.readdirSync(currentFile.path);
+	for (let i = 0; i < files.length; i++) {
+		const filename = path.join(currentFile.path, files[i]);
+		if (filename.indexOf('metacall') >= 0) {
+			metacallPath.push(files[i]);
+		}
+	}
+
+	if (metacallPath.length == 0) {
+		//Todo log error here no metacall file
+		return [];
+	}
+
+	return readMetacallFile(metacallPath);
+};
+
+const readMetacallFile = (metacallPath: string[]): MetaCallJSON[] => {
+	const MetaCallJSON: MetaCallJSON[] = [];
+	for (const file of metacallPath) {
+		const where = path.join(<string>currentFile.path + file).toString();
+		try {
+			MetaCallJSON.push(JSON.parse(fs.readFileSync(where).toString()));
+		} catch (e) {
+			//Todo log error unable to parse json
+			return [];
+		}
+	}
+
+	return MetaCallJSON;
 };
