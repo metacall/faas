@@ -3,7 +3,7 @@ export interface currentUploadedFile {
 	type?: string;
 	jsons?: string[];
 	runners?: string[];
-	path?: string;
+	path: string;
 }
 
 export const currentFile: currentUploadedFile = {
