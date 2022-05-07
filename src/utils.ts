@@ -1,4 +1,4 @@
-import busboy, { Busboy } from 'busboy';
+import busboy from 'busboy';
 import { execSync } from 'child_process';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
@@ -6,6 +6,7 @@ import { metacall } from 'metacall';
 import { MetaCallJSON } from 'metacall-protocol/deployment';
 import { generatePackage, PackageError } from 'metacall-protocol/package';
 import * as path from 'path';
+import { Extract } from 'unzipper';
 // import { Deployment, DeployStatus } from 'metacall-protocol/deployment';
 import {
 	currentFile,
@@ -28,15 +29,18 @@ export const callFnByName = (req: Request, res: Response): Response => {
 	return res.send(JSON.stringify(metacall(req.params.name, ...args)));
 };
 
-export const fetchFiles = (req: Request, res: Response): Busboy => {
+export const fetchFiles = (req: Request, res: Response): void => {
 	const bb = busboy({ headers: req.headers });
 	bb.on('file', (name, file, info) => {
-		const { mimeType } = info;
-
-		if (mimeType != 'application/x-zip-compressed')
+		const { mimeType, filename } = info;
+		if (
+			mimeType != 'application/x-zip-compressed' &&
+			mimeType != 'application/zip'
+		) {
 			return res.status(401).send('Upload a zip file');
+		}
 
-		const saveTo = path.join('.', name);
+		const saveTo = path.join(__dirname, filename);
 		currentFile.path = saveTo;
 		file.pipe(fs.createWriteStream(saveTo));
 	});
@@ -46,8 +50,12 @@ export const fetchFiles = (req: Request, res: Response): Busboy => {
 	});
 	bb.on('close', () => {
 		res.end();
+		fs.createReadStream(currentFile.path).pipe(
+			Extract({ path: __dirname })
+		);
+		currentFile.path = currentFile.path.replace('.zip', '');
 	});
-	return req.pipe(bb);
+	req.pipe(bb);
 };
 
 export const fetchFilesFromRepo = (
@@ -169,7 +177,7 @@ const evalMetacall = (): MetaCallJSON[] => {
 const readMetacallFile = (metacallPath: string[]): MetaCallJSON[] => {
 	const MetaCallJSON: MetaCallJSON[] = [];
 	for (const file of metacallPath) {
-		const where = path.join(<string>currentFile.path + file).toString();
+		const where = path.join(currentFile.path + file).toString();
 		try {
 			MetaCallJSON.push(JSON.parse(fs.readFileSync(where).toString()));
 		} catch (e) {
