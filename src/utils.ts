@@ -3,11 +3,11 @@ import { execSync } from 'child_process';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { metacall } from 'metacall';
-import { MetaCallJSON } from 'metacall-protocol/deployment';
-import { generatePackage, PackageError } from 'metacall-protocol/package';
+import { MetaCallJSON } from '@metacall/protocol/deployment';
+import { generatePackage, PackageError } from '@metacall/protocol/package';
 import * as path from 'path';
 import { Extract } from 'unzipper';
-// import { Deployment, DeployStatus } from 'metacall-protocol/deployment';
+// import { Deployment, DeployStatus } from '@metacall/protocol/deployment';
 import {
 	currentFile,
 	deployBody,
@@ -118,7 +118,7 @@ export const deploy = (
 					return res.status(500).json({});
 			});
 	} else installDependencies();
-	const metacallarr: MetaCallJSON[] = evalMetacall();
+	evalMetacall();
 	return res.send({});
 };
 
@@ -154,8 +154,7 @@ const calculatePackages = async () => {
 };
 
 const evalMetacall = (): MetaCallJSON[] => {
-	if (!currentFile.path)
-		return [];
+	if (!currentFile.path) return [];
 	const metacallPath: string[] = [];
 
 	const files = fs.readdirSync(currentFile.path);
