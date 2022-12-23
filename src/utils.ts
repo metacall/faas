@@ -1,10 +1,10 @@
+import { MetaCallJSON } from '@metacall/protocol/deployment';
+import { PackageError, generatePackage } from '@metacall/protocol/package';
 import busboy from 'busboy';
 import { execSync } from 'child_process';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import { metacall } from 'metacall';
-import { MetaCallJSON } from '@metacall/protocol/deployment';
-import { generatePackage, PackageError } from '@metacall/protocol/package';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 // import { Deployment, DeployStatus } from '@metacall/protocol/deployment';
@@ -125,6 +125,15 @@ export const deploy = (
 export const showLogs = (req: Request, res: Response): Response => {
 	return res.send('Demo Logs...');
 };
+
+export const validateAndDeployEnabled = (
+	req: Request,
+	res: Response
+): Response =>
+	res.status(200).json({
+		status: 'success',
+		data: true
+	});
 
 const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
