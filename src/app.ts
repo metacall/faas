@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import {
 	callFnByName,
 	deploy,
@@ -6,12 +6,16 @@ import {
 	fetchFileList,
 	fetchFiles,
 	fetchFilesFromRepo,
-	showLogs
+	showLogs,
+	validateAndDeployEnabled
 } from './utils';
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get('/validate', validateAndDeployEnabled);
+app.get('/api/account/deploy-enabled', validateAndDeployEnabled);
 
 app.post('/call/:name', callFnByName);
 
@@ -39,7 +43,7 @@ app.get('/api/inspect', (req, res) => {
 });
 
 // For all the additional unimplemented routes
-app.all('*', (req, res) => {
+app.all('*', (req: Request, res: Response) => {
 	res.status(404).json({
 		status: 'fail',
 		statusCode: '404',
