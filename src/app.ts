@@ -38,8 +38,15 @@ app.get('/api/inspect', (req, res) => {
 	]);
 });
 
+// For all the additional unimplemented routes
+app.all('*', (req, res) => {
+	res.status(404).json({
+		status: 'fail',
+		statusCode: '404',
+		message: `Can't find ${req.originalUrl} on this server!`
+	});
+});
+
 //TODO serve fn via api
 
-app.listen(9000, () => {
-	console.log('Server listening...');
-});
+export default app;
