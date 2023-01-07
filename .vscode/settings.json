@@ -8,6 +8,10 @@
 	"editor.rulers": [
 		80
 	],
-	"editor.quickSuggestions": true,
+	"editor.quickSuggestions": {
+		"comments": "on",
+		"strings": "on",
+		"other": "on"
+	},
 	"editor.suggestOnTriggerCharacters": true
 }

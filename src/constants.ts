@@ -15,7 +15,7 @@ export const currentFile: currentUploadedFile = {
 };
 
 export type namearg = 'id' | 'type' | 'jsons' | 'runners' | 'path';
-export type valueArg = string & string[];
+export type valueArg = string;
 
 export type fetchFilesFromRepoBody = {
 	branch: 'string';
