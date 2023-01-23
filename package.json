@@ -9,7 +9,7 @@
 		"prepublishOnly": "npm run --silent build",
 		"build": "npm run --silent lint && tsc",
 		"lint": "eslint . --ignore-pattern dist",
-		"postinstall": "npm run build",
+		"postinstall": "npm run fix && npm run build",
 		"fix": "eslint . --ignore-pattern dist --fix",
 		"start": "metacall dist/server.js"
 	},
