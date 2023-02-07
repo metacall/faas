@@ -1,7 +1,9 @@
+import { MetaCallJSON } from '@metacall/protocol/deployment';
+
 export interface currentUploadedFile {
 	id: string;
 	type?: string;
-	jsons?: string[];
+	jsons: MetaCallJSON[];
 	runners?: string[];
 	path: string;
 }
