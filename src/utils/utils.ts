@@ -1,25 +1,25 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { exec } from 'child_process';
+import * as fs from 'fs';
+import { platform } from 'os';
+import { join } from 'path';
 
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
-
-import { exec, execSync } from 'child_process';
-
-import * as fs from 'fs';
-import path from 'path';
+import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { currentFile } from '../constants';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
 
+// Create a proper hashmap that contains all the installation commands mapped to their runner name and shorten this function
 export const installDependencies = async (): Promise<void> => {
 	if (!currentFile.runners) return;
 
 	for (const runner of currentFile.runners) {
 		switch (runner) {
 			case 'python':
-				execSync(
+				await execPromise(
 					`cd ${currentFile.path} ; metacall pip3 install -r requirements.txt`
 				);
 				break;
@@ -38,7 +38,7 @@ export const installDependencies = async (): Promise<void> => {
 export const calculatePackages = async (): Promise<void> => {
 	const data = await generatePackage(currentFile.path);
 	if (data.error == PackageError.Empty) throw PackageError.Empty;
-	currentFile.jsons = data.jsons;
+	//	currentFile.jsons = JSON.parse(data.jsons.toString()); FIXME Fix this line
 	currentFile.runners = data.runners;
 };
 
@@ -48,7 +48,7 @@ export const evalMetacall = (): MetaCallJSON[] => {
 
 	const files = fs.readdirSync(currentFile.path);
 	for (let i = 0; i < files.length; i++) {
-		const filename = path.join(currentFile.path, files[i]);
+		const filename = join(currentFile.path, files[i]);
 		if (filename.indexOf('metacall') >= 0) {
 			metacallPath.push(files[i]);
 		}
@@ -65,7 +65,7 @@ export const evalMetacall = (): MetaCallJSON[] => {
 export const readMetacallFile = (metacallPath: string[]): MetaCallJSON[] => {
 	const MetaCallJSON: MetaCallJSON[] = [];
 	for (const file of metacallPath) {
-		const where = path.join(currentFile.path + file).toString();
+		const where = join(currentFile.path + file).toString();
 		try {
 			MetaCallJSON.push(JSON.parse(fs.readFileSync(where).toString()));
 		} catch (e) {
@@ -114,3 +114,38 @@ export const catchAsync = (
 		fn(req, res, next).catch(err => next(err));
 	};
 };
+
+export const createMetacallJsonFile = (jsons: MetaCallJSON[], path: string) => {
+	const acc: string[] = [];
+	jsons.forEach(el => {
+		const filePath = `${path}/metacall-${el.language_id}.json`;
+
+		fs.writeFileSync(filePath, JSON.stringify(el));
+		acc.push(filePath);
+	});
+	return acc;
+};
+
+export const filterObjectByKeys = <
+	T extends Record<string, string>,
+	K extends keyof T
+>(
+	obj: T,
+	keys: K[]
+): Pick<T, K> =>
+	keys.reduce((filteredObj, key) => {
+		if (key in obj) filteredObj[key] = obj[key];
+		return filteredObj;
+	}, {} as Pick<T, K>);
+
+const missing = (name: string): string =>
+	`Missing ${name} environment variable! Unable to load config`;
+
+export const configDir = (name: string): string =>
+	platform() === 'win32'
+		? process.env.APPDATA
+			? join(process.env.APPDATA, name)
+			: missing('APPDATA')
+		: process.env.HOME
+		? join(process.env.HOME, `.${name}`)
+		: missing('HOME');
