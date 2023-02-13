@@ -4,10 +4,10 @@ import * as path from 'path';
 
 import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
-import { metacall, metacall_load_from_configuration } from 'metacall';
 import { Extract } from 'unzipper';
 
 import {
+	allApplications,
 	currentFile,
 	deployBody,
 	fetchBranchListBody,
@@ -20,7 +20,6 @@ import AppError from './utils/appError';
 import {
 	calculatePackages,
 	catchAsync,
-	createMetacallJsonFile,
 	dirName,
 	ensureFolderExists,
 	execPromise,
@@ -28,6 +27,7 @@ import {
 	installDependencies
 } from './utils/utils';
 
+import { handleJSONFiles } from './controller/deploy';
 import { appsDirectory } from './utils/config';
 
 const appsDir = appsDirectory();
@@ -45,9 +45,10 @@ export const callFnByName = (
 			)
 		);
 
+	const { appName: app, name } = req.params;
 	const args = Object.values(req.body);
 
-	return res.send(JSON.stringify(metacall(req.params.name, ...args)));
+	return res.send(JSON.stringify(allApplications[app].funcs[name](...args)));
 };
 
 export const serveStatic = catchAsync(
@@ -199,23 +200,11 @@ export const deploy = catchAsync(
 
 		await installDependencies();
 
-		let jsonPath: string[] = [];
-
-		if (currentFile.jsons?.length > 0) {
-			jsonPath = createMetacallJsonFile(
-				currentFile.jsons,
-				currentFile.path
-			);
-			console.log('Created Metacall.json files');
-		}
-
-		// eslint-disable-next-line
-
-		jsonPath.forEach(path => {
-			console.log(metacall_load_from_configuration(path));
-		});
-
-		//	evalMetacall();
+		await handleJSONFiles(
+			currentFile.path,
+			currentFile.id,
+			req.body.version
+		);
 
 		res.status(200).json({
 			suffix: hostname(),

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
 
-import { MetaCallJSON } from '@metacall/protocol/deployment';
+import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
@@ -37,44 +37,10 @@ export const installDependencies = async (): Promise<void> => {
 //check if repo contains metacall-*.json if not create and calculate runners then install dependencies
 export const calculatePackages = async (): Promise<void> => {
 	const data = await generatePackage(currentFile.path);
+
 	if (data.error == PackageError.Empty) throw PackageError.Empty;
 	//	currentFile.jsons = JSON.parse(data.jsons.toString()); FIXME Fix this line
 	currentFile.runners = data.runners;
-};
-
-export const evalMetacall = (): MetaCallJSON[] => {
-	if (!currentFile.path) return [];
-	const metacallPath: string[] = [];
-
-	const files = fs.readdirSync(currentFile.path);
-	for (let i = 0; i < files.length; i++) {
-		const filename = join(currentFile.path, files[i]);
-		if (filename.indexOf('metacall') >= 0) {
-			metacallPath.push(files[i]);
-		}
-	}
-
-	if (metacallPath.length == 0) {
-		//Todo log error here no metacall file
-		return [];
-	}
-
-	return readMetacallFile(metacallPath);
-};
-
-export const readMetacallFile = (metacallPath: string[]): MetaCallJSON[] => {
-	const MetaCallJSON: MetaCallJSON[] = [];
-	for (const file of metacallPath) {
-		const where = join(currentFile.path + file).toString();
-		try {
-			MetaCallJSON.push(JSON.parse(fs.readFileSync(where).toString()));
-		} catch (e) {
-			//Todo log error unable to parse json
-			return [];
-		}
-	}
-
-	return MetaCallJSON;
 };
 
 export const exists = (path: string): Promise<boolean> =>
@@ -115,7 +81,10 @@ export const catchAsync = (
 	};
 };
 
-export const createMetacallJsonFile = (jsons: MetaCallJSON[], path: string) => {
+export const createMetacallJsonFile = (
+	jsons: MetaCallJSON[],
+	path: string
+): string[] => {
 	const acc: string[] = [];
 	jsons.forEach(el => {
 		const filePath = `${path}/metacall-${el.language_id}.json`;
@@ -137,3 +106,27 @@ export const configDir = (name: string): string =>
 		: process.env.HOME
 		? join(process.env.HOME, `.${name}`)
 		: missing('HOME');
+
+export const getLangId = (input: string): LanguageId => {
+	console.log(input);
+	const parts = input.split('-');
+	const extension = parts[parts.length - 1].split('.')[0];
+	return extension as LanguageId;
+};
+
+//eslint-disable-next-line
+export const diff = (object1: any, object2: any): any => {
+	for (const key in object2) {
+		//eslint-disable-next-line
+		if (Array.isArray(object2[key])) {
+			//eslint-disable-next-line
+			object1[key] = object1[key].filter(
+				(
+					item: any // eslint-disable-line
+				) => !object2[key].find((i: any) => i.name === item.name) // eslint-disable-line
+			);
+		}
+	}
+
+	return object1; // eslint-disable-line
+};

@@ -1,4 +1,4 @@
-import { MetaCallJSON } from '@metacall/protocol/deployment';
+import { DeployStatus, MetaCallJSON } from '@metacall/protocol/deployment';
 
 export interface currentUploadedFile {
 	id: string;
@@ -35,3 +35,41 @@ export type deployBody = {
 	plan: string;
 	version: string;
 };
+
+export type tpackages = Record<string, unknown>;
+
+export interface IApp {
+	status: DeployStatus;
+	prefix: string;
+	suffix: string;
+	version: string;
+	packages: tpackages;
+}
+
+export class App implements IApp {
+	public status: DeployStatus;
+	public prefix: string;
+	public suffix: string;
+	public version: string;
+	public packages: tpackages;
+
+	constructor(
+		status: DeployStatus,
+		prefix: string,
+		suffix: string,
+		version: string,
+		packages: tpackages
+	) {
+		this.status = status;
+		this.prefix = prefix;
+		this.suffix = suffix;
+		this.version = version;
+		this.packages = packages;
+	}
+}
+
+type IAppWithFunctions = IApp & {
+	funcs: Record<string, (...args: any[]) => any>; // eslint-disable-line
+};
+
+export const allApplications: Record<string, IAppWithFunctions> = {};
