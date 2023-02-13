@@ -25,7 +25,8 @@ import {
 	dirName,
 	ensureFolderExists,
 	execPromise,
-	installDependencies
+	installDependencies,
+	generateUniqueAppName
 } from './utils/utils';
 
 import { appsDirectory } from './utils/config';
@@ -70,6 +71,8 @@ export const serveStatic = (req: Request, res: Response) => {
 
 export const fetchFiles = (req: Request, res: Response): void => {
 	const bb = busboy({ headers: req.headers });
+	currentFile.id = generateUniqueAppName(appsDir, 10);
+	console.log(appsDir);
 	bb.on('file', (name, file, info) => {
 		const { mimeType, filename } = info;
 		if (

@@ -2,12 +2,13 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
-
+import crypto from 'crypto';
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { currentFile } from '../constants';
+import { appsDirectory } from './config';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
@@ -149,3 +150,19 @@ export const configDir = (name: string): string =>
 		: process.env.HOME
 		? join(process.env.HOME, `.${name}`)
 		: missing('HOME');
+
+export const generateUniqueAppName = (
+	appDir: string,
+	maxLength = 100
+): string => {
+	const randomBytes = crypto.randomBytes(16); // generates 16 random bytes
+	const uniqueId = randomBytes.toString('hex');
+	let stub: string = uniqueId.slice(0, maxLength);
+	while (fs.existsSync(join(appDir, stub))) {
+		const randomBytes = crypto.randomBytes(16); // generates 16 random bytes
+		const uniqueId = randomBytes.toString('hex');
+		stub = uniqueId.slice(0, maxLength);
+	}
+
+	return stub;
+};
