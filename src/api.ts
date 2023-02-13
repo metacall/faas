@@ -71,8 +71,7 @@ export const serveStatic = (req: Request, res: Response) => {
 
 export const fetchFiles = (req: Request, res: Response): void => {
 	const bb = busboy({ headers: req.headers });
-	currentFile.id = generateUniqueAppName(appsDir, 10);
-	console.log(appsDir);
+	currentFile.id = generateUniqueAppName(appsDir);
 	bb.on('file', (name, file, info) => {
 		const { mimeType, filename } = info;
 		if (
