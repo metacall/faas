@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { IAppError } from './appError';
 
 const globalErroHandler = (
 	err: IAppError,
 	req: Request,
-	res: Response
+	res: Response,
+	next: NextFunction
 ): Response => {
 	err.statusCode = err.statusCode || 500;
 	err.status = err.status || 'error';

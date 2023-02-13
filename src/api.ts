@@ -6,7 +6,6 @@ import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
 import { metacall, metacall_load_from_configuration } from 'metacall';
 import { Extract } from 'unzipper';
-import { filterObjectByKeys } from './utils/utils';
 
 import {
 	currentFile,
@@ -25,6 +24,7 @@ import {
 	dirName,
 	ensureFolderExists,
 	execPromise,
+	exists,
 	installDependencies,
 	generateUniqueAppName
 } from './utils/utils';
@@ -51,23 +51,27 @@ export const callFnByName = (
 	return res.send(JSON.stringify(metacall(req.params.name, ...args)));
 };
 
-export const serveStatic = (req: Request, res: Response) => {
-	if (!req.params) {
-		return res.status(400).send('Invalid url');
+export const serveStatic = catchAsync(
+	async (req: Request, res: Response, next: NextFunction) => {
+		if (!req.params) next(new AppError('Invalid API endpoint', 404));
+
+		const { app, file } = req.params;
+
+		const appLocation = path.join(appsDir, `${app}/${file}`);
+
+		// TODO - The best way to handle this is first list all the application which has been deployed and match if there is application or not and then go for file search
+
+		if (!(await exists(appLocation)))
+			next(
+				new AppError(
+					"The file you're looking for might not be available or the application may not be deployed.",
+					404
+				)
+			);
+
+		res.status(200).sendFile(appLocation);
 	}
-
-	// Filtering params
-	const { appName, file } = filterObjectByKeys(req.params, [
-		'appName',
-		'file'
-	]);
-
-	if (!appName || !file) return;
-
-	const appLocation = path.join(appsDir, `${appName}/${file}`);
-
-	res.status(200).sendFile(appLocation);
-};
+);
 
 export const fetchFiles = (req: Request, res: Response): void => {
 	const bb = busboy({ headers: req.headers });

@@ -78,7 +78,7 @@ export const readMetacallFile = (metacallPath: string[]): MetaCallJSON[] => {
 	return MetaCallJSON;
 };
 
-const exists = (path: string): Promise<boolean> =>
+export const exists = (path: string): Promise<boolean> =>
 	fs.promises.stat(path).then(
 		() => true,
 		() => false
@@ -126,18 +126,6 @@ export const createMetacallJsonFile = (jsons: MetaCallJSON[], path: string) => {
 	});
 	return acc;
 };
-
-export const filterObjectByKeys = <
-	T extends Record<string, string>,
-	K extends keyof T
->(
-	obj: T,
-	keys: K[]
-): Pick<T, K> =>
-	keys.reduce((filteredObj, key) => {
-		if (key in obj) filteredObj[key] = obj[key];
-		return filteredObj;
-	}, {} as Pick<T, K>);
 
 const missing = (name: string): string =>
 	`Missing ${name} environment variable! Unable to load config`;
