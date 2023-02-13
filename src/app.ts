@@ -1,10 +1,9 @@
 import { hostname } from 'os';
 
 import express, { NextFunction, Request, Response } from 'express';
-import { metacall_inspect } from 'metacall';
 
 import * as api from './api';
-import { currentFile } from './constants';
+import { allApplications } from './constants';
 import AppError from './utils/appError';
 import globalErrorHandler from './utils/errorHandler';
 
@@ -23,9 +22,6 @@ app.get(
 	api.serveStatic
 );
 
-// http://localhost:9000/Creatoon/deploy/v1/call/reverse
-// http://localhost:9000/Creatoon/deploy/v1/static/dist/apps/deploy/README.md
-
 app.post('/api/package/create', api.fetchFiles);
 app.post('/api/repository/add', api.fetchFilesFromRepo);
 
@@ -36,19 +32,7 @@ app.post('/api/deploy/logs', api.showLogs);
 app.post('/api/deploy/create', api.deploy);
 
 app.get('/api/inspect', (req, res) => {
-	// eslint-disable-next-line
-	const packages = metacall_inspect();
-
-	res.send([
-		{
-			status: 'ready',
-			prefix: host,
-			suffix: currentFile.id,
-			version: 'v1',
-			packages, // eslint-disable-line
-			ports: []
-		}
-	]);
+	res.send(Object.values(allApplications));
 });
 
 // For all the additional unimplemented routes
@@ -57,7 +41,5 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use(globalErrorHandler);
-
-//TODO serve fn via api
 
 export default app;

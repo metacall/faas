@@ -3,6 +3,4 @@ import { configDir } from './utils';
 
 export const defaultPath = configDir(join('metacall', 'faas'));
 
-console.log(defaultPath);
-
-export const appsDirectory = (path = defaultPath) => join(path, 'apps');
+export const appsDirectory = (path = defaultPath): string => join(path, 'apps');
