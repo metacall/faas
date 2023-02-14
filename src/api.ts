@@ -75,49 +75,65 @@ export const serveStatic = catchAsync(
 
 export const fetchFiles = (req: Request, res: Response): void => {
 	const bb = busboy({ headers: req.headers });
+	const errors: string[] = [];
 	bb.on('file', (name, file, info) => {
 		const { mimeType, filename } = info;
 		if (
 			mimeType != 'application/x-zip-compressed' &&
 			mimeType != 'application/zip'
-		) {
-			return res.status(401).json({
-				status: 'Failed',
-				message: 'Upload a zip file'
-			});
+		)
+			return errors.push('Upload a zip file');
+		try {
+			const saveTo = path.join(__dirname, filename);
+			currentFile.path = saveTo;
+			file.pipe(fs.createWriteStream(saveTo));
+		} catch (error) {
+			const e = error as Error;
+			errors.push(e.message);
 		}
-
-		const saveTo = path.join(__dirname, filename);
-		currentFile.path = saveTo;
-		file.pipe(fs.createWriteStream(saveTo));
 	});
 
 	bb.on('field', (name: namearg, val: string) => {
-		if (name === 'runners') {
-			currentFile['runners'] = JSON.parse(val) as string[];
-		} else if (name === 'jsons') {
-			currentFile['jsons'] = JSON.parse(val) as MetaCallJSON[];
-		} else {
-			currentFile[name] = val;
+		try {
+			if (name === 'runners') {
+				currentFile['runners'] = JSON.parse(val) as string[];
+			} else if (name === 'jsons') {
+				currentFile['jsons'] = JSON.parse(val) as MetaCallJSON[];
+			} else {
+				currentFile[name] = val;
+			}
+		} catch (error) {
+			const e = error as Error;
+			errors.push(e.message);
 		}
 	});
 
 	bb.on('finish', () => {
-		const appLocation = path.join(appsDir, `${currentFile.id}`);
+		try {
+			const appLocation = path.join(appsDir, `${currentFile.id}`);
+			if (!currentFile.path) throw new Error('No file attached');
+			fs.createReadStream(currentFile.path).pipe(
+				Extract({ path: appLocation })
+			);
 
-		fs.createReadStream(currentFile.path).pipe(
-			Extract({ path: appLocation })
-		);
+			fs.unlinkSync(currentFile.path);
 
-		fs.unlinkSync(currentFile.path);
-
-		currentFile.path = appLocation;
+			currentFile.path = appLocation;
+		} catch (error) {
+			const e = error as Error;
+			errors.push(e.message);
+		}
 	});
 
 	bb.on('close', () => {
-		res.status(201).json({
-			id: currentFile.id
-		});
+		if (errors.length > 0)
+			res.status(400).json({
+				errors
+			});
+		else
+			res.status(201).json({
+				id: currentFile.id
+			});
 	});
 
 	req.pipe(bb);

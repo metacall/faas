@@ -110,7 +110,7 @@ export const configDir = (name: string): string =>
 export const getLangId = (input: string): LanguageId => {
 	console.log(input);
 	const parts = input.split('-');
-	const extension = parts[parts.length - 1].split('.')[0];
+	const extension: string = parts[parts.length - 1].split('.')[0];
 	return extension as LanguageId;
 };
 
