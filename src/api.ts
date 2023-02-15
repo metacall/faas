@@ -1,21 +1,18 @@
-import * as fs from 'fs';
 import { hostname } from 'os';
 import * as path from 'path';
 
-import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
-import { Extract } from 'unzipper';
+
+import upload from './controller/upload';
 
 import {
 	allApplications,
 	currentFile,
 	deployBody,
 	fetchBranchListBody,
-	fetchFilesFromRepoBody,
-	namearg
+	fetchFilesFromRepoBody
 } from './constants';
 
-import { MetaCallJSON } from '@metacall/protocol/deployment';
 import AppError from './utils/appError';
 import {
 	calculatePackages,
@@ -73,55 +70,11 @@ export const serveStatic = catchAsync(
 	}
 );
 
-export const fetchFiles = (req: Request, res: Response): void => {
-	const bb = busboy({ headers: req.headers });
-	bb.on('file', (name, file, info) => {
-		const { mimeType, filename } = info;
-		if (
-			mimeType != 'application/x-zip-compressed' &&
-			mimeType != 'application/zip'
-		) {
-			return res.status(401).json({
-				status: 'Failed',
-				message: 'Upload a zip file'
-			});
-		}
-
-		const saveTo = path.join(__dirname, filename);
-		currentFile.path = saveTo;
-		file.pipe(fs.createWriteStream(saveTo));
-	});
-
-	bb.on('field', (name: namearg, val: string) => {
-		if (name === 'runners') {
-			currentFile['runners'] = JSON.parse(val) as string[];
-		} else if (name === 'jsons') {
-			currentFile['jsons'] = JSON.parse(val) as MetaCallJSON[];
-		} else {
-			currentFile[name] = val;
-		}
-	});
-
-	bb.on('finish', () => {
-		const appLocation = path.join(appsDir, `${currentFile.id}`);
-
-		fs.createReadStream(currentFile.path).pipe(
-			Extract({ path: appLocation })
-		);
-
-		fs.unlinkSync(currentFile.path);
-
-		currentFile.path = appLocation;
-	});
-
-	bb.on('close', () => {
-		res.status(201).json({
-			id: currentFile.id
-		});
-	});
-
-	req.pipe(bb);
-};
+export const fetchFiles = (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): void => upload(req, res, next);
 
 export const fetchFilesFromRepo = catchAsync(
 	async (
@@ -240,5 +193,6 @@ export const validateAndDeployEnabled = (
  *
  * FAAS
  * the apps are not getting detected once the server closes, do we need to again deploy them
+ * find a way to detect metacall.json in the files and dont deploy if there is not because json ke through hi hum upload krre hai
  *
  */
