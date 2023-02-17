@@ -6,11 +6,11 @@ import {
 	metacall_load_from_configuration_export
 } from 'metacall';
 import { hostname } from 'os';
-import { App, allApplications, currentFile } from '../constants';
+import { allApplications, App, currentFile } from '../constants';
 import { createMetacallJsonFile, diff, getLangId } from '../utils/utils';
 
 export const handleNoJSONFile = (
-	jsonPath: string[],
+	jsonPaths: string[],
 	suffix: string,
 	version: string
 ): void => {
@@ -22,9 +22,13 @@ export const handleNoJSONFile = (
 		{}
 	);
 
+	// TODO:
+	// type Modules = { module_ptr, funcs }[];
+	// const modules =  jsonPaths.map(path => metacall_load_from_configuration_export(path));
+
 	const funcs = {};
 
-	jsonPath.forEach(path => {
+	jsonPaths.forEach(path => {
 		const previousInspect = metacall_inspect();
 		Object.assign(funcs, metacall_load_from_configuration_export(path));
 		const newInspect = metacall_inspect();
