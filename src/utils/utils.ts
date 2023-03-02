@@ -7,7 +7,7 @@ import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { currentFile } from '../constants';
+import { currentFile, installDependenciesScript } from '../constants';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
@@ -17,20 +17,8 @@ export const installDependencies = async (): Promise<void> => {
 	if (!currentFile.runners) return;
 
 	for (const runner of currentFile.runners) {
-		switch (runner) {
-			case 'python':
-				await execPromise(
-					`cd ${currentFile.path} ; metacall pip3 install -r requirements.txt`
-				);
-				break;
-			case 'nodejs':
-				{
-					await execPromise(
-						`cd ${currentFile.path} ; metacall npm i`
-					);
-				}
-				break;
-		}
+		if(runner == undefined) continue;
+		else await execPromise(installDependenciesScript[runner]);
 	}
 };
 
