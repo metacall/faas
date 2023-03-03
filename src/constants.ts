@@ -17,11 +17,11 @@ export const currentFile: currentUploadedFile = {
 };
 
 export const installDependenciesScript: Record<string, string> = {
-	"python": `cd ${currentFile.path} ; metacall pip3 install -r requirements.txt`,
-	"nodejs": `cd ${currentFile.path} ; metacall npm i`,
-	"csharp": `cd ${currentFile.path}; dotnet restore; dotnet release;`,
-	"ruby": `cd ${currentFile.path}; bundle install`,
-}
+	python: `cd ${currentFile.path} ; metacall pip3 install -r requirements.txt`,
+	nodejs: `cd ${currentFile.path} ; metacall npm i`,
+	csharp: `cd ${currentFile.path}; dotnet restore; dotnet release;`,
+	ruby: `cd ${currentFile.path}; bundle install`
+};
 
 export type namearg = 'id' | 'type' | 'jsons' | 'runners' | 'path';
 export type valueArg = string;

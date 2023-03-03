@@ -17,7 +17,7 @@ export const installDependencies = async (): Promise<void> => {
 	if (!currentFile.runners) return;
 
 	for (const runner of currentFile.runners) {
-		if(runner == undefined) continue;
+		if (runner == undefined) continue;
 		else await execPromise(installDependenciesScript[runner]);
 	}
 };

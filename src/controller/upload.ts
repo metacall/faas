@@ -18,15 +18,14 @@ const getUploadError = (on: keyof busboy.BusboyEvents): AppError => {
 	const errorUploadMessage: Record<string, string> = {
 		file: 'Error while fetching the zip file, please upload it again',
 		field: 'You might be sending improperly formed multipart form data fields or jsons',
-		finish: 'Internal Server Error, Please upload your zip file again',
+		finish: 'Internal Server Error, Please upload your zip file again'
 	};
 
-	const message = errorUploadMessage[on.toString()] || 'Internal Server Error, Please upload the zip again'
+	const message =
+		errorUploadMessage[on.toString()] ||
+		'Internal Server Error, Please upload the zip again';
 
-	return new AppError(
-		message,
-		500
-	);
+	return new AppError(message, 500);
 };
 
 export default (req: Request, res: Response, next: NextFunction): void => {
