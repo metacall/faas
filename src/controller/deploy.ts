@@ -53,7 +53,7 @@ export const handleJSONFiles = async (
 			: findMetaCallJsons(await findFilesPath(path)).map(
 					el => `${path}/${el}`
 			  );
-
+	console.log(jsonPath);
 	// FIXME Currently it do not support metacall.json syntax, else metacall-{runner}.json is fine and will work
 	handleNoJSONFile(jsonPath, suffix, version);
 };
