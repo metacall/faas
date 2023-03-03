@@ -45,6 +45,17 @@ export const ensureFolderExists = async <Path extends string>(
 	path
 );
 
+export const deleteRepoFolderIfExist = <Path extends string>(
+	path: Path,
+	url: string
+): void => {
+	const arr = url.split('/');
+	const folder = arr[arr.length - 1].split('.git')[0];
+	const repoFilePath = join(path, folder);
+
+	fs.rmSync(repoFilePath, { recursive: true, force: true });
+};
+
 export const execPromise = (
 	command: string
 ): Promise<{

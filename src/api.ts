@@ -17,6 +17,7 @@ import AppError from './utils/appError';
 import {
 	calculatePackages,
 	catchAsync,
+	deleteRepoFolderIfExist,
 	dirName,
 	ensureFolderExists,
 	execPromise,
@@ -79,11 +80,23 @@ export const fetchFiles = (
 export const fetchFilesFromRepo = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
-		res: Response
+		res: Response,
+		next: NextFunction
 	) => {
 		const { branch, url } = req.body;
 
 		await ensureFolderExists(appsDir);
+
+		try {
+			deleteRepoFolderIfExist(appsDir, url);
+		} catch (err) {
+			next(
+				new AppError(
+					'error occurred in deleting repository directory',
+					500
+				)
+			);
+		}
 
 		await execPromise(
 			`cd ${appsDir}; git clone --single-branch --depth=1 --branch ${branch} ${url} `
