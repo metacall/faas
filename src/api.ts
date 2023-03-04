@@ -137,10 +137,21 @@ export const fetchBranchList = catchAsync(
 export const fetchFileList = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
-		res: Response
+		res: Response,
+		next: NextFunction
 	) => {
 		await ensureFolderExists(appsDir);
 
+		try {
+			deleteRepoFolderIfExist(appsDir, req.body.url);
+		} catch (err) {
+			next(
+				new AppError(
+					'error occurred in deleting repository directory',
+					500
+				)
+			);
+		}
 		await execPromise(
 			`cd ${appsDir} ; git clone ${req.body.url} --depth=1 --no-checkout`
 		);
