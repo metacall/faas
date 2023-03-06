@@ -45,6 +45,16 @@ export const ensureFolderExists = async <Path extends string>(
 	path
 );
 
+export const deleteRepoFolderIfExist = <Path extends string>(
+	path: Path,
+	url: string
+): void => {
+	const folder = dirName(url);
+	const repoFilePath = join(path, folder);
+
+	fs.rmSync(repoFilePath, { recursive: true, force: true });
+};
+
 export const execPromise = (
 	command: string
 ): Promise<{
