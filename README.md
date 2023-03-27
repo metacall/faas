@@ -38,7 +38,7 @@ metacall-deploy --dev
 
 ### Important Note
 
-- This project is still under development and there is one extra thing you need to install before running this project and its [Metacall Core](https://github.com/metacall/core/blob/develop/docs/README.md#41-installation).
+- This project is still under development and there is one extra thing you need to install before running this project and its [MetaCall Core](https://github.com/metacall/core/blob/develop/docs/README.md#41-installation).
 
 - This project is developed using [MetaCall Core] itself in order to provide polyglot support, we are using its [Node Port](https://github.com/metacall/core/tree/develop/source/ports/node_port) of this library to use all the functions and methods ```MetaCall Core C API``` provides.
 
