@@ -16,7 +16,7 @@ When referring to the ```Real``` version of Metacall FaaS, it should be noted th
 
 Soon, we realized that many contributors joining the community needed an paid account on the ```Real FaaS``` for testing their polyglot applications. To remove this barrier, we proposed a project that would mimic the ```Real FaaS```.
 
-With this project, developers can now use it to deploy and test their polyglot applications (built using [Metacall Core](https://github.com/metacall/core)), web apps, and lambdas. The process is simple:
+With this project, developers can now use it to deploy and test their polyglot applications (built using [MetaCall Core](https://github.com/metacall/core)), web apps, and lambdas. The process is simple:
 
 - Step 1 : Spin up the "Local FaaS" by running the following command:
 
