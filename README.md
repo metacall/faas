@@ -10,7 +10,7 @@ npm start
 
 ### About Project :
 
-Metacall organization has its own cloud platform known as [Metacall FaaS](https://metacall.io/), a production-ready and high-performance FaaS/Cloud platform where you can deploy services, web apps, and lambdas in seconds. However, the ```Real``` version of Metacall FaaS is commercialized and requires a plan to deploy your polyglot applications, which can be found [Here](https://metacall.io/pricing/).
+MetaCall organization has its own cloud platform known as [MetaCall Hub](https://metacall.io/), a production-ready and high-performance FaaS/Cloud platform where you can deploy services, web apps, and lambdas in seconds. However, the ```Real``` version of MetaCall FaaS is commercialized and requires a plan to deploy your polyglot applications, which can be found [Here](https://metacall.io/pricing/).
 
 When referring to the ```Real``` version of Metacall FaaS, it should be noted that this refers to the commercialized FaaS cloud service, whereas ```Local``` refers to the mimic version.
 
