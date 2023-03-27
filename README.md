@@ -42,5 +42,5 @@ metacall-deploy --dev
 
 - This project is developed using [Metacall Core] itself in order to provide polyglot support, we are using its [Node Port](https://github.com/metacall/core/tree/develop/source/ports/node_port) of this library to use all the functions and methods ```Metcall Core C API``` provides.
 
-- Also, [Here](https://github.com/metacall/faas/blob/master/types/metacall.d.ts) are all the functions of ```Metacall Core``` we are using.
+- Also, [Here](https://github.com/metacall/faas/blob/master/types/metacall.d.ts) are all the functions of ```MetaCall Core``` we are using.
 
