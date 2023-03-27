@@ -12,7 +12,7 @@ npm start
 
 MetaCall organization has its own cloud platform known as [MetaCall Hub](https://metacall.io/), a production-ready and high-performance FaaS/Cloud platform where you can deploy services, web apps, and lambdas in seconds. However, the ```Real``` version of MetaCall FaaS is commercialized and requires a plan to deploy your polyglot applications, which can be found [Here](https://metacall.io/pricing/).
 
-When referring to the ```Real``` version of Metacall FaaS, it should be noted that this refers to the commercialized FaaS cloud service, whereas ```Local``` refers to the mimic version.
+When referring to the ```Real``` version of MetaCall FaaS, it should be noted that this refers to the commercialized FaaS cloud service, whereas ```Local``` refers to the mimic version.
 
 Soon, we realized that many contributors joining the community needed an paid account on the ```Real FaaS``` for testing their polyglot applications. To remove this barrier, we proposed a project that would mimic the ```Real FaaS```.
 
