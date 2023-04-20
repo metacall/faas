@@ -33,7 +33,9 @@ export const handleNoJSONFile = (
 		Object.assign(funcs, metacall_load_from_configuration_export(path));
 		const newInspect = metacall_inspect();
 		const inspect = diff(newInspect, previousInspect);
-		const langId = getLangId(path);
+		const langId = require(path).language_id;
+		if (!langId) throw `language_id not found in ${path}`;
+
 		if (currentApp) currentApp.packages[langId] = inspect[langId];
 	});
 
