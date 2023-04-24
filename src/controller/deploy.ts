@@ -34,9 +34,14 @@ export const handleNoJSONFile = (
 		const newInspect = metacall_inspect();
 		const inspect = diff(newInspect, previousInspect);
 		const langId = require(path).language_id;
-		if (!langId) throw `language_id not found in ${path}`;
 
-		if (currentApp) currentApp.packages[langId] = inspect[langId];
+		if (!langId) {
+			throw new Error(`language_id not found in ${path}`);
+		}
+
+		if (currentApp) {
+			currentApp.packages[langId] = inspect[langId];
+		}
 	});
 
 	currentApp.status = 'ready';
