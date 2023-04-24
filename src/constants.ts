@@ -16,11 +16,17 @@ export const currentFile: currentUploadedFile = {
 	path: ''
 };
 
-export const installDependenciesScript: Record<string, string> = {
-	python: `cd ${currentFile.path} ; metacall pip3 install -r requirements.txt`,
-	nodejs: `cd ${currentFile.path} ; metacall npm i`,
-	csharp: `cd ${currentFile.path}; dotnet restore; dotnet release;`,
-	ruby: `cd ${currentFile.path}; bundle install`
+export const createInstallDependenciesScript = (
+	runner: string,
+	path: string
+): string => {
+	const installDependenciesScript: Record<string, string> = {
+		python: `cd ${path} && echo "some data for the file" >> randomasd.txt && metacall pip3 install -r requirements.txt`,
+		nodejs: `cd ${path} ; metacall npm i`,
+		csharp: `cd ${path}; metacall dotnet restore;metacall dotnet release;`,
+		ruby: `cd ${path}; metacall bundle install`
+	};
+	return installDependenciesScript[runner];
 };
 
 export type namearg = 'id' | 'type' | 'jsons' | 'runners' | 'path';

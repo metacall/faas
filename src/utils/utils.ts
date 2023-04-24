@@ -7,7 +7,7 @@ import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { currentFile, installDependenciesScript } from '../constants';
+import { createInstallDependenciesScript, currentFile } from '../constants';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
@@ -18,7 +18,11 @@ export const installDependencies = async (): Promise<void> => {
 
 	for (const runner of currentFile.runners) {
 		if (runner == undefined) continue;
-		else await execPromise(installDependenciesScript[runner]);
+		else {
+			await execPromise(
+				createInstallDependenciesScript(runner, currentFile.path)
+			);
+		}
 	}
 };
 
@@ -106,7 +110,6 @@ export const configDir = (name: string): string =>
 		: missing('HOME');
 
 export const getLangId = (input: string): LanguageId => {
-	console.log(input);
 	const parts = input.split('-');
 	const extension = parts[parts.length - 1].split('.')[0];
 	return extension as LanguageId;
