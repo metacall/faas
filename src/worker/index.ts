@@ -6,10 +6,27 @@ import {
 	metacall_load_from_configuration_export
 } from 'metacall';
 import { hostname } from 'os';
-import { allApplications, App, currentFile } from '../constants';
-import { createMetacallJsonFile, diff, getLangId } from '../utils/utils';
+import {
+	App,
+	IAppWithFunctions,
+	currentUploadedFile,
+	protocol
+} from '../constants';
 
-export const handleNoJSONFile = (
+import { createMetacallJsonFile, diff } from '../utils/utils';
+
+let currentFile: currentUploadedFile = {
+	id: '',
+	type: '',
+	jsons: [],
+	runners: [],
+	path: ''
+};
+
+let allApplications: Record<string, IAppWithFunctions> = {};
+let exactFnx: Record<string, (...args: any[]) => any>;
+
+const handleNoJSONFile = (
 	jsonPaths: string[],
 	suffix: string,
 	version: string
@@ -19,18 +36,17 @@ export const handleNoJSONFile = (
 		hostname(),
 		suffix,
 		version,
-		{}
+		{},
+		[]
 	);
 
-	// TODO:
-	// type Modules = { module_ptr, funcs }[];
-	// const modules =  jsonPaths.map(path => metacall_load_from_configuration_export(path));
-
-	const funcs = {};
+	let funcs: string[] = [];
 
 	jsonPaths.forEach(path => {
 		const previousInspect = metacall_inspect();
-		Object.assign(funcs, metacall_load_from_configuration_export(path));
+		exactFnx = metacall_load_from_configuration_export(path);
+		funcs = Object.keys(exactFnx);
+
 		const newInspect = metacall_inspect();
 		const inspect = diff(newInspect, previousInspect);
 		const langId = require(path).language_id;
@@ -46,10 +62,18 @@ export const handleNoJSONFile = (
 
 	currentApp.status = 'ready';
 	allApplications[currentApp.suffix] = { ...currentApp, funcs };
+
+	if (process.send) {
+		process.send({
+			type: protocol.g,
+			data: allApplications
+		});
+	}
+
 	currentApp = undefined;
 };
 
-export const handleJSONFiles = async (
+const handleJSONFiles = async (
 	path: string,
 	suffix: string,
 	version: string
@@ -63,3 +87,17 @@ export const handleJSONFiles = async (
 	// FIXME Currently it do not support metacall.json syntax, else metacall-{runner}.json is fine and will work
 	handleNoJSONFile(jsonPath, suffix, version);
 };
+
+process.on('message', payload => {
+	if (payload.type === protocol.l) {
+		currentFile = payload.currentFile;
+		handleJSONFiles(currentFile.path, currentFile.id, 'v1');
+	} else if (payload.type === protocol.c) {
+		if (process.send) {
+			process.send({
+				type: protocol.r,
+				data: exactFnx[payload.fn.name](...payload.fn.args)
+			});
+		}
+	}
+});

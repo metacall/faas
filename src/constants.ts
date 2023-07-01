@@ -1,4 +1,5 @@
 import { DeployStatus, MetaCallJSON } from '@metacall/protocol/deployment';
+import { ChildProcess } from 'child_process';
 
 export interface currentUploadedFile {
 	id: string;
@@ -57,6 +58,7 @@ export interface IApp {
 	suffix: string;
 	version: string;
 	packages: tpackages;
+	ports: number[];
 }
 
 export class App implements IApp {
@@ -65,24 +67,44 @@ export class App implements IApp {
 	public suffix: string;
 	public version: string;
 	public packages: tpackages;
+	public ports: number[];
 
 	constructor(
 		status: DeployStatus,
 		prefix: string,
 		suffix: string,
 		version: string,
-		packages: tpackages
+		packages: tpackages,
+		ports: number[]
 	) {
 		this.status = status;
 		this.prefix = prefix;
 		this.suffix = suffix;
 		this.version = version;
 		this.packages = packages;
+		this.ports = ports;
 	}
 }
 
-type IAppWithFunctions = IApp & {
-	funcs: Record<string, (...args: any[]) => any>; // eslint-disable-line
+export type IAppWithFunctions = IApp & {
+	funcs: string[];
 };
 
-export const allApplications: Record<string, IAppWithFunctions> = {};
+export type IAllApps = Record<string, IAppWithFunctions>;
+
+export const allApplications: IAllApps = {};
+
+export const protocol = {
+	i: 'installDependencies',
+	l: 'loadFunctions',
+	g: 'getApplicationMetadata',
+	c: 'callFunction',
+	r: 'functionInvokeResult'
+};
+
+export const cps: { [key: string]: ChildProcess } = {};
+
+export interface childProcessResponse {
+	type: keyof typeof protocol;
+	data: any;
+}
