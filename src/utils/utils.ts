@@ -4,10 +4,14 @@ import { platform } from 'os';
 import { join } from 'path';
 
 import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
-import { PackageError, generatePackage } from '@metacall/protocol/package';
+import { generatePackage, PackageError } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { createInstallDependenciesScript, currentFile } from '../constants';
+import {
+	createInstallDependenciesScript,
+	currentFile,
+	IAllApps
+} from '../constants';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
@@ -131,3 +135,7 @@ export const diff = (object1: any, object2: any): any => {
 
 	return object1; // eslint-disable-line
 };
+
+export function isIAllApps(data: any): data is IAllApps {
+	return typeof data === 'object' && data !== null;
+}

@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import { hostname } from 'os';
 import * as path from 'path';
 
@@ -7,10 +8,13 @@ import upload from './controller/upload';
 
 import {
 	allApplications,
+	childProcessResponse,
+	cps,
 	currentFile,
 	deployBody,
 	fetchBranchListBody,
-	fetchFilesFromRepoBody
+	fetchFilesFromRepoBody,
+	protocol
 } from './constants';
 
 import AppError from './utils/appError';
@@ -22,10 +26,10 @@ import {
 	ensureFolderExists,
 	execPromise,
 	exists,
-	installDependencies
+	installDependencies,
+	isIAllApps
 } from './utils/utils';
 
-import { handleJSONFiles } from './controller/deploy';
 import { appsDirectory } from './utils/config';
 
 const appsDir = appsDirectory();
@@ -34,7 +38,7 @@ export const callFnByName = (
 	req: Request,
 	res: Response,
 	next: NextFunction
-): Response => {
+): Response | void => {
 	if (!(req.params && req.params.name))
 		next(
 			new AppError(
@@ -46,7 +50,35 @@ export const callFnByName = (
 	const { appName: app, name } = req.params;
 	const args = Object.values(req.body);
 
-	return res.send(JSON.stringify(allApplications[app].funcs[name](...args)));
+	let responseSent = false; // Flag to track if response has been sent
+	let errorCame = false;
+
+	cps[app].send({
+		type: protocol.c,
+		fn: {
+			name,
+			args
+		}
+	});
+
+	cps[app].on('message', (data: childProcessResponse) => {
+		if (!responseSent) {
+			// Check if response has already been sent
+			if (data.type === protocol.r) {
+				responseSent = true; // Set flag to true to indicate response has been sent
+				return res.send(JSON.stringify(data.data));
+			} else {
+				errorCame = true;
+			}
+		}
+	});
+
+	// Default response in case the 'message' event is not triggered
+	if (!responseSent && errorCame) {
+		responseSent = true; // Set flag to true to indicate response has been sent
+		errorCame = false;
+		return res.send('Function calling error');
+	}
 };
 
 export const serveStatic = catchAsync(
@@ -177,11 +209,30 @@ export const deploy = catchAsync(
 
 		await installDependencies();
 
-		await handleJSONFiles(
-			currentFile.path,
-			currentFile.id,
-			req.body.version
-		);
+		const desiredPath = path.join(__dirname, '/worker/index.js');
+
+		const proc = spawn('metacall', [desiredPath], {
+			stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+		});
+
+		proc.send({
+			type: protocol.l,
+			currentFile
+		});
+
+		// proc.stdout?.on('data', (data: Buffer) => {
+		// 	console.log('CP console log: -->>', data.toString());
+		// });
+
+		proc.on('message', (data: childProcessResponse) => {
+			if (data.type === protocol.g) {
+				if (isIAllApps(data.data)) {
+					const appName = Object.keys(data.data)[0];
+					cps[appName] = proc;
+					allApplications[appName] = data.data[appName];
+				}
+			}
+		});
 
 		res.status(200).json({
 			suffix: hostname(),
