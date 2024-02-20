@@ -106,5 +106,5 @@ export const cps: { [key: string]: ChildProcess } = {};
 
 export interface childProcessResponse {
 	type: keyof typeof protocol;
-	data: any;
+	data: unknown;
 }
