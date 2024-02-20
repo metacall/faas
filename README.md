@@ -1,6 +1,6 @@
 # MetaCall FaaS
 
-Reimplementation of MetaCall FaaS platform written in TypeScript.
+Reimplementation of MetaCall FaaS platform written in TypeScript. This project requires MetaCall installed in order to run it. For more information about installation: https://github.com/metacall/install
 
 ### Development:
 ```sh
