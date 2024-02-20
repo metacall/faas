@@ -20,7 +20,7 @@ jobs:
             - name: Setup NodeJS
               uses: actions/setup-node@v2
               with:
-                  node-version: '14'
+                  node-version: '18'
                   registry-url: https://registry.npmjs.org
 
             - name: Update NPM
