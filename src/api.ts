@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
+import colors from 'colors';
+import { NextFunction, Request, Response } from 'express';
 import { hostname } from 'os';
 import * as path from 'path';
-
-import { NextFunction, Request, Response } from 'express';
 
 import upload from './controller/upload';
 
@@ -33,6 +33,8 @@ import {
 import { appsDirectory } from './utils/config';
 
 const appsDir = appsDirectory();
+
+colors.enable();
 
 export const callFnByName = (
 	req: Request,
@@ -220,9 +222,12 @@ export const deploy = catchAsync(
 			currentFile
 		});
 
-		// proc.stdout?.on('data', (data: Buffer) => {
-		// 	console.log('CP console log: -->>', data.toString());
-		// });
+		proc.stdout?.on('data', (data: Buffer) => {
+			console.log(data.toString().green);
+		});
+		proc.stderr?.on('data', (data: Buffer) => {
+			console.log(data.toString().red);
+		});
 
 		proc.on('message', (data: childProcessResponse) => {
 			if (data.type === protocol.g) {
