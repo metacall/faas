@@ -4,13 +4,15 @@ import { NextFunction, Request, Response } from 'express';
 import { hostname } from 'os';
 import * as path from 'path';
 
-import upload from './controller/upload';
+import deployDeleteController from './controller/delete';
+import uploadController from './controller/upload';
 
 import {
 	allApplications,
 	childProcessResponse,
 	cps,
 	currentFile,
+	deleteBody,
 	deployBody,
 	fetchBranchListBody,
 	fetchFilesFromRepoBody,
@@ -51,6 +53,14 @@ export const callFnByName = (
 
 	const { appName: app, name } = req.params;
 	const args = Object.values(req.body);
+
+	if (!(app in cps)) {
+		return res
+			.status(404)
+			.send(
+				`Oops! It looks like the application (${app}) hasn't been deployed yet. Please deploy it before you can call its functions.`
+			);
+	}
 
 	let responseSent = false; // Flag to track if response has been sent
 	let errorCame = false;
@@ -109,7 +119,7 @@ export const fetchFiles = (
 	req: Request,
 	res: Response,
 	next: NextFunction
-): void => upload(req, res, next);
+): void => uploadController(req, res, next);
 
 export const fetchFilesFromRepo = catchAsync(
 	async (
@@ -253,6 +263,11 @@ export const showLogs = (req: Request, res: Response): Response => {
 	return res.send('Demo Logs...');
 };
 
+export const deployDelete = (
+	req: Omit<Request, 'body'> & { body: deleteBody },
+	res: Response
+): Response => deployDeleteController(req, res);
+
 export const validateAndDeployEnabled = (
 	req: Request,
 	res: Response
@@ -273,6 +288,6 @@ export const validateAndDeployEnabled = (
  *
  * FAAS
  * the apps are not getting detected once the server closes, do we need to again deploy them
- * find a way to detect metacall.json in the files and dont deploy if there is not because json ke through hi hum upload krre hai
+ * find a way to detect metacall.json in the files and dont deploy if there is not because json ke through we are uploading
  *
  */

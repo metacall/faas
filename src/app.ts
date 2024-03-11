@@ -35,6 +35,8 @@ app.get('/api/inspect', (req, res) => {
 	res.send(Object.values(allApplications));
 });
 
+app.post('/api/deploy/delete', api.deployDelete);
+
 // For all the additional unimplemented routes
 app.all('*', (req: Request, res: Response, next: NextFunction) => {
 	next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

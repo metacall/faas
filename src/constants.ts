@@ -50,6 +50,12 @@ export type deployBody = {
 	version: string;
 };
 
+export type deleteBody = {
+	suffix: string; //name of deployment
+	prefix: string;
+	version: string;
+};
+
 export type tpackages = Record<string, unknown>;
 
 export interface IApp {
