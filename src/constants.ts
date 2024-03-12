@@ -114,3 +114,7 @@ export interface childProcessResponse {
 	type: keyof typeof protocol;
 	data: unknown;
 }
+
+export interface InspectObject {
+	[key: string]: Array<{ name: string }>;
+}

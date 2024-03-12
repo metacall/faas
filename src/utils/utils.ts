@@ -10,7 +10,8 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import {
 	createInstallDependenciesScript,
 	currentFile,
-	IAllApps
+	IAllApps,
+	InspectObject
 } from '../constants';
 
 export const dirName = (gitUrl: string): string =>
@@ -119,21 +120,18 @@ export const getLangId = (input: string): LanguageId => {
 	return extension as LanguageId;
 };
 
-//eslint-disable-next-line
-export const diff = (object1: any, object2: any): any => {
+export const diff = (
+	object1: InspectObject,
+	object2: InspectObject
+): InspectObject => {
 	for (const key in object2) {
-		//eslint-disable-next-line
 		if (Array.isArray(object2[key])) {
-			//eslint-disable-next-line
 			object1[key] = object1[key].filter(
-				(
-					item: any // eslint-disable-line
-				) => !object2[key].find((i: any) => i.name === item.name) // eslint-disable-line
+				item => !object2[key].find(i => i.name === item.name)
 			);
 		}
 	}
-
-	return object1; // eslint-disable-line
+	return object1;
 };
 
 export function isIAllApps(data: any): data is IAllApps {
