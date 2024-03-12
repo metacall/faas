@@ -134,6 +134,6 @@ export const diff = (
 	return object1;
 };
 
-export function isIAllApps(data: any): data is IAllApps {
+export function isIAllApps(data: unknown): data is IAllApps {
 	return typeof data === 'object' && data !== null;
 }
