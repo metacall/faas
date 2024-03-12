@@ -31,6 +31,8 @@ app.post('/api/deploy/logs', api.showLogs);
 
 app.post('/api/deploy/create', api.deploy);
 
+app.post('/api/deploy/delete', api.deployDelete);
+
 app.get('/api/inspect', (req, res) => {
 	res.send(Object.values(allApplications));
 });

@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import colors from 'colors';
 import { NextFunction, Request, Response } from 'express';
+import * as fs from 'fs';
 import { hostname } from 'os';
 import * as path from 'path';
 
@@ -11,6 +12,7 @@ import {
 	childProcessResponse,
 	cps,
 	currentFile,
+	deleteBody,
 	deployBody,
 	fetchBranchListBody,
 	fetchFilesFromRepoBody,
@@ -251,6 +253,34 @@ export const deploy = catchAsync(
 
 export const showLogs = (req: Request, res: Response): Response => {
 	return res.send('Demo Logs...');
+};
+
+export const deployDelete = (
+	req: Omit<Request, 'body'> & { body: deleteBody },
+	res: Response,
+	next: NextFunction
+): void => {
+	const { suffix: appName } = req.body;
+
+	try {
+		if (cps[appName]) {
+			cps[appName].kill();
+			delete cps[appName];
+		}
+
+		const appPath = path.join(appsDir, appName);
+
+		if (fs.existsSync(appPath)) {
+			fs.rmdirSync(appPath, { recursive: true });
+		}
+		delete allApplications[appName];
+
+		res.send(`Deleting ${appName} deploy Succeed`);
+	} catch (error) {
+		next(
+			new AppError('error occurred in deleting repository directory', 500)
+		);
+	}
 };
 
 export const validateAndDeployEnabled = (

@@ -108,3 +108,7 @@ export interface childProcessResponse {
 	type: keyof typeof protocol;
 	data: unknown;
 }
+
+export interface deleteBody {
+	suffix: string;
+}
