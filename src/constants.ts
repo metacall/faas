@@ -111,4 +111,6 @@ export interface childProcessResponse {
 
 export interface deleteBody {
 	suffix: string;
+	prefix: string;
+	version: string;
 }
