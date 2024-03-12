@@ -4,9 +4,10 @@ import { join } from 'path';
 
 import { Request, Response } from 'express';
 
-import { allApplications, cps, deleteBody } from '../constants';
+import { allApplications, childProcesses, deleteBody } from '../constants';
 import { appsDirectory } from '../utils/config';
-import { deleteStatusMessage } from '../utils/resposeTexts';
+import { deleteStatusMessage } from '../utils/responseTexts';
+import { ensureFolderExists } from '../utils/utils';
 
 export default (
 	req: Omit<Request, 'body'> & { body: deleteBody },
@@ -18,24 +19,35 @@ export default (
 	// Initialize isError flag
 	let isError = false;
 
-	// Check if the application exists in cps and allApplications objects
-	if (!(app in cps && app in allApplications)) {
+	// Check if the application exists in childProcesses and allApplications objects
+	if (!(app in childProcesses && app in allApplications)) {
 		isError = true;
+		return res.send(deleteStatusMessage(app)['error']);
 	}
 
 	// Retrieve the child process associated with the application and kill it
-	const appCP: ChildProcess = cps[app];
-	appCP.kill();
+	const childProcessesInApplications: ChildProcess = childProcesses[app];
+	childProcessesInApplications.kill();
 
-	// Remove the application from cps and allApplications objects
-	delete cps[app];
+	// Remove the application from childProcesses and allApplications objects
+	delete childProcesses[app];
 	delete allApplications[app];
+
+	if (app in childProcesses && app in allApplications) {
+		isError = true;
+		return res.send(deleteStatusMessage(app)['appShouldntExist']);
+	}
 
 	// Determine the location of the application
 	const appLocation = join(appsDirectory(), app);
 
 	// Delete the directory of the application
 	rmSync(appLocation, { recursive: true, force: true });
+
+	if (!ensureFolderExists(appLocation)) {
+		isError = true;
+		return res.send(deleteStatusMessage(app)['folderShouldntExist']);
+	}
 
 	// Send response based on whether there was an error during deletion
 	return res.send(
