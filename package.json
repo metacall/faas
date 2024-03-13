@@ -2,14 +2,13 @@
 	"name": "@metacall/faas",
 	"version": "0.1.0",
 	"description": "Reimplementation of MetaCall FaaS platform written in TypeScript.",
-	"main": "dist/index.js",
+	"main": "dist/server.js",
 	"scripts": {
 		"test": "npm run --silent build && mocha dist/test",
 		"unit": "npm run --silent test -- --ignore **/integration**",
 		"prepublishOnly": "npm run --silent build",
 		"build": "npm run --silent lint && tsc",
 		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
-		"postinstall": "npm run fix && npm run build",
 		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
 		"start": "npm run build && metacall dist/server.js"
 	},
