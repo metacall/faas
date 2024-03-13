@@ -8,9 +8,9 @@
 		"unit": "npm run --silent test -- --ignore **/integration**",
 		"prepublishOnly": "npm run --silent build",
 		"build": "npm run --silent lint && tsc",
-		"lint": "eslint . --ignore-pattern dist",
+		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
 		"postinstall": "npm run fix && npm run build",
-		"fix": "eslint . --ignore-pattern dist --fix",
+		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
 		"start": "npm run build && metacall dist/server.js"
 	},
 	"repository": {
