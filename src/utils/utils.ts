@@ -136,6 +136,45 @@ export const diff = (object1: any, object2: any): any => {
 	return object1; // eslint-disable-line
 };
 
-export function isIAllApps(data: any): data is IAllApps {
+export function isIAllApps(data: unknown): data is IAllApps {
 	return typeof data === 'object' && data !== null;
 }
+
+export const listDirectoriesWithPrefix = (
+	searchString: string,
+	appsDir: string
+): string[] => {
+	try {
+		const filteredDirectories = fs
+			.readdirSync(appsDir)
+			.filter(
+				file =>
+					fs.statSync(join(appsDir, file)).isDirectory() &&
+					file.startsWith(searchString)
+			);
+		return filteredDirectories;
+	} catch (err) {
+		console.error('Error reading directory:', err);
+		return [];
+	}
+};
+
+export const isArrEmpty = <T>(arr: T[]): boolean => arr.length === 0;
+
+export const getCorrectNameWithVersion = (
+	appName: string,
+	appsWithSameName: string[]
+): string => {
+	if (isArrEmpty(appsWithSameName)) {
+		return appName + '-v1';
+	}
+	const lastApp = appsWithSameName[appsWithSameName.length - 1];
+	const regex = /-v(\d+)$/;
+	const match = regex.exec(lastApp);
+	if (match) {
+		const versionNumber = parseInt(match[1]) + 1;
+		return currentFile.id + '-v' + versionNumber.toString();
+	}
+
+	return '';
+};

@@ -11,6 +11,10 @@ import { currentFile, namearg } from '../constants';
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
+import {
+	getCorrectNameWithVersion,
+	listDirectoriesWithPrefix
+} from '../utils/utils';
 
 const appsDir = appsDirectory();
 
@@ -79,6 +83,17 @@ export default (req: Request, res: Response, next: NextFunction): void => {
 
 	bb.on('finish', () => {
 		handleError(() => {
+			const appsWithSameName = listDirectoriesWithPrefix(
+				currentFile.id,
+				appsDir
+			);
+
+			const appName = getCorrectNameWithVersion(
+				currentFile.id,
+				appsWithSameName
+			);
+			currentFile['id'] = appName;
+
 			const appLocation = path.join(appsDir, `${currentFile.id}`);
 
 			fs.createReadStream(currentFile.path).pipe(

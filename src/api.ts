@@ -23,13 +23,14 @@ import AppError from './utils/appError';
 import {
 	calculatePackages,
 	catchAsync,
-	deleteRepoFolderIfExist,
 	dirName,
 	ensureFolderExists,
 	execPromise,
 	exists,
+	getCorrectNameWithVersion,
 	installDependencies,
-	isIAllApps
+	isIAllApps,
+	listDirectoriesWithPrefix
 } from './utils/utils';
 
 import { appsDirectory } from './utils/config';
@@ -124,34 +125,26 @@ export const fetchFiles = (
 export const fetchFilesFromRepo = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
-		res: Response,
-		next: NextFunction
+		res: Response
 	) => {
 		const { branch, url } = req.body;
 
 		await ensureFolderExists(appsDir);
 
-		try {
-			deleteRepoFolderIfExist(appsDir, url);
-		} catch (err) {
-			next(
-				new AppError(
-					'error occurred in deleting repository directory',
-					500
-				)
-			);
-		}
+		const repoName = dirName(url);
+
+		const appsWithSameName = listDirectoriesWithPrefix(repoName, appsDir);
+
+		const appName = getCorrectNameWithVersion(repoName, appsWithSameName);
 
 		await execPromise(
-			`cd ${appsDir}; git clone --single-branch --depth=1 --branch ${branch} ${url} `
+			`cd ${appsDir}; git clone --single-branch --depth=1 --branch ${branch} ${url} ${appName}`
 		);
 
-		const id = dirName(req.body.url);
+		currentFile['id'] = appName;
+		currentFile.path = `${appsDir}/${appName}`;
 
-		currentFile['id'] = id;
-		currentFile.path = `${appsDir}/${id}`;
-
-		res.status(201).send({ id });
+		res.status(201).send({ appName });
 	}
 );
 
@@ -181,26 +174,20 @@ export const fetchBranchList = catchAsync(
 export const fetchFileList = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
-		res: Response,
-		next: NextFunction
+		res: Response
 	) => {
 		await ensureFolderExists(appsDir);
+		const repoName = dirName(req.body.url);
 
-		try {
-			deleteRepoFolderIfExist(appsDir, req.body.url);
-		} catch (err) {
-			next(
-				new AppError(
-					'error occurred in deleting repository directory',
-					500
-				)
-			);
-		}
+		const appsWithSameName = listDirectoriesWithPrefix(repoName, appsDir);
+
+		const appName = getCorrectNameWithVersion(repoName, appsWithSameName);
+
 		await execPromise(
-			`cd ${appsDir} ; git clone ${req.body.url} --depth=1 --no-checkout`
+			`cd ${appsDir} ; git clone ${req.body.url} ${appName} --depth=1 --no-checkout`
 		);
 
-		const dirPath = `${appsDir}/${dirName(req.body.url)}`;
+		const dirPath = `${appsDir}/${appName}`;
 
 		const { stdout } = await execPromise(
 			`cd ${dirPath} ; git ls-tree -r ${req.body.branch} --name-only; cd .. ; rm -r ${dirPath}`
