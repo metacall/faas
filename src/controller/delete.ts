@@ -11,7 +11,7 @@ import { deleteStatusMessage } from '../utils/resposeTexts';
 export default (
 	req: Omit<Request, 'body'> & { body: deleteBody },
 	res: Response
-) => {
+): Response => {
 	// Extract the suffix (application name) of the application from the request body
 	const { suffix: app } = req.body;
 
