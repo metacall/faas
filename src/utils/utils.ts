@@ -32,10 +32,12 @@ export const installDependencies = async (): Promise<void> => {
 };
 
 //check if repo contains metacall-*.json if not create and calculate runners then install dependencies
-export const calculatePackages = async (): Promise<void> => {
+export const calculatePackages = async (next: NextFunction): Promise<void> => {
 	const data = await generatePackage(currentFile.path);
 
-	if (data.error == PackageError.Empty) throw PackageError.Empty;
+	if (data.error == PackageError.Empty) {
+		return next(new Error(PackageError.Empty));
+	}
 	//	currentFile.jsons = JSON.parse(data.jsons.toString()); FIXME Fix this line
 	currentFile.runners = data.runners;
 };
