@@ -19,7 +19,12 @@ export const findJsonFilesRecursively = async (
 			await findJsonFilesRecursively(path.join(appsDir, file.name));
 		} else if (file.name === 'metacall.json') {
 			const filePath = path.join(appsDir, file.name);
+			const desiredPath = path.join(__dirname, '/worker/index.js');
+			const id = path.basename(appsDir);
 
+			currentFile.id = id;
+			(currentFile.type = 'application/x-zip-compressed'),
+				(currentFile.path = appsDir);
 		}
 	}
 };
