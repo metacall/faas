@@ -32,6 +32,7 @@ import {
 	isIAllApps
 } from './utils/utils';
 
+import { PackageError } from '@metacall/protocol/package';
 import { appsDirectory } from './utils/config';
 
 const appsDir = appsDirectory();
@@ -220,31 +221,34 @@ export const fetchFileList = catchAsync(
 export const deploy = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: deployBody },
-		res: Response
+		res: Response,
+		next: NextFunction
 	) => {
-		req.body.resourceType == 'Repository' && (await calculatePackages());
+		try {
+			req.body.resourceType == 'Repository' &&
+				(await calculatePackages(next));
 
-		// TODO Currently Deploy function will only work for workdir, we will add the addRepo
+			// TODO Currently Deploy function will only work for workdir, we will add the addRepo
 
-		await installDependencies();
+			await installDependencies();
 
-		const desiredPath = path.join(__dirname, '/worker/index.js');
+			const desiredPath = path.join(__dirname, '/worker/index.js');
 
-		const proc = spawn('metacall', [desiredPath], {
-			stdio: ['pipe', 'pipe', 'pipe', 'ipc']
-		});
+			const proc = spawn('metacall', [desiredPath], {
+				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+			});
 
-		proc.send({
-			type: protocol.l,
-			currentFile
-		});
+			proc.send({
+				type: protocol.l,
+				currentFile
+			});
 
-		proc.stdout?.on('data', (data: Buffer) => {
-			console.log(data.toString().green);
-		});
-		proc.stderr?.on('data', (data: Buffer) => {
-			console.log(data.toString().red);
-		});
+			proc.stdout?.on('data', (data: Buffer) => {
+				console.log(data.toString().green);
+			});
+			proc.stderr?.on('data', (data: Buffer) => {
+				console.log(data.toString().red);
+			});
 
 		proc.on('message', (data: childProcessResponse) => {
 			if (data.type === protocol.g) {
@@ -252,17 +256,29 @@ export const deploy = catchAsync(
 					const appName = Object.keys(data.data)[0];
 					childProcesses[appName] = proc;
 					allApplications[appName] = data.data[appName];
+
+			proc.on('message', (data: childProcessResponse) => {
+				if (data.type === protocol.g) {
+					if (isIAllApps(data.data)) {
+						const appName = Object.keys(data.data)[0];
+						cps[appName] = proc;
+						allApplications[appName] = data.data[appName];
+					}
 				}
+			});
+
+			res.status(200).json({
+				suffix: hostname(),
+				prefix: currentFile.id,
+				version: 'v1'
+			});
+		} catch (err) {
+			// Check if the error is PackageError.Empty
+			if (err === PackageError.Empty) {
+				return next(err);
 			}
-		});
-
-		res.status(200).json({
-			suffix: hostname(),
-			prefix: currentFile.id,
-			version: 'v1'
-		});
-
-		// Handle err == PackageError.Empty, use next function for error handling
+			return next(err);
+		}
 	}
 );
 
