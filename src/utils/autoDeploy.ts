@@ -25,6 +25,32 @@ export const findJsonFilesRecursively = async (
 			currentFile.id = id;
 			(currentFile.type = 'application/x-zip-compressed'),
 				(currentFile.path = appsDir);
+
+			const proc = spawn('metacall', [desiredPath, filePath], {
+				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+			});
+
+			proc.send({
+				type: protocol.l,
+				currentFile
+			});
+
+			proc.stdout?.on('data', (data: Buffer) => {
+				console.log(data.toString().green);
+			});
+			proc.stderr?.on('data', (data: Buffer) => {
+				console.log(data.toString().red);
+			});
+
+			proc.on('message', (data: childProcessResponse) => {
+				if (data.type === protocol.g) {
+					if (isIAllApps(data.data)) {
+						const appName = Object.keys(data.data)[0];
+						cps[appName] = proc;
+						allApplications[appName] = data.data[appName];
+					}
+				}
+			});
 		}
 	}
 };
