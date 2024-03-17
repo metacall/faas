@@ -13,6 +13,7 @@ import {
 	IAllApps,
 	InspectObject
 } from '../constants';
+import { logger } from './logger';
 
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
@@ -138,4 +139,13 @@ export const diff = (
 
 export function isIAllApps(data: unknown): data is IAllApps {
 	return typeof data === 'object' && data !== null;
+}
+
+export function logProcessOutput(
+	proc: NodeJS.ReadableStream | null,
+	color: 'green' | 'red'
+): void {
+	proc?.on('data', (data: Buffer) => {
+		logger.log(data.toString()[color]);
+	});
 }
