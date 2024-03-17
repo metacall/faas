@@ -29,7 +29,8 @@ import {
 	execPromise,
 	exists,
 	installDependencies,
-	isIAllApps
+	isIAllApps,
+	logProcessOutput
 } from './utils/utils';
 
 import { PackageError } from '@metacall/protocol/package';
@@ -236,12 +237,8 @@ export const deploy = catchAsync(
 				currentFile
 			});
 
-			proc.stdout?.on('data', (data: Buffer) => {
-				console.log(data.toString().green);
-			});
-			proc.stderr?.on('data', (data: Buffer) => {
-				console.log(data.toString().red);
-			});
+			logProcessOutput(proc.stdout, 'green');
+			logProcessOutput(proc.stderr, 'red');
 
 			proc.on('message', (data: childProcessResponse) => {
 				if (data.type === protocol.g) {
