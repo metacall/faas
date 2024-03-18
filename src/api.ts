@@ -250,18 +250,11 @@ export const deploy = catchAsync(
 				console.log(data.toString().red);
 			});
 
-		proc.on('message', (data: childProcessResponse) => {
-			if (data.type === protocol.g) {
-				if (isIAllApps(data.data)) {
-					const appName = Object.keys(data.data)[0];
-					childProcesses[appName] = proc;
-					allApplications[appName] = data.data[appName];
-
 			proc.on('message', (data: childProcessResponse) => {
 				if (data.type === protocol.g) {
 					if (isIAllApps(data.data)) {
 						const appName = Object.keys(data.data)[0];
-						cps[appName] = proc;
+						childProcesses[appName] = proc;
 						allApplications[appName] = data.data[appName];
 					}
 				}
