@@ -1,3 +1,4 @@
+import { pathIsMetaCallJson } from '@metacall/protocol/package';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,7 +18,7 @@ export const findJsonFilesRecursively = async (
 	for (const file of files) {
 		if (file.isDirectory()) {
 			await findJsonFilesRecursively(path.join(appsDir, file.name));
-		} else if (file.name === 'metacall.json') {
+		} else if (pathIsMetaCallJson(file.name)) {
 			const filePath = path.join(appsDir, file.name);
 			const desiredPath = path.join(__dirname, '../worker/index.js');
 			const id = path.basename(appsDir);
