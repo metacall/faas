@@ -5,7 +5,7 @@ import * as path from 'path';
 import {
 	allApplications,
 	childProcessResponse,
-	cps,
+	childProcesses,
 	currentFile,
 	protocol
 } from '../constants';
@@ -47,7 +47,7 @@ export const findJsonFilesRecursively = async (
 				if (data.type === protocol.g) {
 					if (isIAllApps(data.data)) {
 						const appName = Object.keys(data.data)[0];
-						cps[appName] = proc;
+						childProcesses[appName] = proc;
 						allApplications[appName] = data.data[appName];
 					}
 				}

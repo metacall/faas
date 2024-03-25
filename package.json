@@ -63,7 +63,16 @@
 			"project": "./tsconfig.json"
 		},
 		"rules": {
-			"tsdoc/syntax": "warn"
+			"tsdoc/syntax": "warn",
+			"no-unused-vars": "off",
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					"argsIgnorePattern": "^_",
+					"varsIgnorePattern": "^_",
+					"caughtErrorsIgnorePattern": "^_"
+				}
+			]
 		}
 	},
 	"dependencies": {

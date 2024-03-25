@@ -96,7 +96,7 @@ export const callFnByName = (
 };
 
 export const serveStatic = catchAsync(
-	async (req: Request, res: Response, next: NextFunction) => {
+	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 		if (!req.params) next(new AppError('Invalid API endpoint', 404));
 
 		const { app, file } = req.params;
@@ -120,7 +120,7 @@ export const serveStatic = catchAsync(
 				)
 			);
 
-		res.status(200).sendFile(appLocation);
+		return res.status(200).sendFile(appLocation);
 	}
 );
 
@@ -160,7 +160,7 @@ export const fetchFilesFromRepo = catchAsync(
 		currentFile['id'] = id;
 		currentFile.path = `${appsDir}/${id}`;
 
-		res.status(201).send({ id });
+		return res.status(201).send({ id });
 	}
 );
 
@@ -183,7 +183,7 @@ export const fetchBranchList = catchAsync(
 				}
 			});
 
-		res.send({ branches });
+		return res.send({ branches });
 	}
 );
 
@@ -215,7 +215,9 @@ export const fetchFileList = catchAsync(
 			`cd ${dirPath} ; git ls-tree -r ${req.body.branch} --name-only; cd .. ; rm -r ${dirPath}`
 		);
 
-		res.send({ files: JSON.stringify(stdout.toString()).split('\\n') });
+		return res.send({
+			files: JSON.stringify(stdout.toString()).split('\\n')
+		});
 	}
 );
 
@@ -257,7 +259,7 @@ export const deploy = catchAsync(
 				}
 			});
 
-			res.status(200).json({
+			return res.status(200).json({
 				suffix: hostname(),
 				prefix: currentFile.id,
 				version: 'v1'
@@ -278,8 +280,9 @@ export const showLogs = (req: Request, res: Response): Response => {
 
 export const deployDelete = (
 	req: Omit<Request, 'body'> & { body: deleteBody },
-	res: Response
-): Response => deployDeleteController(req, res);
+	res: Response,
+	next: NextFunction
+): void => deployDeleteController(req, res, next);
 
 export const validateAndDeployEnabled = (
 	req: Request,
