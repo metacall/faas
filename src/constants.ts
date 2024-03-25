@@ -108,7 +108,7 @@ export const protocol = {
 	r: 'functionInvokeResult'
 };
 
-export const cps: { [key: string]: ChildProcess } = {};
+export const childProcesses: { [key: string]: ChildProcess } = {};
 
 export interface childProcessResponse {
 	type: keyof typeof protocol;

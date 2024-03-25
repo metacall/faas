@@ -10,7 +10,7 @@ import uploadController from './controller/upload';
 import {
 	allApplications,
 	childProcessResponse,
-	cps,
+	childProcesses,
 	currentFile,
 	deleteBody,
 	deployBody,
@@ -56,7 +56,7 @@ export const callFnByName = (
 	const { appName: app, name } = req.params;
 	const args = Object.values(req.body);
 
-	if (!(app in cps)) {
+	if (!(app in childProcesses)) {
 		return res
 			.status(404)
 			.send(
@@ -67,7 +67,7 @@ export const callFnByName = (
 	let responseSent = false; // Flag to track if response has been sent
 	let errorCame = false;
 
-	cps[app].send({
+	childProcesses[app].send({
 		type: protocol.c,
 		fn: {
 			name,
@@ -75,7 +75,7 @@ export const callFnByName = (
 		}
 	});
 
-	cps[app].on('message', (data: childProcessResponse) => {
+	childProcesses[app].on('message', (data: childProcessResponse) => {
 		if (!responseSent) {
 			// Check if response has already been sent
 			if (data.type === protocol.r) {
@@ -103,7 +103,14 @@ export const serveStatic = catchAsync(
 
 		const appLocation = path.join(appsDir, `${app}/${file}`);
 
-		// TODO - The best way to handle this is first list all the application which has been deployed and match if there is application or not and then go for file search
+		if (!(app in childProcesses)) {
+			next(
+				new AppError(
+					`Oops! It looks like the application (${app}) hasn't been deployed yet. Please deploy it before you can call its functions.`,
+					404
+				)
+			);
+		}
 
 		if (!(await exists(appLocation)))
 			next(
@@ -244,7 +251,7 @@ export const deploy = catchAsync(
 				if (data.type === protocol.g) {
 					if (isIAllApps(data.data)) {
 						const appName = Object.keys(data.data)[0];
-						cps[appName] = proc;
+						childProcesses[appName] = proc;
 						allApplications[appName] = data.data[appName];
 					}
 				}
