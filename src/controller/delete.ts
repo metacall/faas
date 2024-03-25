@@ -44,7 +44,7 @@ export default (
 	// Delete the directory of the application
 	rmSync(appLocation, { recursive: true, force: true });
 
-	if (!ensureFolderExists(appLocation)) {
+	if (!(await ensureFolderExists(appLocation))) {
 		isError = true;
 		return res.send(deleteStatusMessage(app)['folderShouldntExist']);
 	}
