@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { assignColorToWorker, maxWorkerWidth } from './utils';
+import { assignColorToWorker } from './utils';
 
 const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
@@ -16,14 +16,12 @@ export const logger = {
 		}
 		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	},
-
 	present: (deploymentName: string, message: string): void => {
-		const maxNameWidth = maxWorkerWidth();
-		const paddedName = deploymentName.padEnd(maxNameWidth, ' ');
+		const fixedWidth = 20;
+		const paddedName = deploymentName.padEnd(fixedWidth, ' ');
 
-		const colorCode = assignColorToWorker(deploymentName);
-		const coloredText = `\x1b[38;5;${colorCode}m${paddedName}_1 | \x1b[0m`;
-		const logMessage = `${coloredText} ${message}`;
+		const coloredName = assignColorToWorker(`${paddedName} |`);
+		const logMessage = `${coloredName} ${message}`;
 		console.log(logMessage);
 	}
 };

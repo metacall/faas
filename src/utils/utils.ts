@@ -13,8 +13,7 @@ import {
 	allApplications,
 	asniCode,
 	createInstallDependenciesScript,
-	currentFile,
-	processColorMap
+	currentFile
 } from '../constants';
 import { logger } from './logger';
 
@@ -166,11 +165,6 @@ export const maxWorkerWidth = (maxIndexWidth = 3): number => {
 };
 
 export const assignColorToWorker = (deploymentName: string): string => {
-	if (!processColorMap[deploymentName]) {
-		const randomIndex = Math.floor(Math.random() * asniCode.length);
-		const colorCode = asniCode[randomIndex];
-		processColorMap[deploymentName] = colorCode;
-	}
-	// console.log('colorMapObject: ', processColorMap);
-	return processColorMap[deploymentName];
+	const colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
+	return `\x1b[38;5;${colorCode}m${deploymentName}\x1b[0m`;
 };

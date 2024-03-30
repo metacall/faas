@@ -143,5 +143,3 @@ export const asniCode = [
 	'148',
 	'112'
 ];
-
-export const processColorMap: Record<string, string> = {};
