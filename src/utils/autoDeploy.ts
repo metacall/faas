@@ -9,7 +9,7 @@ import {
 	currentFile,
 	protocol
 } from '../constants';
-import { isIAllApps } from './utils';
+import { isIAllApps, logProcessOutput } from './utils';
 
 export const findJsonFilesRecursively = async (
 	appsDir: string
@@ -36,12 +36,8 @@ export const findJsonFilesRecursively = async (
 				currentFile
 			});
 
-			proc.stdout?.on('data', (data: Buffer) => {
-				console.log(data.toString().green);
-			});
-			proc.stderr?.on('data', (data: Buffer) => {
-				console.log(data.toString().red);
-			});
+			logProcessOutput(proc.stdout, currentFile.id);
+			logProcessOutput(proc.stderr, currentFile.id);
 
 			proc.on('message', (data: childProcessResponse) => {
 				if (data.type === protocol.g) {
