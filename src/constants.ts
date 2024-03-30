@@ -118,3 +118,30 @@ export interface childProcessResponse {
 export interface InspectObject {
 	[key: string]: Array<{ name: string }>;
 }
+
+export const asniCode = [
+	'178',
+	'166',
+	'154',
+	'142',
+	'118',
+	'106',
+	'70',
+	'203',
+	'202',
+	'190',
+	'215',
+	'214',
+	'32',
+	'6',
+	'4',
+	'3',
+	'220',
+	'208',
+	'184',
+	'172',
+	'148',
+	'112'
+];
+
+export const processColorMap: Record<string, string> = {};

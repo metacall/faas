@@ -246,8 +246,8 @@ export const deploy = catchAsync(
 				currentFile
 			});
 
-			logProcessOutput(proc.stdout, 'green');
-			logProcessOutput(proc.stderr, 'red');
+			logProcessOutput(proc.stdout, currentFile.id);
+			logProcessOutput(proc.stderr, currentFile.id);
 
 			proc.on('message', (data: childProcessResponse) => {
 				if (data.type === protocol.g) {

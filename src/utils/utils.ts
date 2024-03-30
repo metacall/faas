@@ -4,14 +4,17 @@ import { platform } from 'os';
 import { join } from 'path';
 
 import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
-import { generatePackage, PackageError } from '@metacall/protocol/package';
+import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import {
+	IAllApps,
+	InspectObject,
+	allApplications,
+	asniCode,
 	createInstallDependenciesScript,
 	currentFile,
-	IAllApps,
-	InspectObject
+	processColorMap
 } from '../constants';
 import { logger } from './logger';
 
@@ -147,9 +150,27 @@ export function isIAllApps(data: unknown): data is IAllApps {
 
 export function logProcessOutput(
 	proc: NodeJS.ReadableStream | null,
-	color: 'green' | 'red'
+	deploymentName: string
 ): void {
 	proc?.on('data', (data: Buffer) => {
-		logger.log(data.toString()[color]);
+		logger.store(deploymentName, data.toString());
+		logger.present(deploymentName, data.toString());
 	});
 }
+
+export const maxWorkerWidth = (maxIndexWidth = 3): number => {
+	const workerLengths = Object.keys(allApplications).map(
+		worker => worker.length
+	);
+	return Math.max(...workerLengths) + maxIndexWidth;
+};
+
+export const assignColorToWorker = (deploymentName: string): string => {
+	if (!processColorMap[deploymentName]) {
+		const randomIndex = Math.floor(Math.random() * asniCode.length);
+		const colorCode = asniCode[randomIndex];
+		processColorMap[deploymentName] = colorCode;
+	}
+	// console.log('colorMapObject: ', processColorMap);
+	return processColorMap[deploymentName];
+};
