@@ -118,6 +118,10 @@ export interface childProcessResponse {
 export interface InspectObject {
 	[key: string]: Array<{ name: string }>;
 }
+export interface LogMessage {
+	deploymentName: string;
+	message: string;
+}
 
 export const asniCode = [
 	'178',

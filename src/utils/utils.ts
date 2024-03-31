@@ -152,8 +152,7 @@ export function logProcessOutput(
 	deploymentName: string
 ): void {
 	proc?.on('data', (data: Buffer) => {
-		logger.store(deploymentName, data.toString());
-		logger.present(deploymentName, data.toString());
+		logger.enqueueLog(deploymentName, data.toString());
 	});
 }
 
