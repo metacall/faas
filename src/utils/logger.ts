@@ -10,8 +10,9 @@ export const logger = {
 		const timeStamp = new Date().toISOString();
 		const logMessage = `${timeStamp} - ${message}\n`;
 		console.log(message);
-		if (!fs.existsSync(logFileFullPath)) {
-			fs.writeFileSync(logFileFullPath, '', { encoding: 'utf-8' });
+
+		if (!fs.existsSync(logFilePath)) {
+			fs.mkdirSync(logFilePath, { recursive: true });
 		}
 		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
