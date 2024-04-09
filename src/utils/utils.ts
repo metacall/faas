@@ -8,14 +8,14 @@ import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import {
+	CurrentUploadedFile,
 	IAllApps,
 	InspectObject,
 	PIDToColorCodeMap,
 	allApplications,
 	asniCode,
 	assignedColorCodes,
-	createInstallDependenciesScript,
-	currentFile
+	createInstallDependenciesScript
 } from '../constants';
 import { logger } from './logger';
 
@@ -23,7 +23,9 @@ export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
 
 // Create a proper hashmap that contains all the installation commands mapped to their runner name and shorten this function
-export const installDependencies = async (): Promise<void> => {
+export const installDependencies = async (
+	currentFile: CurrentUploadedFile
+): Promise<void> => {
 	if (!currentFile.runners) return;
 
 	for (const runner of currentFile.runners) {
@@ -37,7 +39,10 @@ export const installDependencies = async (): Promise<void> => {
 };
 
 //check if repo contains metacall-*.json if not create and calculate runners then install dependencies
-export const calculatePackages = async (next: NextFunction): Promise<void> => {
+export const calculatePackages = async (
+	currentFile: CurrentUploadedFile,
+	next: NextFunction
+): Promise<void> => {
 	const data = await generatePackage(currentFile.path);
 
 	if (data.error == PackageError.Empty) {

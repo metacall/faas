@@ -14,7 +14,6 @@ import {
 	WorkerMessageUnknown,
 	allApplications,
 	childProcesses,
-	currentFile,
 	deleteBody,
 	deployBody,
 	fetchBranchListBody,
@@ -23,7 +22,6 @@ import {
 
 import AppError from './utils/appError';
 import {
-	calculatePackages,
 	catchAsync,
 	deleteRepoFolderIfExist,
 	dirName,
@@ -159,8 +157,9 @@ export const fetchFilesFromRepo = catchAsync(
 
 		const id = dirName(req.body.url);
 
-		currentFile['id'] = id;
-		currentFile.path = `${appsDir}/${id}`;
+		// TODO: This method is wrong
+		// currentFile['id'] = id;
+		// currentFile.path = `${appsDir}/${id}`;
 
 		return res.status(201).send({ id });
 	}
@@ -230,12 +229,20 @@ export const deploy = catchAsync(
 		next: NextFunction
 	) => {
 		try {
-			req.body.resourceType == 'Repository' &&
-				(await calculatePackages(next));
-
 			// TODO Currently Deploy function will only work for workdir, we will add the addRepo
+			// req.body.resourceType == 'Repository' &&
+			// 	(await calculatePackages(next));
 
-			await installDependencies();
+			console.log(req.body);
+
+			const currentFile: CurrentUploadedFile = {
+				id: '',
+				type: '',
+				path: '',
+				jsons: []
+			};
+
+			await installDependencies(currentFile);
 
 			const desiredPath = path.join(__dirname, '/worker/index.js');
 

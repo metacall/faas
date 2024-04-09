@@ -9,8 +9,7 @@ import {
 	WorkerMessage,
 	WorkerMessageUnknown,
 	allApplications,
-	childProcesses,
-	currentFile
+	childProcesses
 } from '../constants';
 import { isIAllApps, logProcessOutput } from './utils';
 
@@ -26,9 +25,12 @@ export const findJsonFilesRecursively = async (
 			const desiredPath = path.join(__dirname, '../worker/index.js');
 			const id = path.basename(appsDir);
 
-			currentFile.id = id;
-			(currentFile.type = 'application/x-zip-compressed'),
-				(currentFile.path = appsDir);
+			const currentFile: CurrentUploadedFile = {
+				id,
+				type: 'application/x-zip-compressed',
+				path: appsDir,
+				jsons: []
+			};
 
 			const proc = spawn('metacall', [desiredPath, filePath], {
 				stdio: ['pipe', 'pipe', 'pipe', 'ipc']

@@ -9,14 +9,6 @@ export interface CurrentUploadedFile {
 	path: string;
 }
 
-export const currentFile: CurrentUploadedFile = {
-	id: '',
-	type: '',
-	jsons: [],
-	runners: [],
-	path: ''
-};
-
 export const createInstallDependenciesScript = (
 	runner: string,
 	path: string

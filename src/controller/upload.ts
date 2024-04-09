@@ -5,7 +5,7 @@ import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
 import { Extract } from 'unzipper';
 
-import { currentFile, namearg } from '../constants';
+import { CurrentUploadedFile, namearg } from '../constants';
 
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import AppError from '../utils/appError';
@@ -29,6 +29,12 @@ const getUploadError = (on: keyof busboy.BusboyEvents): AppError => {
 
 export default (req: Request, res: Response, next: NextFunction): void => {
 	const bb = busboy({ headers: req.headers });
+	const currentFile: CurrentUploadedFile = {
+		id: '',
+		type: '',
+		path: '',
+		jsons: []
+	};
 
 	const handleError = (fn: () => void, on: keyof busboy.BusboyEvents) => {
 		try {
@@ -69,7 +75,7 @@ export default (req: Request, res: Response, next: NextFunction): void => {
 
 	bb.on('finish', () => {
 		handleError(() => {
-			const appLocation = path.join(appsDir, `${currentFile.id}`);
+			const appLocation = path.join(appsDir, currentFile.id);
 
 			fs.createReadStream(currentFile.path).pipe(
 				Extract({ path: appLocation })
