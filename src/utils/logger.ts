@@ -44,11 +44,22 @@ class Logger {
 	}
 
 	private present(deploymentName: string, message: string): void {
-		const fixedWidth = 20;
-		const paddedName = deploymentName.padEnd(fixedWidth, ' ');
+		message = message.trim();
+		const fixedWidth = 24;
 
+		let paddedName = deploymentName.padEnd(fixedWidth, ' ');
+		if (deploymentName.length > fixedWidth) {
+			paddedName = deploymentName.substring(0, fixedWidth - 2) + '_1';
+		}
+
+		// Regular expression for splitting by '\n', '. ', or ' /'
+		const messageLines = message.split(/(?:\n|\. | \/)/);
 		const coloredName = assignColorToWorker(`${paddedName} |`);
-		const logMessage = `${coloredName} ${message}`;
+		const formattedMessageLines = messageLines.map(
+			line => `${coloredName} ${line}`
+		);
+		const logMessage = formattedMessageLines.join('\n');
+
 		console.log(logMessage);
 	}
 }

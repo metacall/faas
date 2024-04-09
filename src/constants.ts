@@ -124,13 +124,10 @@ export interface LogMessage {
 }
 
 export const asniCode = [
-	'178',
 	'166',
 	'154',
 	'142',
 	'118',
-	'106',
-	'70',
 	'203',
 	'202',
 	'190',
@@ -139,7 +136,6 @@ export const asniCode = [
 	'32',
 	'6',
 	'4',
-	'3',
 	'220',
 	'208',
 	'184',
@@ -147,3 +143,5 @@ export const asniCode = [
 	'148',
 	'112'
 ];
+
+export const deploymentNameToColorCodeMap: Record<string, string> = {};

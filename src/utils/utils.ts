@@ -13,7 +13,8 @@ import {
 	allApplications,
 	asniCode,
 	createInstallDependenciesScript,
-	currentFile
+	currentFile,
+	deploymentNameToColorCodeMap
 } from '../constants';
 import { logger } from './logger';
 
@@ -164,6 +165,10 @@ export const maxWorkerWidth = (maxIndexWidth = 3): number => {
 };
 
 export const assignColorToWorker = (deploymentName: string): string => {
-	const colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
-	return `\x1b[38;5;${colorCode}m${deploymentName}\x1b[0m`;
+	if (!deploymentNameToColorCodeMap[deploymentName]) {
+		const colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
+		deploymentNameToColorCodeMap[deploymentName] = colorCode;
+	}
+	const assignColorCode = deploymentNameToColorCodeMap[deploymentName];
+	return `\x1b[38;5;${assignColorCode}m${deploymentName}\x1b[0m`;
 };
