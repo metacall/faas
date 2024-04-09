@@ -7,10 +7,11 @@
 		"test": "npm run build && mocha dist/test",
 		"unit": "npm run test -- --ignore **/integration**",
 		"prepublishOnly": "npm run build",
+		"buildDebug": "npm run lint && tsc --sourceMap true",
 		"build": "npm run lint && tsc",
 		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
 		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
-		"start": "npm run build && metacall dist/server.js"
+		"start": "npm run build && node dist/server.js"
 	},
 	"repository": {
 		"type": "git",
