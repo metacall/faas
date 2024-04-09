@@ -3,11 +3,14 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+	CurrentUploadedFile,
+	IAppWithFunctions,
+	ProtocolMessageType,
+	WorkerMessage,
+	WorkerMessageUnknown,
 	allApplications,
-	childProcessResponse,
 	childProcesses,
-	currentFile,
-	protocol
+	currentFile
 } from '../constants';
 import { isIAllApps, logProcessOutput } from './utils';
 
@@ -31,20 +34,25 @@ export const findJsonFilesRecursively = async (
 				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 			});
 
-			proc.send({
-				type: protocol.l,
-				currentFile
-			});
+			const message: WorkerMessage<CurrentUploadedFile> = {
+				type: ProtocolMessageType.Load,
+				data: currentFile
+			};
+
+			proc.send(message);
 
 			logProcessOutput(proc.stdout, proc.pid, currentFile.id);
 			logProcessOutput(proc.stderr, proc.pid, currentFile.id);
 
-			proc.on('message', (data: childProcessResponse) => {
-				if (data.type === protocol.g) {
-					if (isIAllApps(data.data)) {
-						const appName = Object.keys(data.data)[0];
+			proc.on('message', (payload: WorkerMessageUnknown) => {
+				if (payload.type === ProtocolMessageType.MetaData) {
+					const message = payload as WorkerMessage<
+						Record<string, IAppWithFunctions>
+					>;
+					if (isIAllApps(message.data)) {
+						const appName = Object.keys(message.data)[0];
 						childProcesses[appName] = proc;
-						allApplications[appName] = data.data[appName];
+						allApplications[appName] = message.data[appName];
 					}
 				}
 			});

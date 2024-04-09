@@ -8,14 +8,17 @@ import {
 import { hostname } from 'os';
 import {
 	App,
+	CurrentUploadedFile,
 	IAppWithFunctions,
-	currentUploadedFile,
-	protocol
+	ProtocolMessageType,
+	WorkerMessage,
+	WorkerMessageUnknown
 } from '../constants';
 
 import { createMetacallJsonFile, diff } from '../utils/utils';
 
-let currentFile: currentUploadedFile = {
+// TODO: This is a very bad design error, we must refactor this
+let currentFile: CurrentUploadedFile = {
 	id: '',
 	type: '',
 	jsons: [],
@@ -65,7 +68,7 @@ const handleNoJSONFile = (
 
 	if (process.send) {
 		process.send({
-			type: protocol.g,
+			type: ProtocolMessageType.MetaData,
 			data: allApplications
 		});
 	}
@@ -78,25 +81,33 @@ const handleJSONFiles = async (
 	suffix: string,
 	version: string
 ): Promise<void> => {
-	let jsonPath: string[] =
-		currentFile.jsons.length > 0
-			? createMetacallJsonFile(currentFile.jsons, path)
-			: findMetaCallJsons(await findFilesPath(path)).map(
-					el => `${path}/${el}`
-			  );
-	// FIXME Currently it do not support metacall.json syntax, else metacall-{runner}.json is fine and will work
-	handleNoJSONFile(jsonPath, suffix, version);
+	if (currentFile.jsons.length > 0) {
+		const jsonPaths = await createMetacallJsonFile(currentFile.jsons, path);
+		handleNoJSONFile(jsonPaths, suffix, version);
+	} else {
+		const filesPaths = await findFilesPath(path);
+		const jsonPaths = findMetaCallJsons(filesPaths).map(
+			el => `${path}/${el}`
+		);
+		handleNoJSONFile(jsonPaths, suffix, version);
+	}
 };
 
-process.on('message', payload => {
-	if (payload.type === protocol.l) {
-		currentFile = payload.currentFile;
+process.on('message', (payload: WorkerMessageUnknown) => {
+	if (payload.type === ProtocolMessageType.Load) {
+		currentFile = (payload as WorkerMessage<CurrentUploadedFile>).data;
 		handleJSONFiles(currentFile.path, currentFile.id, 'v1');
-	} else if (payload.type === protocol.c) {
+	} else if (payload.type === ProtocolMessageType.Invoke) {
+		const fn = (
+			payload as WorkerMessage<{
+				name: string;
+				args: unknown[];
+			}>
+		).data;
 		if (process.send) {
 			process.send({
-				type: protocol.r,
-				data: exactFnx[payload.fn.name](...payload.fn.args)
+				type: ProtocolMessageType.InvokeResult,
+				data: exactFnx[fn.name](...fn.args)
 			});
 		}
 	}

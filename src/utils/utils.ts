@@ -1,5 +1,5 @@
 import { exec } from 'child_process';
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
 
@@ -47,28 +47,29 @@ export const calculatePackages = async (next: NextFunction): Promise<void> => {
 	currentFile.runners = data.runners;
 };
 
-export const exists = (path: string): Promise<boolean> =>
-	fs.promises.stat(path).then(
-		() => true,
-		() => false
-	);
+export const exists = async (path: string): Promise<boolean> => {
+	try {
+		await fs.stat(path);
+		return true;
+	} catch (e) {
+		return false;
+	}
+};
 
 export const ensureFolderExists = async <Path extends string>(
 	path: Path
 ): Promise<Path> => (
-	(await exists(path)) ||
-		(await fs.promises.mkdir(path, { recursive: true })),
-	path
+	(await exists(path)) || (await fs.mkdir(path, { recursive: true })), path
 );
 
-export const deleteRepoFolderIfExist = <Path extends string>(
+export const deleteRepoFolderIfExist = async <Path extends string>(
 	path: Path,
 	url: string
-): void => {
+): Promise<void> => {
 	const folder = dirName(url);
 	const repoFilePath = join(path, folder);
 
-	fs.rmSync(repoFilePath, { recursive: true, force: true });
+	await fs.rm(repoFilePath, { recursive: true, force: true });
 };
 
 export const execPromise = (
@@ -99,17 +100,21 @@ export const catchAsync = (
 	};
 };
 
-export const createMetacallJsonFile = (
+export const createMetacallJsonFile = async (
 	jsons: MetaCallJSON[],
 	path: string
-): string[] => {
+): Promise<string[]> => {
 	const acc: string[] = [];
-	jsons.forEach(el => {
+	for (const el of jsons) {
 		const filePath = `${path}/metacall-${el.language_id}.json`;
+		try {
+			await fs.writeFile(filePath, JSON.stringify(el));
+			acc.push(filePath);
+		} catch (e) {
+			// TODO: Do something here?
+		}
+	}
 
-		fs.writeFileSync(filePath, JSON.stringify(el));
-		acc.push(filePath);
-	});
 	return acc;
 };
 

@@ -8,15 +8,17 @@ import deployDeleteController from './controller/delete';
 import uploadController from './controller/upload';
 
 import {
+	CurrentUploadedFile,
+	ProtocolMessageType,
+	WorkerMessage,
+	WorkerMessageUnknown,
 	allApplications,
-	childProcessResponse,
 	childProcesses,
 	currentFile,
 	deleteBody,
 	deployBody,
 	fetchBranchListBody,
-	fetchFilesFromRepoBody,
-	protocol
+	fetchFilesFromRepoBody
 } from './constants';
 
 import AppError from './utils/appError';
@@ -68,19 +70,19 @@ export const callFnByName = (
 	let errorCame = false;
 
 	childProcesses[app].send({
-		type: protocol.c,
-		fn: {
+		type: ProtocolMessageType.Invoke,
+		data: {
 			name,
 			args
 		}
 	});
 
-	childProcesses[app].on('message', (data: childProcessResponse) => {
+	childProcesses[app].on('message', (message: WorkerMessageUnknown) => {
 		if (!responseSent) {
 			// Check if response has already been sent
-			if (data.type === protocol.r) {
+			if (message.type === ProtocolMessageType.InvokeResult) {
 				responseSent = true; // Set flag to true to indicate response has been sent
-				return res.send(JSON.stringify(data.data));
+				return res.send(JSON.stringify(message.data));
 			} else {
 				errorCame = true;
 			}
@@ -141,7 +143,7 @@ export const fetchFilesFromRepo = catchAsync(
 		await ensureFolderExists(appsDir);
 
 		try {
-			deleteRepoFolderIfExist(appsDir, url);
+			await deleteRepoFolderIfExist(appsDir, url);
 		} catch (err) {
 			next(
 				new AppError(
@@ -196,7 +198,7 @@ export const fetchFileList = catchAsync(
 		await ensureFolderExists(appsDir);
 
 		try {
-			deleteRepoFolderIfExist(appsDir, req.body.url);
+			await deleteRepoFolderIfExist(appsDir, req.body.url);
 		} catch (err) {
 			next(
 				new AppError(
@@ -242,19 +244,21 @@ export const deploy = catchAsync(
 			});
 
 			proc.send({
-				type: protocol.l,
-				currentFile
+				type: ProtocolMessageType.Load,
+				data: currentFile
 			});
 
 			logProcessOutput(proc.stdout, proc.pid, currentFile.id);
 			logProcessOutput(proc.stderr, proc.pid, currentFile.id);
 
-			proc.on('message', (data: childProcessResponse) => {
-				if (data.type === protocol.g) {
-					if (isIAllApps(data.data)) {
-						const appName = Object.keys(data.data)[0];
+			proc.on('message', (payload: WorkerMessageUnknown) => {
+				if (payload.type === ProtocolMessageType.MetaData) {
+					const message =
+						payload as WorkerMessage<CurrentUploadedFile>;
+					if (isIAllApps(message.data)) {
+						const appName = Object.keys(message.data)[0];
 						childProcesses[appName] = proc;
-						allApplications[appName] = data.data[appName];
+						allApplications[appName] = message.data[appName];
 					}
 				}
 			});

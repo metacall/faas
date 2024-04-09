@@ -1,7 +1,7 @@
 import { DeployStatus, MetaCallJSON } from '@metacall/protocol/deployment';
 import { ChildProcess } from 'child_process';
 
-export interface currentUploadedFile {
+export interface CurrentUploadedFile {
 	id: string;
 	type?: string;
 	jsons: MetaCallJSON[];
@@ -9,7 +9,7 @@ export interface currentUploadedFile {
 	path: string;
 }
 
-export const currentFile: currentUploadedFile = {
+export const currentFile: CurrentUploadedFile = {
 	id: '',
 	type: '',
 	jsons: [],
@@ -100,20 +100,22 @@ export type IAllApps = Record<string, IAppWithFunctions>;
 
 export const allApplications: IAllApps = {};
 
-export const protocol = {
-	i: 'installDependencies',
-	l: 'loadFunctions',
-	g: 'getApplicationMetadata',
-	c: 'callFunction',
-	r: 'functionInvokeResult'
-};
+export enum ProtocolMessageType {
+	Install = 'InstallDependencies',
+	Load = 'LoadFunctions',
+	MetaData = 'GetApplicationMetadata',
+	Invoke = 'CallFunction',
+	InvokeResult = 'FunctionInvokeResult'
+}
 
 export const childProcesses: { [key: string]: ChildProcess } = {};
 
-export interface childProcessResponse {
-	type: keyof typeof protocol;
-	data: unknown;
+export interface WorkerMessage<T> {
+	type: ProtocolMessageType;
+	data: T;
 }
+
+export type WorkerMessageUnknown = WorkerMessage<unknown>;
 
 export interface InspectObject {
 	[key: string]: Array<{ name: string }>;
