@@ -10,11 +10,12 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import {
 	IAllApps,
 	InspectObject,
+	PIDToColorCodeMap,
 	allApplications,
 	asniCode,
+	assignedColorCodes,
 	createInstallDependenciesScript,
-	currentFile,
-	deploymentNameToColorCodeMap
+	currentFile
 } from '../constants';
 import { logger } from './logger';
 
@@ -150,10 +151,11 @@ export function isIAllApps(data: unknown): data is IAllApps {
 
 export function logProcessOutput(
 	proc: NodeJS.ReadableStream | null,
+	workerPID: number | undefined,
 	deploymentName: string
 ): void {
 	proc?.on('data', (data: Buffer) => {
-		logger.enqueueLog(deploymentName, data.toString());
+		logger.enqueueLog(deploymentName, workerPID || 0, data.toString());
 	});
 }
 
@@ -164,11 +166,22 @@ export const maxWorkerWidth = (maxIndexWidth = 3): number => {
 	return Math.max(...workerLengths) + maxIndexWidth;
 };
 
-export const assignColorToWorker = (deploymentName: string): string => {
-	if (!deploymentNameToColorCodeMap[deploymentName]) {
-		const colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
-		deploymentNameToColorCodeMap[deploymentName] = colorCode;
+export const assignColorToWorker = (
+	deploymentName: string,
+	workerPID: number
+): string => {
+	if (!PIDToColorCodeMap[workerPID]) {
+		let colorCode: number;
+
+		// Keep looking for unique code
+		do {
+			colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
+		} while (assignedColorCodes[colorCode]);
+
+		// Assign the unique code and mark it as used
+		PIDToColorCodeMap[workerPID] = colorCode;
+		assignedColorCodes[colorCode] = true;
 	}
-	const assignColorCode = deploymentNameToColorCodeMap[deploymentName];
+	const assignColorCode = PIDToColorCodeMap[workerPID];
 	return `\x1b[38;5;${assignColorCode}m${deploymentName}\x1b[0m`;
 };

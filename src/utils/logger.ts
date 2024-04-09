@@ -18,9 +18,9 @@ class Logger {
 		while (this.logQueue.length > 0) {
 			const logEntry = this.logQueue.shift();
 			if (logEntry) {
-				const { deploymentName, message } = logEntry;
+				const { deploymentName, workerPID, message } = logEntry;
 				this.store(deploymentName, message);
-				this.present(deploymentName, message);
+				this.present(deploymentName, workerPID, message);
 				await new Promise(resolve => setTimeout(resolve, 0));
 			}
 		}
@@ -28,8 +28,12 @@ class Logger {
 		this.isProcessing = false;
 	}
 
-	public enqueueLog(deploymentName: string, message: string): void {
-		this.logQueue.push({ deploymentName, message });
+	public enqueueLog(
+		deploymentName: string,
+		workerPID: number,
+		message: string
+	): void {
+		this.logQueue.push({ deploymentName, workerPID, message });
 		this.processQueue().catch(console.error);
 	}
 
@@ -43,7 +47,11 @@ class Logger {
 		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
 
-	private present(deploymentName: string, message: string): void {
+	private present(
+		deploymentName: string,
+		workerPID: number,
+		message: string
+	): void {
 		message = message.trim();
 		const fixedWidth = 24;
 
@@ -54,7 +62,7 @@ class Logger {
 
 		// Regular expression for splitting by '\n', '. ', or ' /'
 		const messageLines = message.split(/(?:\n|\. | \/)/);
-		const coloredName = assignColorToWorker(`${paddedName} |`);
+		const coloredName = assignColorToWorker(`${paddedName} |`, workerPID);
 		const formattedMessageLines = messageLines.map(
 			line => `${coloredName} ${line}`
 		);

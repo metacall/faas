@@ -120,28 +120,24 @@ export interface InspectObject {
 }
 export interface LogMessage {
 	deploymentName: string;
+	workerPID: number;
 	message: string;
 }
 
-export const asniCode = [
-	'166',
-	'154',
-	'142',
-	'118',
-	'203',
-	'202',
-	'190',
-	'215',
-	'214',
-	'32',
-	'6',
-	'4',
-	'220',
-	'208',
-	'184',
-	'172',
-	'148',
-	'112'
+export const asniCode: number[] = [
+	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
 ];
 
-export const deploymentNameToColorCodeMap: Record<string, string> = {};
+export interface PIDToColorCodeMapType {
+	[key: string]: number;
+}
+
+export interface AssignedColorCodesType {
+	[key: string]: boolean;
+}
+
+// Maps a PID to a color code
+export const PIDToColorCodeMap: PIDToColorCodeMapType = {};
+
+// Tracks whether a color code is assigned
+export const assignedColorCodes: AssignedColorCodesType = {};
