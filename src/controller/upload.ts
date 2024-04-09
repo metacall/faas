@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
-import PQueue from 'p-queue-es5';
 import { Extract } from 'unzipper';
 
 import { currentFile, namearg } from '../constants';
@@ -30,24 +29,15 @@ const getUploadError = (on: keyof busboy.BusboyEvents): AppError => {
 
 export default (req: Request, res: Response, next: NextFunction): void => {
 	const bb = busboy({ headers: req.headers });
-	const queue = new PQueue({ concurrency: 1 });
 
 	const handleError = (fn: () => void, on: keyof busboy.BusboyEvents) => {
-		queue
-			.add(() => {
-				try {
-					fn();
-				} catch (e) {
-					req.unpipe(bb);
-					queue.pause();
-					next(getUploadError(on));
-				}
-			})
-			.catch(err => {
-				req.unpipe(bb);
-				queue.pause();
-				next(err);
-			});
+		try {
+			fn();
+		} catch (e) {
+			console.error(e);
+			req.unpipe(bb);
+			next(getUploadError(on));
+		}
 	};
 
 	bb.on('file', (name, file, info) => {
