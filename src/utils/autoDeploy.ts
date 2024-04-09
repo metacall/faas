@@ -36,8 +36,8 @@ export const findJsonFilesRecursively = async (
 				currentFile
 			});
 
-			logProcessOutput(proc.stdout, 'green');
-			logProcessOutput(proc.stderr, 'red');
+			logProcessOutput(proc.stdout, proc.pid, currentFile.id);
+			logProcessOutput(proc.stderr, proc.pid, currentFile.id);
 
 			proc.on('message', (data: childProcessResponse) => {
 				if (data.type === protocol.g) {
