@@ -8,7 +8,7 @@ import {
 import { hostname } from 'os';
 import {
 	App,
-	CurrentUploadedFile,
+	Deployment,
 	IAppWithFunctions,
 	ProtocolMessageType,
 	WorkerMessage,
@@ -17,8 +17,7 @@ import {
 
 import { createMetacallJsonFile, diff } from '../utils/utils';
 
-// TODO: This is a very bad design error, we must refactor this
-let currentFile: CurrentUploadedFile = {
+let deployment: Deployment = {
 	id: '',
 	type: '',
 	jsons: [],
@@ -81,8 +80,8 @@ const handleJSONFiles = async (
 	suffix: string,
 	version: string
 ): Promise<void> => {
-	if (currentFile.jsons.length > 0) {
-		const jsonPaths = await createMetacallJsonFile(currentFile.jsons, path);
+	if (deployment.jsons.length > 0) {
+		const jsonPaths = await createMetacallJsonFile(deployment.jsons, path);
 		handleNoJSONFile(jsonPaths, suffix, version);
 	} else {
 		const filesPaths = await findFilesPath(path);
@@ -95,8 +94,8 @@ const handleJSONFiles = async (
 
 process.on('message', (payload: WorkerMessageUnknown) => {
 	if (payload.type === ProtocolMessageType.Load) {
-		currentFile = (payload as WorkerMessage<CurrentUploadedFile>).data;
-		handleJSONFiles(currentFile.path, currentFile.id, 'v1');
+		deployment = (payload as WorkerMessage<Deployment>).data;
+		handleJSONFiles(deployment.path, deployment.id, 'v1');
 	} else if (payload.type === ProtocolMessageType.Invoke) {
 		const fn = (
 			payload as WorkerMessage<{

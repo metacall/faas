@@ -8,16 +8,17 @@ import deployDeleteController from './controller/delete';
 import uploadController from './controller/upload';
 
 import {
-	CurrentUploadedFile,
+	DeleteBody,
+	DeployBody,
+	Deployment,
+	FetchBranchListBody,
+	FetchFilesFromRepoBody,
 	ProtocolMessageType,
 	WorkerMessage,
 	WorkerMessageUnknown,
 	allApplications,
 	childProcesses,
-	deleteBody,
-	deployBody,
-	fetchBranchListBody,
-	fetchFilesFromRepoBody
+	deploymentMap
 } from './constants';
 
 import AppError from './utils/appError';
@@ -132,7 +133,7 @@ export const fetchFiles = (
 
 export const fetchFilesFromRepo = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
+		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
 		res: Response,
 		next: NextFunction
 	) => {
@@ -158,8 +159,8 @@ export const fetchFilesFromRepo = catchAsync(
 		const id = dirName(req.body.url);
 
 		// TODO: This method is wrong
-		// currentFile['id'] = id;
-		// currentFile.path = `${appsDir}/${id}`;
+		// deployment.id = id;
+		// deployment.path = `${appsDir}/${id}`;
 
 		return res.status(201).send({ id });
 	}
@@ -167,7 +168,7 @@ export const fetchFilesFromRepo = catchAsync(
 
 export const fetchBranchList = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: fetchBranchListBody },
+		req: Omit<Request, 'body'> & { body: FetchBranchListBody },
 		res: Response
 	) => {
 		const { stdout } = await execPromise(
@@ -190,7 +191,7 @@ export const fetchBranchList = catchAsync(
 
 export const fetchFileList = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: fetchFilesFromRepoBody },
+		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
 		res: Response,
 		next: NextFunction
 	) => {
@@ -224,27 +225,29 @@ export const fetchFileList = catchAsync(
 
 export const deploy = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: deployBody },
+		req: Omit<Request, 'body'> & { body: DeployBody },
 		res: Response,
 		next: NextFunction
 	) => {
 		try {
-			// TODO Currently Deploy function will only work for workdir, we will add the addRepo
+			// TODO: Implement repository
 			// req.body.resourceType == 'Repository' &&
 			// 	(await calculatePackages(next));
 
-			console.log(req.body);
+			const deployment = deploymentMap[req.body.suffix];
 
-			const currentFile: CurrentUploadedFile = {
-				id: '',
-				type: '',
-				path: '',
-				jsons: []
-			};
+			if (deployment === undefined) {
+				return next(
+					new AppError(
+						`Invalid deployment id: ${req.body.suffix}`,
+						400
+					)
+				);
+			}
 
-			await installDependencies(currentFile);
+			await installDependencies(deployment);
 
-			const desiredPath = path.join(__dirname, '/worker/index.js');
+			const desiredPath = path.join(__dirname, 'worker', 'index.js');
 
 			const proc = spawn('metacall', [desiredPath], {
 				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
@@ -252,16 +255,15 @@ export const deploy = catchAsync(
 
 			proc.send({
 				type: ProtocolMessageType.Load,
-				data: currentFile
+				data: deployment
 			});
 
-			logProcessOutput(proc.stdout, proc.pid, currentFile.id);
-			logProcessOutput(proc.stderr, proc.pid, currentFile.id);
+			logProcessOutput(proc.stdout, proc.pid, deployment.id);
+			logProcessOutput(proc.stderr, proc.pid, deployment.id);
 
 			proc.on('message', (payload: WorkerMessageUnknown) => {
 				if (payload.type === ProtocolMessageType.MetaData) {
-					const message =
-						payload as WorkerMessage<CurrentUploadedFile>;
+					const message = payload as WorkerMessage<Deployment>;
 					if (isIAllApps(message.data)) {
 						const appName = Object.keys(message.data)[0];
 						childProcesses[appName] = proc;
@@ -272,7 +274,7 @@ export const deploy = catchAsync(
 
 			return res.status(200).json({
 				suffix: hostname(),
-				prefix: currentFile.id,
+				prefix: deployment.id,
 				version: 'v1'
 			});
 		} catch (err) {
@@ -290,7 +292,7 @@ export const showLogs = (req: Request, res: Response): Response => {
 };
 
 export const deployDelete = (
-	req: Omit<Request, 'body'> & { body: deleteBody },
+	req: Omit<Request, 'body'> & { body: DeleteBody },
 	res: Response,
 	next: NextFunction
 ): void => deployDeleteController(req, res, next);
@@ -303,18 +305,3 @@ export const validateAndDeployEnabled = (
 		status: 'success',
 		data: true
 	});
-
-/**
- * deploy
- * Provide a mesage that repo has been deployed, use --inspect to know more about deployment
- * We can add the type of url in the --inspect
- * If there is already metacall.json present then, log found metacall.json and reading it, reading done
- * We must an option to go back in the fileselection wizard so that, user dont have to close the connection
- * At the end of deployment through deploy cli, we should run the --inspect command so that current deployed file is shown and show only the current deployed app
- *
- *
- * FAAS
- * the apps are not getting detected once the server closes, do we need to again deploy them
- * find a way to detect metacall.json in the files and dont deploy if there is not because json ke through we are uploading
- *
- */

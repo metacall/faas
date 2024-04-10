@@ -4,14 +4,14 @@ import { join } from 'path';
 
 import { NextFunction, Request, Response } from 'express';
 
-import { allApplications, childProcesses, deleteBody } from '../constants';
+import { allApplications, childProcesses, DeleteBody } from '../constants';
 import { appsDirectory } from '../utils/config';
 import { deleteStatusMessage } from '../utils/responseTexts';
 import { catchAsync, ensureFolderExists } from '../utils/utils';
 
 export default catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: deleteBody },
+		req: Omit<Request, 'body'> & { body: DeleteBody },
 		res: Response,
 		_next: NextFunction
 	): Promise<Response> => {

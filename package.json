@@ -66,6 +66,15 @@
 		"rules": {
 			"tsdoc/syntax": "warn",
 			"no-unused-vars": "off",
+			"@typescript-eslint/naming-convention": [
+				"error",
+				{
+					"selector": "property",
+					"format": [
+						"camelCase"
+					]
+				}
+			],
 			"@typescript-eslint/no-unused-vars": [
 				"error",
 				{

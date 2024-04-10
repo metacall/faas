@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-	CurrentUploadedFile,
+	Deployment,
 	IAppWithFunctions,
 	ProtocolMessageType,
 	WorkerMessage,
@@ -13,19 +13,25 @@ import {
 } from '../constants';
 import { isIAllApps, logProcessOutput } from './utils';
 
+// TODO: Refactor this
 export const findJsonFilesRecursively = async (
 	appsDir: string
 ): Promise<void> => {
+	// TODO: Avoid sync commands
 	const files = fs.readdirSync(appsDir, { withFileTypes: true });
 	for (const file of files) {
 		if (file.isDirectory()) {
 			await findJsonFilesRecursively(path.join(appsDir, file.name));
 		} else if (pathIsMetaCallJson(file.name)) {
 			const filePath = path.join(appsDir, file.name);
-			const desiredPath = path.join(__dirname, '../worker/index.js');
+			const desiredPath = path.join(
+				path.resolve(__dirname, '..'),
+				'worker',
+				'index.js'
+			);
 			const id = path.basename(appsDir);
 
-			const currentFile: CurrentUploadedFile = {
+			const deployment: Deployment = {
 				id,
 				type: 'application/x-zip-compressed',
 				path: appsDir,
@@ -36,15 +42,15 @@ export const findJsonFilesRecursively = async (
 				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 			});
 
-			const message: WorkerMessage<CurrentUploadedFile> = {
+			const message: WorkerMessage<Deployment> = {
 				type: ProtocolMessageType.Load,
-				data: currentFile
+				data: deployment
 			};
 
 			proc.send(message);
 
-			logProcessOutput(proc.stdout, proc.pid, currentFile.id);
-			logProcessOutput(proc.stderr, proc.pid, currentFile.id);
+			logProcessOutput(proc.stdout, proc.pid, deployment.id);
+			logProcessOutput(proc.stderr, proc.pid, deployment.id);
 
 			proc.on('message', (payload: WorkerMessageUnknown) => {
 				if (payload.type === ProtocolMessageType.MetaData) {

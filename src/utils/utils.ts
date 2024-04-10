@@ -8,12 +8,12 @@ import { PackageError, generatePackage } from '@metacall/protocol/package';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import {
-	CurrentUploadedFile,
+	ANSICode,
+	Deployment,
 	IAllApps,
 	InspectObject,
 	PIDToColorCodeMap,
 	allApplications,
-	asniCode,
 	assignedColorCodes,
 	createInstallDependenciesScript
 } from '../constants';
@@ -22,34 +22,33 @@ import { logger } from './logger';
 export const dirName = (gitUrl: string): string =>
 	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
 
-// Create a proper hashmap that contains all the installation commands mapped to their runner name and shorten this function
 export const installDependencies = async (
-	currentFile: CurrentUploadedFile
+	deployment: Deployment
 ): Promise<void> => {
-	if (!currentFile.runners) return;
+	if (!deployment.runners) return;
 
-	for (const runner of currentFile.runners) {
+	for (const runner of deployment.runners) {
 		if (runner == undefined) continue;
 		else {
 			await execPromise(
-				createInstallDependenciesScript(runner, currentFile.path)
+				createInstallDependenciesScript(runner, deployment.path)
 			);
 		}
 	}
 };
 
-//check if repo contains metacall-*.json if not create and calculate runners then install dependencies
+// Check if repo contains metacall-*.json if not create and calculate runners then install dependencies
 export const calculatePackages = async (
-	currentFile: CurrentUploadedFile,
+	deployment: Deployment,
 	next: NextFunction
 ): Promise<void> => {
-	const data = await generatePackage(currentFile.path);
+	const data = await generatePackage(deployment.path);
 
 	if (data.error == PackageError.Empty) {
 		return next(new Error(PackageError.Empty));
 	}
-	//	currentFile.jsons = JSON.parse(data.jsons.toString()); FIXME Fix this line
-	currentFile.runners = data.runners;
+	// deployment.jsons = JSON.parse(data.jsons.toString()); FIXME Fix this line
+	deployment.runners = data.runners;
 };
 
 export const exists = async (path: string): Promise<boolean> => {
@@ -185,7 +184,7 @@ export const assignColorToWorker = (
 
 		// Keep looking for unique code
 		do {
-			colorCode = asniCode[Math.floor(Math.random() * asniCode.length)];
+			colorCode = ANSICode[Math.floor(Math.random() * ANSICode.length)];
 		} while (assignedColorCodes[colorCode]);
 
 		// Assign the unique code and mark it as used

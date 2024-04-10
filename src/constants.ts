@@ -1,13 +1,16 @@
 import { DeployStatus, MetaCallJSON } from '@metacall/protocol/deployment';
 import { ChildProcess } from 'child_process';
 
-export interface CurrentUploadedFile {
+export interface Deployment {
 	id: string;
 	type?: string;
 	jsons: MetaCallJSON[];
 	runners?: string[];
 	path: string;
+	blob?: string;
 }
+
+export const deploymentMap: Record<string, Deployment> = {};
 
 export const createInstallDependenciesScript = (
 	runner: string,
@@ -22,28 +25,25 @@ export const createInstallDependenciesScript = (
 	return installDependenciesScript[runner];
 };
 
-export type namearg = 'id' | 'type' | 'jsons' | 'runners' | 'path';
-export type valueArg = string;
-
-export type fetchFilesFromRepoBody = {
+export type FetchFilesFromRepoBody = {
 	branch: 'string';
 	url: 'string';
 };
-export type fetchBranchListBody = {
+export type FetchBranchListBody = {
 	url: 'string';
 };
 
-export type deployBody = {
-	suffix: string; //name of deployment
+export type DeployBody = {
+	suffix: string; // name of deployment
 	resourceType: 'Package' | 'Repository';
-	release: string; //release date
+	release: string; // release date
 	env: string[];
 	plan: string;
 	version: string;
 };
 
-export type deleteBody = {
-	suffix: string; //name of deployment
+export type DeleteBody = {
+	suffix: string; // name of deployment
 	prefix: string;
 	version: string;
 };
@@ -118,7 +118,7 @@ export interface LogMessage {
 	message: string;
 }
 
-export const asniCode: number[] = [
+export const ANSICode: number[] = [
 	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
 ];
 
