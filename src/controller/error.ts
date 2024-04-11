@@ -1,13 +1,11 @@
-/* eslint-disable */
-
 import { NextFunction, Request, Response } from 'express';
-import { IAppError } from './appError';
+import { IAppError } from '../utils/appError';
 
-const globalErroHandler = (
+export const globalError = (
 	err: IAppError,
 	req: Request,
 	res: Response,
-	next: NextFunction
+	_next: NextFunction
 ): Response => {
 	err.statusCode = err.statusCode || 500;
 	err.status = err.status || 'error';
@@ -22,5 +20,3 @@ const globalErroHandler = (
 
 	return res.status(err.statusCode).send(err.message);
 };
-
-export default globalErroHandler;

@@ -25,26 +25,12 @@ export const createInstallDependenciesScript = (
 	return installDependenciesScript[runner];
 };
 
-export type FetchFilesFromRepoBody = {
-	branch: 'string';
-	url: 'string';
-};
-export type FetchBranchListBody = {
-	url: 'string';
-};
-
 export type DeployBody = {
 	suffix: string; // name of deployment
 	resourceType: 'Package' | 'Repository';
 	release: string; // release date
 	env: string[];
 	plan: string;
-	version: string;
-};
-
-export type DeleteBody = {
-	suffix: string; // name of deployment
-	prefix: string;
 	version: string;
 };
 

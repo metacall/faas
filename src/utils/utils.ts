@@ -1,7 +1,5 @@
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
-import { platform } from 'os';
-import { join } from 'path';
 
 import { LanguageId, MetaCallJSON } from '@metacall/protocol/deployment';
 import { PackageError, generatePackage } from '@metacall/protocol/package';
@@ -18,9 +16,6 @@ import {
 	createInstallDependenciesScript
 } from '../constants';
 import { logger } from './logger';
-
-export const dirName = (gitUrl: string): string =>
-	String(gitUrl.split('/')[gitUrl.split('/').length - 1]).replace('.git', '');
 
 export const installDependencies = async (
 	deployment: Deployment
@@ -65,16 +60,6 @@ export const ensureFolderExists = async <Path extends string>(
 ): Promise<Path> => (
 	(await exists(path)) || (await fs.mkdir(path, { recursive: true })), path
 );
-
-export const deleteRepoFolderIfExist = async <Path extends string>(
-	path: Path,
-	url: string
-): Promise<void> => {
-	const folder = dirName(url);
-	const repoFilePath = join(path, folder);
-
-	await fs.rm(repoFilePath, { recursive: true, force: true });
-};
 
 export const execPromise = (
 	command: string
@@ -121,18 +106,6 @@ export const createMetacallJsonFile = async (
 
 	return acc;
 };
-
-const missing = (name: string): string =>
-	`Missing ${name} environment variable! Unable to load config`;
-
-export const configDir = (name: string): string =>
-	platform() === 'win32'
-		? process.env.APPDATA
-			? join(process.env.APPDATA, name)
-			: missing('APPDATA')
-		: process.env.HOME
-		? join(process.env.HOME, `.${name}`)
-		: missing('HOME');
 
 export const getLangId = (input: string): LanguageId => {
 	const parts = input.split('-');

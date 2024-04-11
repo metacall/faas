@@ -1,15 +1,35 @@
+import { NextFunction, Request, Response } from 'express';
+
 import { ChildProcess } from 'child_process';
 import { rmSync } from 'fs';
 import { join } from 'path';
 
-import { NextFunction, Request, Response } from 'express';
-
-import { allApplications, childProcesses, DeleteBody } from '../constants';
+import { allApplications, childProcesses } from '../constants';
 import { appsDirectory } from '../utils/config';
-import { deleteStatusMessage } from '../utils/responseTexts';
 import { catchAsync, ensureFolderExists } from '../utils/utils';
 
-export default catchAsync(
+const deleteStatusMessage = (
+	app: string
+): {
+	success: string;
+	error: string;
+	folderShouldntExist: string;
+	appShouldntExist: string;
+} => ({
+	success: 'Deploy Delete Succeed',
+	error: `Oops! It looks like the application (${app}) hasn't been deployed yet. Please deploy it before you delete it.`,
+	folderShouldntExist: `The folder shouldnt exist after deleting it.`,
+	appShouldntExist: `The application shouldnt exist after deleting it`
+});
+
+type DeleteBody = {
+	suffix: string; // name of deployment
+	prefix: string;
+	version: string;
+};
+
+// TODO: Refactor this, do not use sync methods
+export const deployDelete = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: DeleteBody },
 		res: Response,
@@ -41,7 +61,7 @@ export default catchAsync(
 		}
 
 		// Determine the location of the application
-		const appLocation = join(appsDirectory(), app);
+		const appLocation = join(appsDirectory, app);
 
 		// Delete the directory of the application
 		rmSync(appLocation, { recursive: true, force: true });

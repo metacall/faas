@@ -1,4 +1,5 @@
-import * as dotenv from 'dotenv';
+import colors from 'colors';
+import dotenv from 'dotenv';
 
 import app from './app';
 import { findJsonFilesRecursively } from './utils/autoDeploy';
@@ -9,14 +10,15 @@ import { ensureFolderExists } from './utils/utils';
 void (async (): Promise<void> => {
 	try {
 		dotenv.config();
+		colors.enable();
 
-		const appsDir = appsDirectory();
+		await ensureFolderExists(appsDirectory);
 
-		await ensureFolderExists(appsDir);
-
-		await findJsonFilesRecursively(appsDir);
+		// TODO: Refactor this
+		await findJsonFilesRecursively(appsDirectory);
 
 		console.log('Previously deployed apllications deployed successfully');
+		// END-TODO
 
 		const port = process.env.PORT || 9000;
 

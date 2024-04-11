@@ -13,8 +13,6 @@ import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { ensureFolderExists } from '../utils/utils';
 
-const appsDir = appsDirectory();
-
 const getUploadError = (
 	on: keyof busboy.BusboyEvents,
 	error: Error
@@ -46,7 +44,11 @@ const getUploadError = (
 	return new AppError(appError.message, appError.code);
 };
 
-export default (req: Request, res: Response, next: NextFunction): void => {
+export const uploadPackage = (
+	req: Request,
+	res: Response,
+	next: NextFunction
+): void => {
 	const bb = busboy({ headers: req.headers });
 	const deployment: Deployment = {
 		id: '',
@@ -89,7 +91,7 @@ export default (req: Request, res: Response, next: NextFunction): void => {
 				);
 			}
 
-			const appLocation = path.join(appsDir, deployment.id);
+			const appLocation = path.join(appsDirectory, deployment.id);
 			deployment.path = appLocation;
 
 			// Create temporary directory for the blob
