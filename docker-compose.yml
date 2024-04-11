@@ -26,5 +26,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: faas
     ports:
       - "9000:9000"
+
+# TODO: testing

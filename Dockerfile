@@ -17,7 +17,7 @@
 #	limitations under the License.
 #
 
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS base
 
 # Image descriptor
 LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
@@ -29,15 +29,24 @@ LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
 
 WORKDIR /metacall
 
-RUN apt-get update \
-	&& apt-get install wget ca-certificates -y --no-install-recommends \
-	&& wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+FROM base AS deps
 
 COPY . .
 
 RUN npm install \
 	&& npm run build
 
+FROM base as faas
+
+RUN apt-get update \
+	&& apt-get install wget ca-certificates -y --no-install-recommends \
+	&& wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+COPY --from=deps /metacall/node_modules node_modules
+COPY --from=deps /metacall/dist dist
+
 EXPOSE 9000
 
 CMD ["node", "dist/index.js"]
+
+# TODO: testing
