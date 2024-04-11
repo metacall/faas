@@ -5,13 +5,15 @@ import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { catchAsync, execPromise } from '../utils/utils';
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 type FetchFilesFromRepoBody = {
-	branch: 'string';
-	url: 'string';
+	branch: string;
+	url: string;
 };
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 type FetchBranchListBody = {
-	url: 'string';
+	url: string;
 };
 
 const dirName = (gitUrl: string): string =>

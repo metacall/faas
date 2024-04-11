@@ -22,6 +22,7 @@ const deleteStatusMessage = (
 	appShouldntExist: `The application shouldnt exist after deleting it`
 });
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 type DeleteBody = {
 	suffix: string; // name of deployment
 	prefix: string;

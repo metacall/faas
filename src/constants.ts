@@ -25,17 +25,9 @@ export const createInstallDependenciesScript = (
 	return installDependenciesScript[runner];
 };
 
-export type DeployBody = {
-	suffix: string; // name of deployment
-	resourceType: 'Package' | 'Repository';
-	release: string; // release date
-	env: string[];
-	plan: string;
-	version: string;
-};
-
 export type tpackages = Record<string, unknown>;
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 export interface IApp {
 	status: DeployStatus;
 	prefix: string;
@@ -45,6 +37,7 @@ export interface IApp {
 	ports: number[];
 }
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 export class App implements IApp {
 	public status: DeployStatus;
 	public prefix: string;

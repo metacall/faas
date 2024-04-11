@@ -4,7 +4,6 @@ import { hostname } from 'os';
 import path from 'path';
 
 import {
-	DeployBody,
 	ProtocolMessageType,
 	WorkerMessageUnknown,
 	allApplications,
@@ -22,6 +21,16 @@ import {
 } from '../utils/utils';
 
 import { PackageError } from '@metacall/protocol/package';
+
+// TODO: Isn't this available inside protocol package? We MUST reuse it
+export type DeployBody = {
+	suffix: string; // name of deployment
+	resourceType: 'Package' | 'Repository';
+	release: string; // release date
+	env: string[];
+	plan: string;
+	version: string;
+};
 
 export const deploy = catchAsync(
 	async (
