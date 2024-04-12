@@ -1,6 +1,6 @@
-import { pathIsMetaCallJson } from '@metacall/protocol/package';
+import { MetaCallJSON, pathIsMetaCallJson } from '@metacall/protocol';
 import { spawn } from 'child_process';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
 	Deployment,
@@ -13,57 +13,80 @@ import {
 } from '../constants';
 import { isIAllApps, logProcessOutput } from './utils';
 
-// TODO: Refactor this
-export const findJsonFilesRecursively = async (
-	appsDir: string
-): Promise<void> => {
-	// TODO: Avoid sync commands
-	const files = fs.readdirSync(appsDir, { withFileTypes: true });
-	for (const file of files) {
-		if (file.isDirectory()) {
-			await findJsonFilesRecursively(path.join(appsDir, file.name));
-		} else if (pathIsMetaCallJson(file.name)) {
-			const filePath = path.join(appsDir, file.name);
-			const desiredPath = path.join(
-				path.resolve(__dirname, '..'),
-				'worker',
-				'index.js'
-			);
-			const id = path.basename(appsDir);
+export const autoDeployApps = async (appsDir: string): Promise<void> => {
+	const allDirectories = await fs.readdir(appsDir, { withFileTypes: true });
 
-			const deployment: Deployment = {
-				id,
-				type: 'application/x-zip-compressed',
-				path: appsDir,
-				jsons: []
-			};
+	let directoryProcessed = false;
 
-			const proc = spawn('metacall', [desiredPath, filePath], {
-				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+	for (const directory of allDirectories) {
+		if (directory.isDirectory()) {
+			const directoryPath = path.join(appsDir, directory.name);
+			const directoryFiles = await fs.readdir(directoryPath, {
+				withFileTypes: true
 			});
 
-			const message: WorkerMessage<Deployment> = {
-				type: ProtocolMessageType.Load,
-				data: deployment
-			};
+			const jsonFiles = directoryFiles
+				.filter(file => file.isFile() && pathIsMetaCallJson(file.name))
+				.map(file => path.join(directoryPath, file.name));
 
-			proc.send(message);
+			if (jsonFiles.length > 0) {
+				directoryProcessed = true;
 
-			logProcessOutput(proc.stdout, proc.pid, deployment.id);
-			logProcessOutput(proc.stderr, proc.pid, deployment.id);
+				const desiredPath = path.join(
+					path.resolve(__dirname, '..'),
+					'worker',
+					'index.js'
+				);
 
-			proc.on('message', (payload: WorkerMessageUnknown) => {
-				if (payload.type === ProtocolMessageType.MetaData) {
-					const message = payload as WorkerMessage<
-						Record<string, IAppWithFunctions>
-					>;
-					if (isIAllApps(message.data)) {
-						const appName = Object.keys(message.data)[0];
-						childProcesses[appName] = proc;
-						allApplications[appName] = message.data[appName];
+				const jsonContent: MetaCallJSON[] = await Promise.all(
+					jsonFiles.map(async file => {
+						const content = await fs.readFile(file, 'utf-8');
+
+						// map method returns array.That's why didn't passed MetaCallJSON[]
+						return JSON.parse(content) as MetaCallJSON;
+					})
+				);
+
+				const deployment: Deployment = {
+					id: directory.name,
+					type: 'application/x-zip-compressed',
+					path: directoryPath,
+					jsons: jsonContent
+				};
+
+				const proc = spawn('metacall', [desiredPath, ...jsonFiles], {
+					stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+				});
+
+				const message: WorkerMessage<Deployment> = {
+					type: ProtocolMessageType.Load,
+					data: deployment
+				};
+
+				proc.send(message);
+
+				logProcessOutput(proc.stdout, proc.pid, deployment.id);
+				logProcessOutput(proc.stderr, proc.pid, deployment.id);
+
+				proc.on('message', (payload: WorkerMessageUnknown) => {
+					if (payload.type === ProtocolMessageType.MetaData) {
+						const message = payload as WorkerMessage<
+							Record<string, IAppWithFunctions>
+						>;
+						if (isIAllApps(message.data)) {
+							const appName = Object.keys(message.data)[0];
+							childProcesses[appName] = proc;
+							allApplications[appName] = message.data[appName];
+						}
 					}
-				}
-			});
+				});
+			}
 		}
+	}
+
+	if (directoryProcessed) {
+		console.log(
+			'Previously deployed applications deployed successfully'.green
+		);
 	}
 };

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { ChildProcess } from 'child_process';
-import { rmSync } from 'fs';
+import { rm } from 'fs/promises';
 import { join } from 'path';
 
 import { allApplications, childProcesses } from '../constants';
@@ -29,7 +29,6 @@ type DeleteBody = {
 	version: string;
 };
 
-// TODO: Refactor this, do not use sync methods
 export const deployDelete = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: DeleteBody },
@@ -65,7 +64,7 @@ export const deployDelete = catchAsync(
 		const appLocation = join(appsDirectory, app);
 
 		// Delete the directory of the application
-		rmSync(appLocation, { recursive: true, force: true });
+		await rm(appLocation, { recursive: true, force: true });
 
 		if (!(await ensureFolderExists(appLocation))) {
 			isError = true;
