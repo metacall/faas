@@ -17,7 +17,7 @@ void (async (): Promise<void> => {
 		// TODO: Refactor this
 		await findJsonFilesRecursively(appsDirectory);
 
-		console.log('Previously deployed apllications deployed successfully');
+		console.log('Previously deployed applications deployed successfully');
 		// END-TODO
 
 		const port = process.env.PORT || 9000;

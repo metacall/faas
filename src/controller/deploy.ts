@@ -20,8 +20,6 @@ import {
 	logProcessOutput
 } from '../utils/utils';
 
-import { PackageError } from '@metacall/protocol/package';
-
 // TODO: Isn't this available inside protocol package? We MUST reuse it
 export type DeployBody = {
 	suffix: string; // name of deployment
@@ -43,7 +41,7 @@ export const deploy = catchAsync(
 			// req.body.resourceType == 'Repository' &&
 			// 	(await calculatePackages(next));
 
-			const deployment = deploymentMap[req.body.suffix];
+			const deployment = await deploymentMap[req.body.suffix];
 
 			if (deployment === undefined) {
 				return next(
@@ -86,15 +84,11 @@ export const deploy = catchAsync(
 			});
 
 			return res.status(200).json({
-				suffix: hostname(),
-				prefix: deployment.id,
+				prefix: hostname(),
+				suffix: deployment.id,
 				version: 'v1'
 			});
 		} catch (err) {
-			// Check if the error is PackageError.Empty
-			if (err === PackageError.Empty) {
-				return next(err);
-			}
 			return next(err);
 		}
 	}

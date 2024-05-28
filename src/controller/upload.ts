@@ -162,20 +162,30 @@ export const uploadPackage = (
 
 		const options: ParseOptions = { path: deployment.path };
 
+		let deployResolve: (
+			value: Deployment | PromiseLike<Deployment>
+		) => void;
+		let deployReject: (reason?: unknown) => void;
+
+		deploymentMap[deployment.id] = new Promise((resolve, reject) => {
+			deployResolve = resolve;
+			deployReject = reject;
+		});
+
 		fs.createReadStream(deployment.blob)
 			.pipe(Extract(options))
 			.on('close', () => {
 				deleteBlob();
-				deploymentMap[deployment.id] = deployment;
+				deployResolve(deployment);
 			})
 			.on('error', error => {
 				deleteBlob();
-				errorHandler(
-					new AppError(
-						`Failed to unzip the deployment at: ${error.toString()}`,
-						500
-					)
+				const appError = new AppError(
+					`Failed to unzip the deployment at: ${error.toString()}`,
+					500
 				);
+				errorHandler(appError);
+				deployReject(appError);
 			});
 	});
 

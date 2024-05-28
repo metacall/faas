@@ -10,7 +10,7 @@ export interface Deployment {
 	blob?: string;
 }
 
-export const deploymentMap: Record<string, Deployment> = {};
+export const deploymentMap: Record<string, Promise<Deployment>> = {};
 
 export const createInstallDependenciesScript = (
 	runner: string,

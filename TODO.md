@@ -1,1 +1,0 @@
--   We are including the whole metacall-deploy as dependency even that we only use just the ./lib folder, we should abstract this and separate them into different repos, so we dont add unnecesary dependencies to this project.
