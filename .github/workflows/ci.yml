@@ -44,7 +44,7 @@ jobs:
               shell: bash
               run: |
                   docker compose build
-                  docker compose up test
+                  docker compose up --exit-code-from test
                   docker compose down
 
             - name: Publish
