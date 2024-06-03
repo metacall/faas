@@ -30,6 +30,13 @@ function getPrefix() {
 	echo $prefix
 }
 
+# Deploy only if we are not testing startup deployments, otherwise the deployments have been loaded already
+function deploy() {
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+		metacall-deploy --dev
+	fi
+}
+
 # Wait for the FaaS to be ready
 while [[ ! $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness) = "200" ]]; do
 	sleep 1
@@ -40,7 +47,7 @@ echo "FaaS ready, starting tests."
 # Test deploy (Python) without dependencies
 app="python-base-app"
 pushd data/$app
-	metacall-deploy --dev
+	deploy
 	prefix=$(getPrefix $app)
 	url=$BASE_URL/$prefix/$app/v1/call
 	[[ $(curl -s $url/number) = 100 ]] || exit 1

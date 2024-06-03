@@ -17,10 +17,10 @@ export const createInstallDependenciesScript = (
 	path: string
 ): string => {
 	const installDependenciesScript: Record<string, string> = {
-		python: `cd ${path} && echo "some data for the file" >> randomasd.txt && metacall pip3 install -r requirements.txt`,
-		nodejs: `cd ${path} ; metacall npm i`,
-		csharp: `cd ${path}; metacall dotnet restore;metacall dotnet release;`,
-		ruby: `cd ${path}; metacall bundle install`
+		python: `cd ${path} && metacall pip3 install -r requirements.txt`,
+		nodejs: `cd ${path} && metacall npm i`,
+		csharp: `cd ${path} && metacall dotnet restore && metacall dotnet release;`,
+		ruby: `cd ${path} && metacall bundle install`
 	};
 	return installDependenciesScript[runner];
 };
