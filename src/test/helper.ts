@@ -33,7 +33,7 @@ export const executeProcessWithInput = (
 	path: string,
 	args: string[] = [],
 	inputs: string[] = []
-): { Promise: Promise<string>; child: ChildProcess } => {
+): { promise: Promise<string>; child: ChildProcess } => {
 	const child = executeProcess(path, args);
 
 	let childTimeout: NodeJS.Timeout | undefined,
@@ -61,7 +61,7 @@ export const executeProcessWithInput = (
 	};
 
 	return {
-		Promise: new Promise<string>((resolve, reject) => {
+		promise: new Promise<string>((resolve, reject) => {
 			child.stderr?.once('data', err => {
 				child.stdin?.end();
 				if (childTimeout) {
