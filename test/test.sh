@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #
 #	MetaCall FaaS Script by Parra Studios
 #	Reimplementation of MetaCall FaaS platform written in TypeScript.
@@ -17,29 +19,30 @@
 #	limitations under the License.
 #
 
-version: '3.7'
+set -exuo pipefail
 
-services:
-  faas:
-    image: metacall/faas
-    container_name: metacall_faas
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: faas
-    ports:
-      - "9000:9000"
+# FaaS base URL
+BASE_URL="http://localhost:9000"
 
-  test:
-    image: metacall/faas:test
-    container_name: metacall_faas_test
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
-    network_mode: host
-    depends_on:
-      - faas
-    volumes:
-      - ./test/:/metacall/
-    command: /metacall/test.sh
+# Get the prefix of a deployment
+function getPrefix() {
+	prefix=$(metacall-deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
+	echo $prefix
+}
+
+# Wait for the FaaS to be ready
+while [[ ! $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness) = "200" ]]; do
+	sleep 1
+done
+
+echo "FaaS ready, starting tests."
+
+# Test deploy (Python) without dependencies
+app="python-base-app"
+pushd data/$app
+	metacall-deploy --dev
+	prefix=$(getPrefix $app)
+	url=$BASE_URL/$prefix/$app/v1/call
+	[[ $(curl -s $url/number) = 100 ]] || exit 1
+	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+popd

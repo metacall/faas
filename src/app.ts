@@ -12,9 +12,11 @@ const host = hostname();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/readiness', (_req: Request, res: Response) => res.sendStatus(200));
 app.get('/validate', api.validate);
 app.get('/api/account/deploy-enabled', api.validate);
 
+app.get(`/${host}/:appName/:version/call/:name`, api.callFunction);
 app.post(`/${host}/:appName/:version/call/:name`, api.callFunction);
 app.get(
 	`/${host}/:appName/:version/static/.metacall/faas/apps/:app/:file`,

@@ -49,4 +49,8 @@ EXPOSE 9000
 
 CMD ["node", "dist/index.js"]
 
-# TODO: testing
+FROM base AS test
+
+RUN apt-get update \
+	&& apt-get install curl ca-certificates jq -y --no-install-recommends \
+	&& npm install -g @metacall/deploy

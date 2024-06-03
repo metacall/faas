@@ -38,13 +38,14 @@ jobs:
             # TODO: Have working unit tests generated
             # - name: Run Unit Tests
             #   run: |
-            #       npm run unit
-
-            # TODO: Integration tests requires metacall/FaaS or dashboard.metacall.io credentials
-            # TODO: unComment when we are ready for integration tests
-            # - name: Run Tests
-            #   run: |
             #       npm run test
+
+            - name: Run Integration Tests
+              shell: bash
+              run: |
+                  docker compose build
+                  docker compose up test
+                  docker compose down
 
             - name: Publish
               uses: JS-DevTools/npm-publish@v1

@@ -44,3 +44,14 @@ metacall-deploy --dev
 -   This project is developed using [MetaCall Core] itself in order to provide polyglot support, we are using its [Node Port](https://github.com/metacall/core/tree/develop/source/ports/node_port) of this library to use all the functions and methods `MetaCall Core C API` provides.
 
 -   Also, [Here](https://github.com/metacall/faas/blob/master/types/metacall.d.ts) are all the functions of `MetaCall Core` we are using.
+
+### Testing
+
+This will run a test, and if the `docker compose up test` command exits with exit code 0, it will mean that the test has passed.
+If you want to see the output of the FaaS, run `docker compose up` instead. But when running this, the command won't terminate once the test finishes and the FaaS will keep running. You will need to press `Ctrl+C` in order to close it.
+
+```sh
+docker compose build
+docker compose up test
+docker compose down
+```
