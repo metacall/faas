@@ -2,16 +2,15 @@
 	"name": "@metacall/faas",
 	"version": "0.1.0",
 	"description": "Reimplementation of MetaCall FaaS platform written in TypeScript.",
-	"main": "dist/server.js",
+	"main": "dist/index.js",
 	"scripts": {
-		"test": "npm run --silent build && mocha dist/test",
-		"coverage": "nyc npm run test",
-		"unit": "npm run --silent test -- --ignore **/integration**",
-		"prepublishOnly": "npm run --silent build",
-		"build": "npm run --silent lint && tsc",
+		"test": "npm run build && mocha dist/test",
+		"prepublishOnly": "npm run build",
+		"buildDebug": "npm run lint && tsc --sourceMap true",
+		"build": "npm run lint && tsc",
 		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
 		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
-		"start": "npm run build && metacall dist/server.js"
+		"start": "npm run build && node dist/index.js"
 	},
 	"repository": {
 		"type": "git",
@@ -64,17 +63,34 @@
 			"project": "./tsconfig.json"
 		},
 		"rules": {
-			"tsdoc/syntax": "warn"
+			"tsdoc/syntax": "warn",
+			"no-unused-vars": "off",
+			"@typescript-eslint/naming-convention": [
+				"error",
+				{
+					"selector": "property",
+					"format": [
+						"camelCase"
+					]
+				}
+			],
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					"argsIgnorePattern": "^_",
+					"varsIgnorePattern": "^_",
+					"caughtErrorsIgnorePattern": "^_"
+				}
+			]
 		}
 	},
 	"dependencies": {
-		"@metacall/protocol": "^0.1.19",
+		"@metacall/protocol": "^0.1.26",
 		"busboy": "^1.4.0",
 		"colors": "^1.4.0",
 		"dotenv": "^16.0.3",
 		"express": "^4.18.2",
 		"git-clone": "^0.2.0",
-		"p-queue-es5": "^6.0.2",
 		"unzipper": "^0.10.11"
 	},
 	"devDependencies": {
@@ -84,6 +100,7 @@
 		"@types/express": "^4.17.15",
 		"@types/git-clone": "^0.2.0",
 		"@types/mocha": "^10.0.6",
+		"@types/node": "^14.14.7",
 		"@types/unzipper": "^0.10.5",
 		"@typescript-eslint/eslint-plugin": "^4.7.0",
 		"@typescript-eslint/parser": "^4.7.0",

@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 declare module 'metacall' {
 	export function metacall(name: string, ...args: any): any;

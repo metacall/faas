@@ -1,21 +1,16 @@
 import { DeployStatus, MetaCallJSON } from '@metacall/protocol/deployment';
 import { ChildProcess } from 'child_process';
 
-export interface currentUploadedFile {
+export interface Deployment {
 	id: string;
 	type?: string;
 	jsons: MetaCallJSON[];
 	runners?: string[];
 	path: string;
+	blob?: string;
 }
 
-export const currentFile: currentUploadedFile = {
-	id: '',
-	type: '',
-	jsons: [],
-	runners: [],
-	path: ''
-};
+export const deploymentMap: Record<string, Promise<Deployment>> = {};
 
 export const createInstallDependenciesScript = (
 	runner: string,
@@ -30,34 +25,9 @@ export const createInstallDependenciesScript = (
 	return installDependenciesScript[runner];
 };
 
-export type namearg = 'id' | 'type' | 'jsons' | 'runners' | 'path';
-export type valueArg = string;
-
-export type fetchFilesFromRepoBody = {
-	branch: 'string';
-	url: 'string';
-};
-export type fetchBranchListBody = {
-	url: 'string';
-};
-
-export type deployBody = {
-	suffix: string; //name of deployment
-	resourceType: 'Package' | 'Repository';
-	release: string; //release date
-	env: string[];
-	plan: string;
-	version: string;
-};
-
-export type deleteBody = {
-	suffix: string; //name of deployment
-	prefix: string;
-	version: string;
-};
-
 export type tpackages = Record<string, unknown>;
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 export interface IApp {
 	status: DeployStatus;
 	prefix: string;
@@ -67,6 +37,7 @@ export interface IApp {
 	ports: number[];
 }
 
+// TODO: Isn't this available inside protocol package? We MUST reuse it
 export class App implements IApp {
 	public status: DeployStatus;
 	public prefix: string;
@@ -100,21 +71,46 @@ export type IAllApps = Record<string, IAppWithFunctions>;
 
 export const allApplications: IAllApps = {};
 
-export const protocol = {
-	i: 'installDependencies',
-	l: 'loadFunctions',
-	g: 'getApplicationMetadata',
-	c: 'callFunction',
-	r: 'functionInvokeResult'
-};
-
-export const cps: { [key: string]: ChildProcess } = {};
-
-export interface childProcessResponse {
-	type: keyof typeof protocol;
-	data: unknown;
+export enum ProtocolMessageType {
+	Install = 'InstallDependencies',
+	Load = 'LoadFunctions',
+	MetaData = 'GetApplicationMetadata',
+	Invoke = 'CallFunction',
+	InvokeResult = 'FunctionInvokeResult'
 }
+
+export const childProcesses: { [key: string]: ChildProcess } = {};
+
+export interface WorkerMessage<T> {
+	type: ProtocolMessageType;
+	data: T;
+}
+
+export type WorkerMessageUnknown = WorkerMessage<unknown>;
 
 export interface InspectObject {
 	[key: string]: Array<{ name: string }>;
 }
+export interface LogMessage {
+	deploymentName: string;
+	workerPID: number;
+	message: string;
+}
+
+export const ANSICode: number[] = [
+	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
+];
+
+export interface PIDToColorCodeMapType {
+	[key: string]: number;
+}
+
+export interface AssignedColorCodesType {
+	[key: string]: boolean;
+}
+
+// Maps a PID to a color code
+export const PIDToColorCodeMap: PIDToColorCodeMapType = {};
+
+// Tracks whether a color code is assigned
+export const assignedColorCodes: AssignedColorCodesType = {};
