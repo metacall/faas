@@ -1,14 +1,11 @@
+import { Deployment } from '@metacall/protocol';
 import { spawn } from 'child_process';
 import path from 'path';
-import { App, Deployment, allApplications } from '../constants';
-import {
-	Processes,
-	WorkerMessageType,
-	WorkerMessageUnknown
-} from '../worker/master';
+import { Applications, Resource } from '../app';
+import { WorkerMessageType, WorkerMessageUnknown } from '../worker/protocol';
 import { logProcessOutput } from './logger';
 
-export const deployProcess = async (deployment: Deployment): Promise<void> => {
+export const deployProcess = async (resource: Resource): Promise<void> => {
 	// Spawn a new process
 	const desiredPath = path.join(
 		path.resolve(__dirname, '..'),
@@ -23,11 +20,11 @@ export const deployProcess = async (deployment: Deployment): Promise<void> => {
 	// Send load message with the deploy information
 	proc.send({
 		type: WorkerMessageType.Load,
-		data: deployment
+		data: resource
 	});
 
 	// Pipe the stdout and stderr to the logger
-	logProcessOutput(proc, deployment.id);
+	logProcessOutput(proc, resource.id);
 
 	// Wait for load result
 	let deployResolve: (value: void) => void;
@@ -41,9 +38,11 @@ export const deployProcess = async (deployment: Deployment): Promise<void> => {
 	proc.on('message', (payload: WorkerMessageUnknown) => {
 		// Get the deploy data and store the process and app into our tables
 		if (payload.type === WorkerMessageType.MetaData) {
-			const app = payload.data as App;
-			Processes[app.suffix] = proc;
-			allApplications[app.suffix] = app;
+			const application = Applications[resource.id];
+			const deployment = payload.data as Deployment;
+
+			application.proc = proc;
+			application.deployment = deployment;
 			deployResolve();
 		}
 	});
@@ -53,7 +52,7 @@ export const deployProcess = async (deployment: Deployment): Promise<void> => {
 		// probably segmentation fault (exit code 139 in Linux)
 		deployReject(
 			new Error(
-				`Deployment '${deployment.id}' process exited with code: ${
+				`Deployment '${resource.id}' process exited with code: ${
 					code || 'unknown'
 				}`
 			)

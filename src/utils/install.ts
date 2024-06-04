@@ -1,4 +1,4 @@
-import { Deployment } from '../constants';
+import { Resource } from '../app';
 import { exec } from './exec';
 
 const createInstallDependenciesScript = (
@@ -8,23 +8,21 @@ const createInstallDependenciesScript = (
 	const installDependenciesScript: Record<string, string> = {
 		python: `cd ${path} && metacall pip3 install -r requirements.txt`,
 		nodejs: `cd ${path} && metacall npm i`,
-		csharp: `cd ${path} && metacall dotnet restore && metacall dotnet release;`,
-		ruby: `cd ${path} && metacall bundle install`
+		ruby: `cd ${path} && metacall bundle install`,
+		csharp: `cd ${path} && metacall dotnet restore && metacall dotnet release`
 	};
 	return installDependenciesScript[runner];
 };
 
 export const installDependencies = async (
-	deployment: Deployment
+	resource: Resource
 ): Promise<void> => {
-	if (!deployment.runners) return;
+	if (!resource.runners) return;
 
-	for (const runner of deployment.runners) {
+	for (const runner of resource.runners) {
 		if (runner == undefined) continue;
 		else {
-			await exec(
-				createInstallDependenciesScript(runner, deployment.path)
-			);
+			await exec(createInstallDependenciesScript(runner, resource.path));
 		}
 	}
 };

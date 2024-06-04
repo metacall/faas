@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { MetaCallJSON } from '@metacall/protocol';
+import { Deployment, MetaCallJSON } from '@metacall/protocol';
 import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
 import { promises as fs } from 'fs';
 import {
@@ -9,12 +9,12 @@ import {
 } from 'metacall';
 import { hostname } from 'os';
 import { join } from 'path';
-import { App, Deployment } from '../constants';
+import { Resource } from '../app';
 import {
 	WorkerMessage,
 	WorkerMessageType,
 	WorkerMessageUnknown
-} from '../worker/master';
+} from './protocol';
 
 const functions: Record<string, (...args: any[]) => any> = {};
 
@@ -28,12 +28,22 @@ const createMetacallJsonFiles = async (
 	}
 };
 
-const loadDeployment = (deployment: Deployment, jsonPaths: string[]): App => {
-	const app = new App('create', hostname(), deployment.id, 'v1', {}, []);
+const loadDeployment = (
+	resource: Resource,
+	jsonPaths: string[]
+): Deployment => {
+	const deployment: Deployment = {
+		status: 'create',
+		prefix: hostname(),
+		suffix: resource.id,
+		version: 'v1',
+		packages: {} as Deployment['packages'],
+		ports: []
+	};
 
 	for (const path of jsonPaths) {
 		// Load the json into metacall
-		const fullPath = join(deployment.path, path);
+		const fullPath = join(resource.path, path);
 		const exports = metacall_load_from_configuration_export(fullPath);
 
 		// Get the inspect information
@@ -44,7 +54,7 @@ const loadDeployment = (deployment: Deployment, jsonPaths: string[]): App => {
 			throw new Error(`language_id not found in ${path}`);
 		}
 
-		app.packages = inspect[json.language_id][path];
+		deployment.packages = inspect[json.language_id][path];
 
 		// Store the functions
 		Object.keys(exports).forEach(func => {
@@ -52,34 +62,34 @@ const loadDeployment = (deployment: Deployment, jsonPaths: string[]): App => {
 		});
 	}
 
-	return app;
+	return deployment;
 };
 
-const handleDeployment = async (deployment: Deployment): Promise<App> => {
+const handleDeployment = async (resource: Resource): Promise<Deployment> => {
 	// Check if the deploy comes with extra JSONs and store them
-	if (deployment.jsons.length > 0) {
+	if (resource.jsons.length > 0) {
 		const jsonPaths = await createMetacallJsonFiles(
-			deployment.path,
-			deployment.jsons
+			resource.path,
+			resource.jsons
 		);
 	}
 
 	// List all files except by the ignored ones
-	const filesPaths = await findFilesPath(deployment.path);
+	const filesPaths = await findFilesPath(resource.path);
 
 	// Get the JSONs from the list of files
 	const jsonPaths = findMetaCallJsons(filesPaths);
 
 	// Deploy the JSONs
-	return loadDeployment(deployment, jsonPaths);
+	return loadDeployment(resource, jsonPaths);
 };
 
 process.on('message', (payload: WorkerMessageUnknown) => {
 	switch (payload.type) {
 		// Handle deploy load
 		case WorkerMessageType.Load: {
-			const deployment = (payload as WorkerMessage<Deployment>).data;
-			handleDeployment(deployment)
+			const resource = (payload as WorkerMessage<Resource>).data;
+			handleDeployment(resource)
 				.then(app => {
 					if (process.send) {
 						process.send({

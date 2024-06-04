@@ -1,5 +1,3 @@
-import { ChildProcess } from 'child_process';
-
 export enum WorkerMessageType {
 	Install = 'InstallDependencies',
 	Load = 'LoadFunctions',
@@ -14,5 +12,3 @@ export interface WorkerMessage<T> {
 }
 
 export type WorkerMessageUnknown = WorkerMessage<unknown>;
-
-export const Processes: { [key: string]: ChildProcess } = {};

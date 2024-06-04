@@ -32,7 +32,7 @@ const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 
 // TODO: Implement this properly?
 // const maxWorkerWidth = (maxIndexWidth = 3): number => {
-// 	const workerLengths = Object.keys(allApplications).map(
+// 	const workerLengths = Object.keys(Applications).map(
 // 		worker => worker.length
 // 	);
 // 	return Math.max(...workerLengths) + maxIndexWidth;

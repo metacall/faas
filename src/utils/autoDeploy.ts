@@ -1,7 +1,7 @@
 import { Dirent } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Deployment } from '../constants';
+import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
 
 export const autoDeployApps = async (appsDir: string): Promise<void> => {
@@ -15,15 +15,21 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		[]
 	);
 
-	const deployments: Deployment[] = directories.map(dir => ({
+	const resources: Resource[] = directories.map(dir => ({
 		id: dir.name,
 		path: path.join(appsDir, dir.name),
 		jsons: []
 	}));
 
-	await Promise.all(deployments.map(deployProcess));
+	await Promise.all(
+		resources.map(resource => {
+			Applications[resource.id] = new Application();
+			Applications[resource.id].resource = Promise.resolve(resource);
+			return deployProcess(resource);
+		})
+	);
 
-	if (deployments.length > 0) {
+	if (resources.length > 0) {
 		console.log(
 			'Previously deployed applications deployed successfully'.green
 		);

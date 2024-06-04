@@ -1,14 +1,13 @@
 import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import os from 'os';
+import path from 'path';
 
 import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
 import { Extract, ParseOptions } from 'unzipper';
 
-import { Deployment, deploymentMap } from '../constants';
-
 import { MetaCallJSON } from '@metacall/protocol/deployment';
+import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { ensureFolderExists } from '../utils/filesystem';
@@ -50,16 +49,22 @@ export const uploadPackage = (
 	next: NextFunction
 ): void => {
 	const bb = busboy({ headers: req.headers });
-	const deployment: Deployment = {
+	const resource: Resource = {
 		id: '',
 		type: '',
 		path: '',
 		jsons: []
 	};
 
+	let handled = false; // TODO: Promisify the whole controller
+
 	const errorHandler = (error: AppError) => {
-		req.unpipe(bb);
-		next(error);
+		if (handled == false) {
+			req.unpipe(bb);
+			next(error);
+		}
+
+		handled = true;
 	};
 
 	const eventHandler = <T>(type: keyof busboy.BusboyEvents, listener: T) => {
@@ -91,12 +96,12 @@ export const uploadPackage = (
 				);
 			}
 
-			const appLocation = path.join(appsDirectory, deployment.id);
-			deployment.path = appLocation;
+			const appLocation = path.join(appsDirectory, resource.id);
+			resource.path = appLocation;
 
 			// Create temporary directory for the blob
 			fs.mkdtemp(
-				path.join(os.tmpdir(), `metacall-faas-${deployment.id}-`),
+				path.join(os.tmpdir(), `metacall-faas-${resource.id}-`),
 				(err, folder) => {
 					if (err !== null) {
 						return errorHandler(
@@ -107,20 +112,20 @@ export const uploadPackage = (
 						);
 					}
 
-					deployment.blob = path.join(folder, filename);
+					resource.blob = path.join(folder, filename);
 
 					// Create the app folder
 					ensureFolderExists(appLocation)
 						.then(() => {
 							// Create the write stream for storing the blob
 							file.pipe(
-								fs.createWriteStream(deployment.blob as string)
+								fs.createWriteStream(resource.blob as string)
 							);
 						})
 						.catch((error: Error) => {
 							errorHandler(
 								new AppError(
-									`Failed to create folder for the deployment at: ${appLocation} - ${error.toString()}`,
+									`Failed to create folder for the resource at: ${appLocation} - ${error.toString()}`,
 									404
 								)
 							);
@@ -130,24 +135,24 @@ export const uploadPackage = (
 		}
 	);
 
-	eventHandler('field', (name: keyof Deployment, val: string) => {
+	eventHandler('field', (name: keyof Resource, val: string) => {
 		if (name === 'runners') {
-			deployment['runners'] = JSON.parse(val) as string[];
+			resource.runners = JSON.parse(val) as string[];
 		} else if (name === 'jsons') {
-			deployment['jsons'] = JSON.parse(val) as MetaCallJSON[];
+			resource.jsons = JSON.parse(val) as MetaCallJSON[];
 		} else {
-			deployment[name] = val;
+			resource[name] = val;
 		}
 	});
 
 	eventHandler('finish', () => {
-		if (deployment.blob === undefined) {
+		if (resource.blob === undefined) {
 			throw Error('Invalid file upload, blob path is not defined');
 		}
 
 		const deleteBlob = () => {
-			if (deployment.blob !== undefined) {
-				fs.unlink(deployment.blob, error => {
+			if (resource.blob !== undefined) {
+				fs.unlink(resource.blob, error => {
 					if (error !== null) {
 						errorHandler(
 							new AppError(
@@ -160,39 +165,70 @@ export const uploadPackage = (
 			}
 		};
 
-		const options: ParseOptions = { path: deployment.path };
+		const deleteFolder = () => {
+			if (resource.path !== undefined) {
+				fs.unlink(resource.path, error => {
+					if (error !== null) {
+						errorHandler(
+							new AppError(
+								`Failed to delete the path at: ${error.toString()}`,
+								500
+							)
+						);
+					}
+				});
+			}
+		};
 
-		let deployResolve: (
-			value: Deployment | PromiseLike<Deployment>
-		) => void;
-		let deployReject: (reason?: unknown) => void;
+		if (Applications[resource.id]) {
+			deleteBlob();
+			return errorHandler(
+				new AppError(
+					`There is an application with name '${resource.id}' already deployed, delete it first.`,
+					400
+				)
+			);
+		}
 
-		deploymentMap[deployment.id] = new Promise((resolve, reject) => {
-			deployResolve = resolve;
-			deployReject = reject;
-		});
+		let resourceResolve: (value: Resource | PromiseLike<Resource>) => void;
+		let resourceReject: (reason?: unknown) => void;
 
-		fs.createReadStream(deployment.blob)
+		Applications[resource.id] = new Application();
+		Applications[resource.id].resource = new Promise<Resource>(
+			(resolve, reject) => {
+				resourceResolve = resolve;
+				resourceReject = reject;
+			}
+		);
+
+		const options: ParseOptions = { path: resource.path };
+
+		fs.createReadStream(resource.blob)
 			.pipe(Extract(options))
 			.on('close', () => {
 				deleteBlob();
-				deployResolve(deployment);
+				resourceResolve(resource);
 			})
 			.on('error', error => {
 				deleteBlob();
+				deleteFolder();
 				const appError = new AppError(
-					`Failed to unzip the deployment at: ${error.toString()}`,
+					`Failed to unzip the resource at: ${error.toString()}`,
 					500
 				);
 				errorHandler(appError);
-				deployReject(appError);
+				resourceReject(appError);
 			});
 	});
 
 	eventHandler('close', () => {
-		res.status(201).json({
-			id: deployment.id
-		});
+		if (handled == false) {
+			res.status(201).json({
+				id: resource.id
+			});
+		}
+
+		handled = true;
 	});
 
 	req.pipe(bb);

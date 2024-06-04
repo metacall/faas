@@ -1,10 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { hostname } from 'os';
 
-import { deploymentMap } from '../constants';
-
 import AppError from '../utils/appError';
 
+import { Applications } from '../app';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
@@ -29,24 +28,25 @@ export const deploy = catchAsync(
 			// TODO: Implement repository
 			// req.body.resourceType == 'Repository'
 
-			const deployment = await deploymentMap[req.body.suffix];
+			const application = Applications[req.body.suffix];
 
-			if (deployment === undefined) {
-				return next(
-					new AppError(
-						`Invalid deployment id: ${req.body.suffix}`,
-						400
-					)
+			// Check if the application exists and it is stored
+			if (!application?.resource) {
+				throw new AppError(
+					`Invalid deployment id: ${req.body.suffix}`,
+					400
 				);
 			}
 
-			await installDependencies(deployment);
+			const resource = await application.resource;
 
-			await deployProcess(deployment);
+			await installDependencies(resource);
+
+			await deployProcess(resource);
 
 			return res.status(200).json({
 				prefix: hostname(),
-				suffix: deployment.id,
+				suffix: resource?.id,
 				version: 'v1'
 			});
 		} catch (err) {

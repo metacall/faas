@@ -1,48 +1,23 @@
-import { hostname } from 'os';
+import { Deployment, MetaCallJSON } from '@metacall/protocol/deployment';
+import { ChildProcess } from 'child_process';
 
-import express, { NextFunction, Request, Response } from 'express';
+export interface Resource {
+	id: string;
+	path: string;
+	jsons: MetaCallJSON[];
+	runners?: string[];
+	type?: string;
+	blob?: string;
+}
 
-import api from './api';
-import { allApplications } from './constants';
-import AppError from './utils/appError';
+export class Application {
+	public resource?: Promise<Resource>;
+	public proc?: ChildProcess;
+	public deployment?: Deployment;
 
-const app = express();
-const host = hostname();
+	public kill(): void {
+		this.proc?.kill();
+	}
+}
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.get('/readiness', (_req: Request, res: Response) => res.sendStatus(200));
-app.get('/validate', api.validate);
-app.get('/api/account/deploy-enabled', api.validate);
-
-app.get(`/${host}/:appName/:version/call/:name`, api.callFunction);
-app.post(`/${host}/:appName/:version/call/:name`, api.callFunction);
-app.get(
-	`/${host}/:appName/:version/static/.metacall/faas/apps/:app/:file`,
-	api.serveStatic
-);
-
-app.post('/api/package/create', api.uploadPackage);
-app.post('/api/repository/add', api.fetchFilesFromRepo);
-
-app.post('/api/repository/branchlist', api.fetchBranchList);
-app.post('/api/repository/filelist', api.fetchFileList);
-app.post('/api/deploy/logs', api.logs);
-
-app.post('/api/deploy/create', api.deploy);
-
-app.get('/api/inspect', (_req, res) => {
-	res.send(Object.values(allApplications));
-});
-
-app.post('/api/deploy/delete', api.deployDelete);
-
-// For all the additional unimplemented routes
-app.all('*', (req: Request, res: Response, next: NextFunction) => {
-	next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-});
-
-app.use(api.globalError);
-
-export default app;
+export const Applications: Record<string, Application> = {};
