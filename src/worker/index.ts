@@ -106,6 +106,7 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 		case WorkerMessageType.Invoke: {
 			const fn = (
 				payload as WorkerMessage<{
+					id: string;
 					name: string;
 					args: unknown[];
 				}>
@@ -113,7 +114,10 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 			if (process.send) {
 				process.send({
 					type: WorkerMessageType.InvokeResult,
-					data: functions[fn.name](...fn.args)
+					data: {
+						id: fn.id,
+						result: functions[fn.name](...fn.args)
+					}
 				});
 			}
 			break;

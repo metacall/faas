@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { Applications } from '../app';
+
 import AppError from '../utils/appError';
-import { WorkerMessageType, WorkerMessageUnknown } from '../worker/protocol';
+import { invokeQueue } from '../utils/invoke';
+import { WorkerMessageType } from '../worker/protocol';
 
 export const callFunction = (
 	req: Request,
@@ -36,37 +38,21 @@ export const callFunction = (
 			);
 	}
 
-	new Promise((resolve, reject) => {
-		application.proc?.send({
-			type: WorkerMessageType.Invoke,
-			data: {
-				name: func,
-				args
-			}
-		});
-
-		application.proc?.on('message', (message: WorkerMessageUnknown) => {
-			if (message.type === WorkerMessageType.InvokeResult) {
-				resolve(JSON.stringify(message.data));
-			}
-		});
-
-		application.proc?.on('exit', code => {
-			// The application may have been ended unexpectedly,
-			// probably segmentation fault (exit code 139 in Linux)
-			reject(
-				JSON.stringify({
-					error: `Deployment '${suffix}' process exited with code: ${
-						code || 'unknown'
-					}`
-				})
-			);
-		});
-	})
-		.then(data => {
-			res.send(data);
-		})
-		.catch(error => {
-			res.status(500).send(error);
-		});
+	// Enqueue the call with a specific id, in order to be able to resolve the
+	// promise later on when the message is received in the process message handler
+	application.proc?.send({
+		type: WorkerMessageType.Invoke,
+		data: {
+			id: invokeQueue.push({
+				resolve: (data: string) => {
+					res.send(data);
+				},
+				reject: (error: string) => {
+					res.status(500).send(error);
+				}
+			}),
+			name: func,
+			args
+		}
+	});
 };
