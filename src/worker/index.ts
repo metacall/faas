@@ -1,113 +1,115 @@
 /* eslint-disable */
 
+import { MetaCallJSON } from '@metacall/protocol';
 import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
+import { promises as fs } from 'fs';
 import {
 	metacall_inspect,
 	metacall_load_from_configuration_export
 } from 'metacall';
 import { hostname } from 'os';
+import { join } from 'path';
+import { App, Deployment } from '../constants';
 import {
-	App,
-	Deployment,
-	IAppWithFunctions,
-	ProtocolMessageType,
 	WorkerMessage,
+	WorkerMessageType,
 	WorkerMessageUnknown
-} from '../constants';
+} from '../worker/master';
 
-import { createMetacallJsonFile, diff } from '../utils/utils';
+const functions: Record<string, (...args: any[]) => any> = {};
 
-let deployment: Deployment = {
-	id: '',
-	type: '',
-	jsons: [],
-	runners: [],
-	path: ''
+const createMetacallJsonFiles = async (
+	path: string,
+	jsons: MetaCallJSON[]
+): Promise<void> => {
+	for (const el of jsons) {
+		const filePath = join(path, `metacall-${el.language_id}.json`);
+		await fs.writeFile(filePath, JSON.stringify(el));
+	}
 };
 
-let allApplications: Record<string, IAppWithFunctions> = {};
-let exactFnx: Record<string, (...args: any[]) => any>;
+const loadDeployment = (deployment: Deployment, jsonPaths: string[]): App => {
+	const app = new App('create', hostname(), deployment.id, 'v1', {}, []);
 
-const handleNoJSONFile = (
-	jsonPaths: string[],
-	suffix: string,
-	version: string
-): void => {
-	let currentApp: App | undefined = new App(
-		'create',
-		hostname(),
-		suffix,
-		version,
-		{},
-		[]
-	);
+	for (const path of jsonPaths) {
+		// Load the json into metacall
+		const fullPath = join(deployment.path, path);
+		const exports = metacall_load_from_configuration_export(fullPath);
 
-	let funcs: string[] = [];
+		// Get the inspect information
+		const inspect = metacall_inspect();
+		const json = require(fullPath);
 
-	jsonPaths.forEach(path => {
-		const previousInspect = metacall_inspect();
-		exactFnx = metacall_load_from_configuration_export(path);
-		funcs = Object.keys(exactFnx);
-
-		const newInspect = metacall_inspect();
-		const inspect = diff(newInspect, previousInspect);
-		const langId = require(path).language_id;
-
-		if (!langId) {
+		if (!json.language_id) {
 			throw new Error(`language_id not found in ${path}`);
 		}
 
-		if (currentApp) {
-			currentApp.packages[langId] = inspect[langId];
-		}
-	});
+		app.packages = inspect[json.language_id][path];
 
-	currentApp.status = 'ready';
-	allApplications[currentApp.suffix] = { ...currentApp, funcs };
-
-	if (process.send) {
-		process.send({
-			type: ProtocolMessageType.MetaData,
-			data: allApplications
+		// Store the functions
+		Object.keys(exports).forEach(func => {
+			functions[func] = exports[func];
 		});
 	}
 
-	currentApp = undefined;
+	return app;
 };
 
-const handleJSONFiles = async (
-	path: string,
-	suffix: string,
-	version: string
-): Promise<void> => {
+const handleDeployment = async (deployment: Deployment): Promise<App> => {
+	// Check if the deploy comes with extra JSONs and store them
 	if (deployment.jsons.length > 0) {
-		const jsonPaths = await createMetacallJsonFile(deployment.jsons, path);
-		handleNoJSONFile(jsonPaths, suffix, version);
-	} else {
-		const filesPaths = await findFilesPath(path);
-		const jsonPaths = findMetaCallJsons(filesPaths).map(
-			el => `${path}/${el}`
+		const jsonPaths = await createMetacallJsonFiles(
+			deployment.path,
+			deployment.jsons
 		);
-		handleNoJSONFile(jsonPaths, suffix, version);
 	}
+
+	// List all files except by the ignored ones
+	const filesPaths = await findFilesPath(deployment.path);
+
+	// Get the JSONs from the list of files
+	const jsonPaths = findMetaCallJsons(filesPaths);
+
+	// Deploy the JSONs
+	return loadDeployment(deployment, jsonPaths);
 };
 
 process.on('message', (payload: WorkerMessageUnknown) => {
-	if (payload.type === ProtocolMessageType.Load) {
-		deployment = (payload as WorkerMessage<Deployment>).data;
-		handleJSONFiles(deployment.path, deployment.id, 'v1');
-	} else if (payload.type === ProtocolMessageType.Invoke) {
-		const fn = (
-			payload as WorkerMessage<{
-				name: string;
-				args: unknown[];
-			}>
-		).data;
-		if (process.send) {
-			process.send({
-				type: ProtocolMessageType.InvokeResult,
-				data: exactFnx[fn.name](...fn.args)
-			});
+	switch (payload.type) {
+		// Handle deploy load
+		case WorkerMessageType.Load: {
+			const deployment = (payload as WorkerMessage<Deployment>).data;
+			handleDeployment(deployment)
+				.then(app => {
+					if (process.send) {
+						process.send({
+							type: WorkerMessageType.MetaData,
+							data: app
+						});
+					}
+				})
+				.catch(() => process.exit(1)); // TODO: Handle this with a message?
+			break;
 		}
+
+		// Handle invoke function
+		case WorkerMessageType.Invoke: {
+			const fn = (
+				payload as WorkerMessage<{
+					name: string;
+					args: unknown[];
+				}>
+			).data;
+			if (process.send) {
+				process.send({
+					type: WorkerMessageType.InvokeResult,
+					data: functions[fn.name](...fn.args)
+				});
+			}
+			break;
+		}
+
+		default:
+			break;
 	}
 });

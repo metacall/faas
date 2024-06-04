@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
-import {
-	ProtocolMessageType,
-	WorkerMessageUnknown,
-	childProcesses
-} from '../constants';
 import AppError from '../utils/appError';
+import {
+	Processes,
+	WorkerMessageType,
+	WorkerMessageUnknown
+} from '../worker/master';
 
 export const callFunction = (
 	req: Request,
@@ -22,7 +22,7 @@ export const callFunction = (
 	const { appName: app, name } = req.params;
 	const args = Object.values(req.body);
 
-	if (!(app in childProcesses)) {
+	if (!(app in Processes)) {
 		return res
 			.status(404)
 			.send(
@@ -33,18 +33,18 @@ export const callFunction = (
 	let responseSent = false; // Flag to track if response has been sent
 	let errorCame = false;
 
-	childProcesses[app].send({
-		type: ProtocolMessageType.Invoke,
+	Processes[app].send({
+		type: WorkerMessageType.Invoke,
 		data: {
 			name,
 			args
 		}
 	});
 
-	childProcesses[app].on('message', (message: WorkerMessageUnknown) => {
+	Processes[app].on('message', (message: WorkerMessageUnknown) => {
 		if (!responseSent) {
 			// Check if response has already been sent
-			if (message.type === ProtocolMessageType.InvokeResult) {
+			if (message.type === WorkerMessageType.InvokeResult) {
 				responseSent = true; // Set flag to true to indicate response has been sent
 				return res.send(JSON.stringify(message.data));
 			} else {

@@ -3,7 +3,8 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
-import { catchAsync, execPromise } from '../utils/utils';
+import { exec } from '../utils/exec';
+import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
 type FetchFilesFromRepoBody = {
@@ -48,7 +49,7 @@ export const fetchFilesFromRepo = catchAsync(
 			);
 		}
 
-		await execPromise(
+		await exec(
 			`cd ${appsDirectory} && git clone --single-branch --depth=1 --branch ${branch} ${url} `
 		);
 
@@ -67,9 +68,7 @@ export const fetchBranchList = catchAsync(
 		req: Omit<Request, 'body'> & { body: FetchBranchListBody },
 		res: Response
 	) => {
-		const { stdout } = await execPromise(
-			`git ls-remote --heads ${req.body.url}`
-		);
+		const { stdout } = await exec(`git ls-remote --heads ${req.body.url}`);
 
 		const branches: string[] = [];
 
@@ -101,13 +100,13 @@ export const fetchFileList = catchAsync(
 				)
 			);
 		}
-		await execPromise(
+		await exec(
 			`cd ${appsDirectory} ; git clone ${req.body.url} --depth=1 --no-checkout`
 		);
 
 		const dirPath = `${appsDirectory}/${dirName(req.body.url)}`;
 
-		const { stdout } = await execPromise(
+		const { stdout } = await exec(
 			`cd ${dirPath} ; git ls-tree -r ${req.body.branch} --name-only; cd .. ; rm -r ${dirPath}`
 		);
 

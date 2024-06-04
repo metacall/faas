@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import app from './app';
 import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
-import { ensureFolderExists } from './utils/utils';
+import { ensureFolderExists } from './utils/filesystem';
 
 // Initialize the FaaS
 void (async (): Promise<void> => {

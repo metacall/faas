@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import path from 'path';
 
-import { childProcesses } from '../constants';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
-import { catchAsync, exists } from '../utils/utils';
+import { exists } from '../utils/filesystem';
+import { Processes } from '../worker/master';
+import { catchAsync } from './catch';
 
 export const serveStatic = catchAsync(
 	async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -14,7 +15,7 @@ export const serveStatic = catchAsync(
 
 		const appLocation = path.join(appsDirectory, `${app}/${file}`);
 
-		if (!(app in childProcesses)) {
+		if (!(app in Processes)) {
 			next(
 				new AppError(
 					`Oops! It looks like the application (${app}) hasn't been deployed yet. Please deploy it before you can call its functions.`,

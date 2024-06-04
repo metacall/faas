@@ -1,12 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { ChildProcess } from 'child_process';
 import { rm } from 'fs/promises';
 import { join } from 'path';
 
-import { allApplications, childProcesses } from '../constants';
+import { allApplications } from '../constants';
 import { appsDirectory } from '../utils/config';
-import { catchAsync, ensureFolderExists } from '../utils/utils';
+import { ensureFolderExists } from '../utils/filesystem';
+import { Processes } from '../worker/master';
+import { catchAsync } from './catch';
 
 const deleteStatusMessage = (
 	app: string
@@ -41,21 +42,20 @@ export const deployDelete = catchAsync(
 		// Initialize isError flag
 		let isError = false;
 
-		// Check if the application exists in childProcesses and allApplications objects
-		if (!(app in childProcesses && app in allApplications)) {
+		// Check if the application exists in Processes and allApplications objects
+		if (!(app in Processes && app in allApplications)) {
 			isError = true;
 			return res.send(deleteStatusMessage(app)['error']);
 		}
 
 		// Retrieve the child process associated with the application and kill it
-		const childProcessesInApplications: ChildProcess = childProcesses[app];
-		childProcessesInApplications.kill();
+		Processes[app].kill();
 
-		// Remove the application from childProcesses and allApplications objects
-		delete childProcesses[app];
+		// Remove the application from Processes and allApplications objects
+		delete Processes[app];
 		delete allApplications[app];
 
-		if (app in childProcesses && app in allApplications) {
+		if (app in Processes && app in allApplications) {
 			isError = true;
 			return res.send(deleteStatusMessage(app)['appShouldntExist']);
 		}

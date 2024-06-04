@@ -11,7 +11,7 @@ import { Deployment, deploymentMap } from '../constants';
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
-import { ensureFolderExists } from '../utils/utils';
+import { ensureFolderExists } from '../utils/filesystem';
 
 const getUploadError = (
 	on: keyof busboy.BusboyEvents,
