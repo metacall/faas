@@ -67,8 +67,7 @@ if [[ $inspect_response != *"$prefix"* ]] || [[ $inspect_response != *"packages"
     exit 1
 fi
 
-
-echo "Inspection test passed."
+echo "Inspect test passed."
 
 # Test delete
 echo "Testing delete functionality."
