@@ -26,20 +26,20 @@ BASE_URL="http://localhost:9000"
 
 # Get the prefix of a deployment
 function getPrefix() {
-	prefix=$(metacall-deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
-	echo $prefix
+    prefix=$(metacall-deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
+    echo $prefix
 }
 
 # Deploy only if we are not testing startup deployments, otherwise the deployments have been loaded already
 function deploy() {
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
-		metacall-deploy --dev
-	fi
+    if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+        metacall-deploy --dev
+    fi
 }
 
 # Wait for the FaaS to be ready
 while [[ ! $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness) = "200" ]]; do
-	sleep 1
+    sleep 1
 done
 
 echo "FaaS ready, starting tests."
@@ -47,38 +47,46 @@ echo "FaaS ready, starting tests."
 # Test deploy (Python) without dependencies
 app="python-base-app"
 pushd data/$app
-	deploy
-	prefix=$(getPrefix $app)
-	url=$BASE_URL/$prefix/$app/v1/call
-	[[ $(curl -s $url/number) = 100 ]] || exit 1
-	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+    deploy
+    prefix=$(getPrefix $app)
+    url=$BASE_URL/$prefix/$app/v1/call
+    [[ $(curl -s $url/number) = 100 ]] || exit 1
+    [[ $(curl -s $url/text) = '"asd"' ]] || exit 1
 popd
-
 
 # Test inspect
 echo "Testing inspect functionality."
 
 # Inspect the deployed projects
 inspect_response=$(curl -s $BASE_URL/api/inspect)
+echo "Inspect response: $inspect_response"
 
 # Verify inspection
-if [[ $inspect_response != *"$prefix"* ]] || [[ $inspect_response != *"packages"* ]]; then
+if [[ $inspect_response != *"$prefix"* ]]; then
     echo "Inspection test failed."
     exit 1
 fi
 
-echo "Inspect test passed."
+# Verify functions are included in the response
+if [[ $inspect_response != *"packages"* ]]; then
+    echo "Functions not found in inspection response."
+    exit 1
+fi
 
-# # Test delete
-# echo "Testing delete functionality."
+echo "Inspection test passed."
 
-# # Delete the deployed project
-# curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'$prefix'","version":"v1"}' $BASE_URL/api/deploy/delete
+# Test delete only if we are not testing startup deployments
+if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+    echo "Testing delete functionality."
 
-# # Verify deletion
-# if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-#     echo "Deletion test failed."
-#     exit 1
-# fi
+    # Delete the deployed project
+    curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
 
-# echo "Deletion test passed."
+    # Verify deletion
+    if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+        echo "Deletion test failed."
+        exit 1
+    fi
+
+    echo "Deletion test passed."
+fi
