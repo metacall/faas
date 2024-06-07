@@ -53,3 +53,41 @@ pushd data/$app
 	[[ $(curl -s $url/number) = 100 ]] || exit 1
 	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
 popd
+
+# Test inspect
+echo "Testing inspect functionality."
+
+# Inspect the deployed projects
+inspect_response=$(curl -s $BASE_URL/api/inspect)
+
+# Verify inspection
+if [[ $inspect_response != *"$prefix"* ]]; then
+	echo "Inspection test failed."
+	exit 1
+fi
+
+# Verify packages are included in the response
+if [[ $inspect_response != *"packages"* ]]; then
+	echo "packages not found in inspection response."
+	exit 1
+fi
+
+echo "Inspection test passed."
+
+# Test delete only if we are not testing startup deployments
+if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+	echo "Testing delete functionality."
+
+	# Delete the deployed project
+	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+
+	# Verify deletion
+	if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+		echo "Deletion test failed."
+		exit 1
+	fi
+
+	echo "Deletion test passed."
+fi
+
+echo "Integration tests passed without errors."

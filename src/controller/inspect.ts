@@ -8,6 +8,10 @@ export const inspect = (_req: Request, res: Response): Response => {
 	for (const application of Object.values(Applications)) {
 		// Check if the application is deployed
 		if (application.deployment) {
+			// Ensure packages is not undefined or null
+			if (!application.deployment.packages) {
+				throw new Error('Packages is undefined or null');
+			}
 			deployments.push(application.deployment);
 		}
 	}

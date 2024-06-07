@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { Deployment, MetaCallJSON } from '@metacall/protocol';
+import { Deployment, LanguageId, MetaCallJSON } from '@metacall/protocol';
 import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
 import { promises as fs } from 'fs';
 import {
@@ -54,7 +54,8 @@ const loadDeployment = (
 			throw new Error(`language_id not found in ${path}`);
 		}
 
-		deployment.packages = inspect[json.language_id][path];
+		deployment.packages[json.language_id as LanguageId] =
+			inspect[json.language_id];
 
 		// Store the functions
 		Object.keys(exports).forEach(func => {
