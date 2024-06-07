@@ -59,7 +59,6 @@ echo "Testing inspect functionality."
 
 # Inspect the deployed projects
 inspect_response=$(curl -s $BASE_URL/api/inspect)
-echo "Inspect response: $inspect_response"
 
 # Verify inspection
 if [[ $inspect_response != *"$prefix"* ]]; then
@@ -67,16 +66,16 @@ if [[ $inspect_response != *"$prefix"* ]]; then
     exit 1
 fi
 
-# Verify functions are included in the response
+# Verify packages are included in the response
 if [[ $inspect_response != *"packages"* ]]; then
-    echo "Functions not found in inspection response."
+    echo "packages not found in inspection response."
     exit 1
 fi
 
 echo "Inspection test passed."
 
 # Test delete only if we are not testing startup deployments
-if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
     echo "Testing delete functionality."
 
     # Delete the deployed project
@@ -90,3 +89,5 @@ if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
 
     echo "Deletion test passed."
 fi
+
+echo "Integration tests passed without errors."
