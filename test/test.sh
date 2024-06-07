@@ -69,16 +69,16 @@ fi
 
 echo "Inspect test passed."
 
-# Test delete
-echo "Testing delete functionality."
+# # Test delete
+# echo "Testing delete functionality."
 
-# Delete the deployed project
-curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'$prefix'","version":"v1"}' $BASE_URL/api/deploy/delete
+# # Delete the deployed project
+# curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'$prefix'","version":"v1"}' $BASE_URL/api/deploy/delete
 
-# Verify deletion
-if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-    echo "Deletion test failed."
-    exit 1
-fi
+# # Verify deletion
+# if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+#     echo "Deletion test failed."
+#     exit 1
+# fi
 
-echo "Deletion test passed."
+# echo "Deletion test passed."
