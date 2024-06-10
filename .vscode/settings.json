@@ -5,13 +5,14 @@
 		"source.organizeImports": "explicit",
 		"source.fixAll": "explicit"
 	},
-	"editor.rulers": [
-		80
-	],
+	"editor.rulers": [80],
 	"editor.quickSuggestions": {
 		"comments": "on",
 		"strings": "on",
 		"other": "on"
 	},
-	"editor.suggestOnTriggerCharacters": true
+	"editor.suggestOnTriggerCharacters": true,
+	"[shellscript]": {
+		"editor.defaultFormatter": "foxundermoon.shell-format"
+	}
 }
