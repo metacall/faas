@@ -21,8 +21,19 @@
 
 set -exuo pipefail
 
+# Maximum number of retries
+MAX_RETRIES=5
+RETRY_COUNT=0
+
 # FaaS base URL
 BASE_URL="http://localhost:9000"
+
+# #function to check readiness
+function check_readiness() {
+	local status_code
+	status_code=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness)
+	echo "$status_code"
+}
 
 # Get the prefix of a deployment
 function getPrefix() {
@@ -38,7 +49,12 @@ function deploy() {
 }
 
 # Wait for the FaaS to be ready
-while [[ ! $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness) = "200" ]]; do
+while [[ $(check_readiness) != "200" ]]; do
+	if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
+		echo "Readiness check failed after $MAX_RETRIES retries."
+		exit 1
+	fi
+	RETRY_COUNT=$((RETRY_COUNT + 1))
 	sleep 1
 done
 
@@ -47,11 +63,11 @@ echo "FaaS ready, starting tests."
 # Test deploy (Python) without dependencies
 app="python-base-app"
 pushd data/$app
-	deploy
-	prefix=$(getPrefix $app)
-	url=$BASE_URL/$prefix/$app/v1/call
-	[[ $(curl -s $url/number) = 100 ]] || exit 1
-	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+deploy
+prefix=$(getPrefix $app)
+url=$BASE_URL/$prefix/$app/v1/call
+[[ $(curl -s $url/number) = 100 ]] || exit 1
+[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
 popd
 
 # Test inspect
@@ -75,19 +91,17 @@ fi
 echo "Inspection test passed."
 
 # Test delete only if we are not testing startup deployments
-if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
-	echo "Testing delete functionality."
+echo "Testing delete functionality."
 
-	# Delete the deployed project
-	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+# Delete the deployed project
+curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
 
-	# Verify deletion
-	if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-		echo "Deletion test failed."
-		exit 1
-	fi
-
-	echo "Deletion test passed."
+# Verify deletion
+if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+	echo "Deletion test failed."
+	exit 1
 fi
+
+echo "Deletion test passed."
 
 echo "Integration tests passed without errors."
