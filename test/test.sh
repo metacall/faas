@@ -60,48 +60,77 @@ done
 
 echo "FaaS ready, starting tests."
 
-# Test deploy (Python) without dependencies
-app="python-base-app"
-pushd data/$app
-deploy
-prefix=$(getPrefix $app)
-url=$BASE_URL/$prefix/$app/v1/call
-[[ $(curl -s $url/number) = 100 ]] || exit 1
-[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
-popd
+# Function to run tests
+function run_tests() {
+	local app=$1
+	local test_func=$2
 
-# Test inspect
-echo "Testing inspect functionality."
+	pushd data/$app
+	deploy
+	prefix=$(getPrefix $app)
+	url=$BASE_URL/$prefix/$app/v1/call
+	$test_func $url
+	popd
 
-# Inspect the deployed projects
-inspect_response=$(curl -s $BASE_URL/api/inspect)
+	# Test inspect
+	echo "Testing inspect functionality."
 
-# Verify inspection
-if [[ $inspect_response != *"$prefix"* ]]; then
-	echo "Inspection test failed."
-	exit 1
+	# Inspect the deployed projects
+	inspect_response=$(curl -s $BASE_URL/api/inspect)
+
+	# Verify inspection
+	if [[ $inspect_response != *"$prefix"* ]]; then
+		echo "Inspection test failed."
+		exit 1
+	fi
+
+	# Verify packages are included in the response
+	if [[ $inspect_response != *"packages"* ]]; then
+		echo "packages not found in inspection response."
+		exit 1
+	fi
+
+	echo "Inspection test passed."
+
+	# Test delete functionality
+	echo "Testing delete functionality."
+
+	# Delete the deployed project
+	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+
+	# Verify deletion
+	if [[ "$app" == "python-dependency-app" ]]; then
+		if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/fetchJoke) != "404" ]]; then
+			echo "Deletion test failed."
+			exit 1
+		fi
+	else
+		if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+			echo "Deletion test failed."
+			exit 1
+		fi
+	fi
+
+	echo "Deletion test passed."
+}
+
+# Test function for python-base-app
+function test_python_base_app() {
+	local url=$1
+	[[ $(curl -s $url/number) = 100 ]] || exit 1
+	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+}
+
+# Test function for python-dependency-app
+function test_python_dependency_app() {
+	local url=$1
+	[[ $(curl -s $url/fetchJoke) == *"setup"* && $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
+}
+
+# Run tests without dependencies
+run_tests "python-base-app" test_python_base_app
+if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "true" ]]; then
+	run_tests "python-dependency-app" test_python_dependency_app
 fi
-
-# Verify packages are included in the response
-if [[ $inspect_response != *"packages"* ]]; then
-	echo "packages not found in inspection response."
-	exit 1
-fi
-
-echo "Inspection test passed."
-
-# Test delete only if we are not testing startup deployments
-echo "Testing delete functionality."
-
-# Delete the deployed project
-curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
-
-# Verify deletion
-if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-	echo "Deletion test failed."
-	exit 1
-fi
-
-echo "Deletion test passed."
 
 echo "Integration tests passed without errors."
