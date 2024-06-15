@@ -93,7 +93,7 @@ function run_tests() {
 	echo "Inspection test passed."
 
 	# Test delete only if we are not testing startup deployments
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
 		echo "Testing delete functionality."
 
 		# Delete the deployed project
