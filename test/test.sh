@@ -92,26 +92,28 @@ function run_tests() {
 
 	echo "Inspection test passed."
 
-	# Test delete functionality
-	echo "Testing delete functionality."
+	# Test delete only if we are not testing startup deployments
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
+		echo "Testing delete functionality."
 
-	# Delete the deployed project
-	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+		# Delete the deployed project
+		curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
 
-	# Verify deletion
-	if [[ "$app" == "python-dependency-app" ]]; then
-		if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/fetchJoke) != "404" ]]; then
-			echo "Deletion test failed."
-			exit 1
+		# Verify deletion
+		if [[ "$app" == "python-dependency-app" ]]; then
+			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/fetchJoke) != "404" ]]; then
+				echo "Deletion test failed."
+				exit 1
+			fi
+		else
+			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+				echo "Deletion test failed."
+				exit 1
+			fi
 		fi
-	else
-		if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-			echo "Deletion test failed."
-			exit 1
-		fi
+
+		echo "Deletion test passed."
 	fi
-
-	echo "Deletion test passed."
 }
 
 # Test function for python-base-app
