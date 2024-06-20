@@ -21,8 +21,19 @@
 
 set -exuo pipefail
 
+# Maximum number of retries
+MAX_RETRIES=5
+RETRY_COUNT=0
+
 # FaaS base URL
 BASE_URL="http://localhost:9000"
+
+# #function to check readiness
+function check_readiness() {
+	local status_code
+	status_code=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness)
+	echo "$status_code"
+}
 
 # Get the prefix of a deployment
 function getPrefix() {
@@ -38,56 +49,90 @@ function deploy() {
 }
 
 # Wait for the FaaS to be ready
-while [[ ! $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness) = "200" ]]; do
+while [[ $(check_readiness) != "200" ]]; do
+	if [[ $RETRY_COUNT -ge $MAX_RETRIES ]]; then
+		echo "Readiness check failed after $MAX_RETRIES retries."
+		exit 1
+	fi
+	RETRY_COUNT=$((RETRY_COUNT + 1))
 	sleep 1
 done
 
 echo "FaaS ready, starting tests."
 
-# Test deploy (Python) without dependencies
-app="python-base-app"
-pushd data/$app
+# Function to run tests
+function run_tests() {
+	local app=$1
+	local test_func=$2
+
+	pushd data/$app
 	deploy
 	prefix=$(getPrefix $app)
 	url=$BASE_URL/$prefix/$app/v1/call
-	[[ $(curl -s $url/number) = 100 ]] || exit 1
-	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
-popd
+	$test_func $url
+	popd
 
-# Test inspect
-echo "Testing inspect functionality."
+	# Test inspect
+	echo "Testing inspect functionality."
 
-# Inspect the deployed projects
-inspect_response=$(curl -s $BASE_URL/api/inspect)
+	# Inspect the deployed projects
+	inspect_response=$(curl -s $BASE_URL/api/inspect)
 
-# Verify inspection
-if [[ $inspect_response != *"$prefix"* ]]; then
-	echo "Inspection test failed."
-	exit 1
-fi
-
-# Verify packages are included in the response
-if [[ $inspect_response != *"packages"* ]]; then
-	echo "packages not found in inspection response."
-	exit 1
-fi
-
-echo "Inspection test passed."
-
-# Test delete only if we are not testing startup deployments
-if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
-	echo "Testing delete functionality."
-
-	# Delete the deployed project
-	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"python-base-app","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
-
-	# Verify deletion
-	if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-		echo "Deletion test failed."
+	# Verify inspection
+	if [[ $inspect_response != *"$prefix"* ]]; then
+		echo "Inspection test failed."
 		exit 1
 	fi
 
-	echo "Deletion test passed."
+	# Verify packages are included in the response
+	if [[ $inspect_response != *"packages"* ]]; then
+		echo "packages not found in inspection response."
+		exit 1
+	fi
+
+	echo "Inspection test passed."
+
+	# Test delete only if we are not testing startup deployments
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+		echo "Testing delete functionality."
+
+		# Delete the deployed project
+		curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+
+		# Verify deletion
+		if [[ "$app" == "python-dependency-app" ]]; then
+			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/fetchJoke) != "404" ]]; then
+				echo "Deletion test failed."
+				exit 1
+			fi
+		else
+			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
+				echo "Deletion test failed."
+				exit 1
+			fi
+		fi
+
+		echo "Deletion test passed."
+	fi
+}
+
+# Test function for python-base-app
+function test_python_base_app() {
+	local url=$1
+	[[ $(curl -s $url/number) = 100 ]] || exit 1
+	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+}
+
+# Test function for python-dependency-app
+function test_python_dependency_app() {
+	local url=$1
+	[[ $(curl -s $url/fetchJoke) == *"setup"* && $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
+}
+
+# Run tests without dependencies
+run_tests "python-base-app" test_python_base_app
+if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "true" ]]; then
+	run_tests "python-dependency-app" test_python_dependency_app
 fi
 
 echo "Integration tests passed without errors."
