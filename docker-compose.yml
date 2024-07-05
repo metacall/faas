@@ -29,6 +29,8 @@ services:
       target: faas
     ports:
       - "9000:9000"
+    volumes:
+      - ./logs:/metacall/logs
 
   test:
     image: metacall/faas:test
