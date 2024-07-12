@@ -51,7 +51,7 @@ jobs:
               run: |
                   docker compose build
                   docker compose up --exit-code-from test
-                  TEST_FAAS_STARTUP_DEPLOY=true docker compose up --exit-code-from test
+                  TEST_FAAS_STARTUP_DEPLOY=true TEST_FAAS_DEPENDENCY_DEPLOY=true docker compose up --exit-code-from test
                   docker compose down
 
             - name: Publish
