@@ -177,7 +177,7 @@ function test_nodejs_dependency_app() {
 
 	local reverse_response
 	reverse_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"str":"hello"}}' $url/reverse)
-	[[ $reverse_response = '"dddddd"' ]] || exit 1
+	[[ $reverse_response = '"olleh"' ]] || exit 1
 
 	local sum_response
 	sum_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"a":1,"b":2}}' $url/sum)
@@ -187,7 +187,7 @@ function test_nodejs_dependency_app() {
 # Run tests
 run_tests "nodejs-base-app" test_nodejs_app
 run_tests "python-base-app" test_python_base_app
-if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "false" ]]; then
+if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "true" ]]; then
 	run_tests "python-dependency-app" test_python_dependency_app
 	run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 fi
