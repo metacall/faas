@@ -19,7 +19,7 @@
 #	limitations under the License.
 
 # You can enable this for debugging
-# set -exuo pipefail
+set -exuo pipefail
 
 # Maximum number of retries
 MAX_RETRIES=5
