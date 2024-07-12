@@ -93,7 +93,9 @@ function run_tests() {
 	echo "Inspection test passed."
 
 	# Call delete functionality
-	delete_functionality $app $prefix
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+		delete_functionality $app $prefix
+	fi
 }
 
 # Function to test delete functionality
