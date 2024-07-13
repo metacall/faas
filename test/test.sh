@@ -95,9 +95,10 @@ function run_tests() {
 	echo "Inspection test passed."
 
 	# Call delete functionality in local development
-	if [[ "${NODE_ENVIRONMENT}" == "development" ]]; then
-		delete_functionality $app $prefix
-	fi
+	# if [[ "${NODE_ENVIRONMENT}" == "development" ]]; then
+	# 	echo "commmmmmmming here"
+	# 	delete_functionality $app $prefix
+	# fi
 
 	# Call delete functionality
 	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" && "${NODE_ENVIRONMENT}" == "deployment" ]]; then
