@@ -18,8 +18,10 @@
 #	See the License for the specific language governing permissions and
 #	limitations under the License.
 
-# You can enable this for debugging
-set -exuo pipefail
+# You can enable this for debugging in development by changing NODE_ENVIRONMENT to development.
+if [[ "${NODE_ENVIRONMENT}" == "deployment" ]]; then
+	set -exuo pipefail
+fi
 
 # Maximum number of retries
 MAX_RETRIES=5
@@ -92,8 +94,13 @@ function run_tests() {
 
 	echo "Inspection test passed."
 
+	# Call delete functionality in local development
+	if [[ "${NODE_ENVIRONMENT}" == "development" ]]; then
+		delete_functionality $app $prefix
+	fi
+
 	# Call delete functionality
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" && "${NODE_ENVIRONMENT}" == "deployment" ]]; then
 		delete_functionality $app $prefix
 	fi
 }
