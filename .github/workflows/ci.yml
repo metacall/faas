@@ -13,13 +13,13 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Setup MetaCall CLI
               run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
             - name: Setup NodeJS
-              uses: actions/setup-node@v2
+              uses: actions/setup-node@v4
               with:
                   node-version: '18'
                   registry-url: https://registry.npmjs.org
@@ -56,7 +56,7 @@ jobs:
                   docker compose down
 
             - name: Publish
-              uses: JS-DevTools/npm-publish@v1
+              uses: JS-DevTools/npm-publish@v3
               if: startsWith(github.ref, 'refs/tags/')
               with:
                   access: 'public'
