@@ -29,6 +29,8 @@ services:
       target: faas
     ports:
       - "9000:9000"
+    volumes:
+      - ./logs:/metacall/logs
 
   test:
     image: metacall/faas:test
@@ -39,7 +41,8 @@ services:
       target: test
     environment:
       TEST_FAAS_STARTUP_DEPLOY: ${TEST_FAAS_STARTUP_DEPLOY:-false}
-      TEST_FAAS_DEPENDENCY_DEPLOY: ${TEST_FAAS_DEPENDENCY_DEPLOY:-true}
+      TEST_FAAS_DEPENDENCY_DEPLOY: ${TEST_FAAS_DEPENDENCY_DEPLOY:-false}
+      NODE_ENVIRONMENT: ${NODE_ENVIRONMENT:-development}
     network_mode: host
     depends_on:
       - faas

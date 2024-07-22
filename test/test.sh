@@ -17,9 +17,11 @@
 #	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #	See the License for the specific language governing permissions and
 #	limitations under the License.
-#
 
-set -exuo pipefail
+# You can enable this for debugging in development by changing NODE_ENVIRONMENT to development.
+if [[ "${NODE_ENVIRONMENT}" == "deployment" ]]; then
+	set -exuo pipefail
+fi
 
 # Maximum number of retries
 MAX_RETRIES=5
@@ -28,7 +30,7 @@ RETRY_COUNT=0
 # FaaS base URL
 BASE_URL="http://localhost:9000"
 
-# #function to check readiness
+# Function to check readiness
 function check_readiness() {
 	local status_code
 	status_code=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness)
@@ -92,28 +94,53 @@ function run_tests() {
 
 	echo "Inspection test passed."
 
-	# Test delete only if we are not testing startup deployments
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
-		echo "Testing delete functionality."
-
-		# Delete the deployed project
-		curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
-
-		# Verify deletion
-		if [[ "$app" == "python-dependency-app" ]]; then
-			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/fetchJoke) != "404" ]]; then
-				echo "Deletion test failed."
-				exit 1
-			fi
-		else
-			if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/number) != "404" ]]; then
-				echo "Deletion test failed."
-				exit 1
-			fi
-		fi
-
-		echo "Deletion test passed."
+	# Call delete functionality in local development
+	if [[ "${NODE_ENVIRONMENT}" == "development" && "${TEST_FAAS_STARTUP_DEPLOY}" == "false" ]]; then
+		delete_functionality $app $prefix
 	fi
+
+	# Call delete functionality
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" && "${NODE_ENVIRONMENT}" == "deployment" ]]; then
+		delete_functionality $app $prefix
+	fi
+}
+
+# Function to test delete functionality
+function delete_functionality() {
+	local app=$1
+	local prefix=$2
+
+	echo "Testing delete functionality."
+
+	# Delete the deployed project
+	curl -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'","prefix":"'"$prefix"'","version":"v1"}' $BASE_URL/api/deploy/delete
+
+	# Verify deletion
+	case "$app" in
+	"python-dependency-app")
+		endpoint="fetchJoke"
+		;;
+	"python-base-app")
+		endpoint="number"
+		;;
+	"nodejs-base-app")
+		endpoint="isPalindrome"
+		;;
+	"nodejs-dependency-app")
+		endpoint="signin"
+		;;
+	*)
+		echo "Unknown application: $app"
+		exit 1
+		;;
+	esac
+
+	if [[ $(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/$prefix/$app/v1/call/$endpoint) != "404" ]]; then
+		echo "Deletion test failed."
+		exit 1
+	fi
+
+	echo "Deletion test passed."
 }
 
 # Test function for python-base-app
@@ -129,10 +156,49 @@ function test_python_dependency_app() {
 	[[ $(curl -s $url/fetchJoke) == *"setup"* && $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
 }
 
-# Run tests without dependencies
+# Test function for nodejs-base-app
+function test_nodejs_app() {
+	local url=$1
+
+	local response1
+	response1=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["madam"]}' $url/isPalindrome)
+	[[ $response1 == "true" ]] || exit 1
+
+	local response2
+	response2=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["world"]}' $url/isPalindrome)
+	[[ $response2 == "false" ]] || exit 1
+}
+
+# Test function for nodejs-dependency-app
+function test_nodejs_dependency_app() {
+	local url=$1
+
+	local signin_response
+	signin_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"user":"viferga","password":"123"}' $url/signin)
+
+	local token
+	token=$(echo $signin_response | sed 's/^"\(.*\)"$/\1/')
+
+	if [[ -z "$token" ]]; then
+		echo "Failed to extract token"
+		exit 1
+	fi
+
+	local reverse_response
+	reverse_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"str":"hello"}}' $url/reverse)
+	[[ $reverse_response = '"olleh"' ]] || exit 1
+
+	local sum_response
+	sum_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"a":1,"b":2}}' $url/sum)
+	[[ $sum_response = 3 ]] || exit 1
+}
+
+# Run tests
+run_tests "nodejs-base-app" test_nodejs_app
 run_tests "python-base-app" test_python_base_app
 if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "true" ]]; then
 	run_tests "python-dependency-app" test_python_dependency_app
+	run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 fi
 
 echo "Integration tests passed without errors."
