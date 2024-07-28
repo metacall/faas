@@ -25,9 +25,6 @@ export const deploy = catchAsync(
 		next: NextFunction
 	) => {
 		try {
-			// TODO: Implement repository
-			// req.body.resourceType == 'Repository'
-
 			const application = Applications[req.body.suffix];
 
 			// Check if the application exists and it is stored
