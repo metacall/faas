@@ -3,6 +3,9 @@
 	"version": "0.1.0",
 	"description": "Reimplementation of MetaCall FaaS platform written in TypeScript.",
 	"main": "dist/index.js",
+	"bin": {
+		"metacall-faas": "dist/index.js"
+	},
 	"scripts": {
 		"test": "npm run build && mocha dist/test",
 		"prepublishOnly": "npm run build",
@@ -100,7 +103,6 @@
 					"@typescript-eslint/no-unsafe-call": "off",
 					"@typescript-eslint/no-var-requires": "off",
 					"@typescript-eslint/no-unsafe-return": "off"
-	
 				}
 			}
 		]
