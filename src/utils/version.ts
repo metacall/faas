@@ -6,6 +6,6 @@ export function printVersionAndExit(): void {
 	const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
 		version: string;
 	};
-	console.log(`FaaS version: ${packageJson.version}`);
+	console.log(`v${packageJson.version}`);
 	process.exit(0);
 }
