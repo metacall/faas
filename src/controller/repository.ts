@@ -135,7 +135,7 @@ export const fetchFileList = catchAsync(
 			const files = stdout.trim().split('\n').filter(Boolean);
 
 			// Clean up the cloned repository
-			await exec(`rm -r ${repoPath}`);
+			await fs.rm(repoPath, { recursive: true, force: true });
 
 			return res.status(200).json({ files });
 		} catch (err) {
