@@ -18,14 +18,29 @@
 #	See the License for the specific language governing permissions and
 #	limitations under the License.
 
-# Integration tests, first docker compose up runs the normal test.
+set -exuo pipefail
+
+if [ -x "$(command -v docker-compose)" ]; then
+	DOCKER_CMD=docker-compose
+else
+	docker compose &>/dev/null
+
+	if [ $? -eq 0 ]; then
+		DOCKER_CMD="docker compose"
+	else
+		echo "ERROR: neither \"docker-compose\" nor \"docker compose\" appear to be installed."
+		exit 1
+	fi
+fi
+
+# Integration tests: first docker compose up runs the normal test.
 # The second one runs the test without deleting the FaaS container,
 # and the environment varialbe TEST_FAAS_STARTUP_DEPLOY forces the
 # test to avoid deploying again all the deployments. By this we are
 # testing if the startup initialization works because the deployments
 # are persisted from the previous run
 
-docker compose build
-NODE_ENVIRONMENT=deployment TEST_FAAS_DEPENDENCY_DEPLOY=true docker compose up --exit-code-from test
-TEST_FAAS_STARTUP_DEPLOY=true TEST_FAAS_DEPENDENCY_DEPLOY=true NODE_ENVIRONMENT=deployment docker compose up --exit-code-from test
-docker compose down
+${DOCKER_CMD} build
+${DOCKER_CMD} up --exit-code-from test
+TEST_FAAS_STARTUP_DEPLOY=true ${DOCKER_CMD} up --exit-code-from test
+${DOCKER_CMD} down

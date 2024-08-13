@@ -18,10 +18,7 @@
 #	See the License for the specific language governing permissions and
 #	limitations under the License.
 
-# You can enable this for debugging in development by changing NODE_ENVIRONMENT to development.
-if [[ "${NODE_ENVIRONMENT}" == "deployment" ]]; then
-	set -exuo pipefail
-fi
+set -exuo pipefail
 
 # Maximum number of retries
 MAX_RETRIES=5
@@ -94,13 +91,8 @@ function run_tests() {
 
 	echo "Inspection test passed."
 
-	# Call delete functionality in local development
-	if [[ "${NODE_ENVIRONMENT}" == "development" && "${TEST_FAAS_STARTUP_DEPLOY}" == "false" ]]; then
-		delete_functionality $app $prefix
-	fi
-
 	# Call delete functionality
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" && "${NODE_ENVIRONMENT}" == "deployment" ]]; then
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
 		delete_functionality $app $prefix
 	fi
 }
@@ -196,9 +188,7 @@ function test_nodejs_dependency_app() {
 # Run tests
 run_tests "nodejs-base-app" test_nodejs_app
 run_tests "python-base-app" test_python_base_app
-if [[ "${TEST_FAAS_DEPENDENCY_DEPLOY}" == "true" ]]; then
-	run_tests "python-dependency-app" test_python_dependency_app
-	run_tests "nodejs-dependency-app" test_nodejs_dependency_app
-fi
+run_tests "python-dependency-app" test_python_dependency_app
+run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 
 echo "Integration tests passed without errors."
