@@ -1,0 +1,43 @@
+name: DockerHub
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: index.docker.io/metacall/faas
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Integration Tests
+        shell: bash
+        run: ./test.sh
+
+      - name: Login to DockerHub
+        run: docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+
+      - name: Push MetaCall FaaS Docker Image to DockerHub
+        run: |
+          docker tag metacall/faas ${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.IMAGE_NAME }}:latest
+          if [[ "${{ contains(github.ref, 'refs/tags/') }}" = true ]]; then
+            TAG=${GITHUB_REF#refs/*/}
+            VERSION=${TAG#v}
+            docker tag metacall/faas ${{ env.IMAGE_NAME }}:${VERSION}
+            docker push ${{ env.IMAGE_NAME }}:${VERSION}
+          fi
+
+      - name: Logout from DockerHub
+        run: docker logout
