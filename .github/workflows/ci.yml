@@ -7,7 +7,8 @@ on:
         tags:
             - 'v*.*.*'
     workflow_dispatch:        
-
+env:
+  IMAGE_NAME: index.docker.io/metacall/faas
 jobs:
     ci:
         runs-on: ubuntu-latest
@@ -55,9 +56,30 @@ jobs:
                   TEST_FAAS_STARTUP_DEPLOY=true TEST_FAAS_DEPENDENCY_DEPLOY=true NODE_ENVIRONMENT=deployment docker compose up --exit-code-from test
                   docker compose down
 
-            - name: Publish
+            - name: Publish npm package
               uses: JS-DevTools/npm-publish@v3
               if: startsWith(github.ref, 'refs/tags/')
               with:
                   access: 'public'
                   token: ${{ secrets.NPM_AUTH_TOKEN }}
+
+
+            # Build and push the docker image to DockerHub
+            - name: Set up Docker Buildx #  to be able to build multi-platform images, export cache, etc.
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: docker/setup-buildx-action@v1
+
+            - name: Login to DockerHub #  will take care to log in against a Docker registry
+              uses: docker/login-action@v1 
+              if: startsWith(github.ref, 'refs/tags/')
+              with:
+                username: ${{ secrets.DOCKER_HUB_USERNAME }}
+                password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+            - name: Build and push # will build and push the Docker image to the registry
+              uses: docker/build-push-action@v2
+              if: startsWith(github.ref, 'refs/tags/')
+              with:
+                context: .
+                file: ./Dockerfile-faas
+                push: true
+                tags: metacall/faas:latest
