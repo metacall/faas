@@ -15,13 +15,13 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{matrix.os}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup MetaCall CLI
-        run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
@@ -30,21 +30,34 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Update NPM
+        shell: bash
         run: npm install -g npm@latest
 
       - name: Installing Dependencies
+        shell: bash
         run: npm i
 
       - name: Lint
+        shell: bash
         run: npm run lint
 
       - name: Build
+        shell: bash
         run: npm run build
 
       # TODO: Have working unit tests generated
       # - name: Run Unit Tests
       #   run: |
       #     npm run test
+
+      - name: Setup MetaCall CLI
+        if: matrix.os == 'ubuntu-latest'
+        run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
+      - name: Setup MetaCall CLI (windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run:  # Add Windows-specific MetaCall CLI installation here  
 
       - name: Run Integration Tests
         shell: bash
