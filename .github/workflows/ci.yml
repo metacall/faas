@@ -30,19 +30,15 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Update NPM
-        shell: bash
         run: npm install -g npm@latest
 
       - name: Installing Dependencies
-        shell: bash
         run: npm i
 
       - name: Lint
-        shell: bash
         run: npm run lint
 
       - name: Build
-        shell: bash
         run: npm run build
 
       # TODO: Have working unit tests generated
@@ -50,14 +46,14 @@ jobs:
       #   run: |
       #     npm run test
 
-      - name: Setup MetaCall CLI
+      - name: Setup MetaCall CLI (unix)
         if: matrix.os == 'ubuntu-latest'
         run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
       - name: Setup MetaCall CLI (windows)
         if: matrix.os == 'windows-latest'
-        shell: powershell
-        run:  # Add Windows-specific MetaCall CLI installation here  
+        run: |
+          cmd.exe /c "powershell -NoProfile -ExecutionPolicy unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))""
 
       - name: Run Integration Tests
         shell: bash
@@ -65,7 +61,7 @@ jobs:
 
       - name: Publish
         uses: JS-DevTools/npm-publish@v3
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
         with:
           access: 'public'
           token: ${{ secrets.NPM_AUTH_TOKEN }}
