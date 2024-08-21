@@ -1,6 +1,6 @@
 {
 	"name": "@metacall/faas",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Reimplementation of MetaCall FaaS platform written in TypeScript.",
 	"main": "dist/index.js",
 	"bin": {
