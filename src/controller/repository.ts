@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import path, { join } from 'path';
 import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
@@ -31,6 +31,25 @@ const deleteRepoFolderIfExist = async <Path extends string>(
 	await fs.rm(repoFilePath, { recursive: true, force: true });
 };
 
+const handleRunners = async (repoPath: string): Promise<string[]> => {
+	const runners: string[] = [];
+	const files = await fs.readdir(repoPath);
+
+	for (const file of files) {
+		const fullPath = path.join(repoPath, file);
+		const stat = await fs.stat(fullPath);
+
+		if (file === 'requirements.txt') runners.push('python');
+
+		if (file === 'package.json') runners.push('nodejs');
+
+		if (stat.isDirectory()) {
+			await handleRunners(fullPath);
+		}
+	}
+	return runners;
+};
+
 export const fetchFilesFromRepo = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
@@ -41,13 +60,14 @@ export const fetchFilesFromRepo = catchAsync(
 		const resource: Resource = {
 			id: '',
 			path: '',
-			jsons: []
+			jsons: [],
+			runners: []
 		};
 
 		try {
 			await deleteRepoFolderIfExist(appsDirectory, url);
 		} catch (err) {
-			next(
+			return next(
 				new AppError(
 					'error occurred in deleting repository directory',
 					500
@@ -73,6 +93,13 @@ export const fetchFilesFromRepo = catchAsync(
 
 		resource.id = id;
 		resource.path = join(appsDirectory, id);
+
+		const detectedRunners = await handleRunners(resource.path);
+		if (detectedRunners.length > 0) {
+			resource.runners = detectedRunners;
+		} else {
+			console.warn('No runners detected');
+		}
 
 		// Create a new Application instance and assign the resource to it
 		const application = new Application();
