@@ -52,5 +52,5 @@ CMD ["node", "dist/index.js"]
 FROM base AS test
 
 RUN apt-get update \
-	&& apt-get install curl ca-certificates jq git -y --no-install-recommends \
+	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
 	&& npm install -g @metacall/deploy
