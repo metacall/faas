@@ -11,7 +11,7 @@
 		"prepublishOnly": "npm run build",
 		"buildDebug": "npm run lint && tsc --sourceMap true",
 		"build": "npm run lint && tsc",
-		"lint": "eslint . --max-warnings=0 --ignore-pattern '{dist,test/**}'",
+		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
 		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
 		"start": "npm run build && node dist/index.js"
 	},
