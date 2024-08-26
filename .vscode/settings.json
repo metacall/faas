@@ -5,9 +5,7 @@
 		"source.organizeImports": "explicit",
 		"source.fixAll": "explicit"
 	},
-	"editor.rulers": [
-		80
-	],
+	"editor.rulers": [80],
 	"editor.quickSuggestions": {
 		"comments": "on",
 		"strings": "on",
