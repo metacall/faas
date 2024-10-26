@@ -12,7 +12,7 @@ export const inspect = (_req: Request, res: Response): Response => {
 			if (!application.deployment.packages) {
 				throw new Error('Packages is undefined or null');
 			}
-			deployments.push(application.deployment);
+			deployments.unshift(application.deployment);
 		}
 	}
 
