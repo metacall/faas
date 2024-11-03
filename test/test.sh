@@ -185,11 +185,6 @@ function test_nodejs_dependency_app() {
 	[[ $sum_response = 3 ]] || exit 1
 }
 
-# Run tests
-run_tests "nodejs-base-app" test_nodejs_app
-run_tests "python-base-app" test_python_base_app
-run_tests "python-dependency-app" test_python_dependency_app
-run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 
 echo "Integration tests for package deployment passed without errors."
 
@@ -308,20 +303,52 @@ function test_nodejs_dependency_app() {
 	echo "Node.js Dependency App tests passed"
 }
 
-echo "starting repository deployment tests"
+# without Dependencies
 
-#without Dependencies
-
-#Test NodeJs app
+# Test NodeJs app
 test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "nodejs-parameter-example" test_nodejs-parameter-example
-# #Test Python app
+# Test Python app
 test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "metacall-python-example" test_python_time_app
 
-# #With Dependencies
+# With Dependencies
 
-# # Test Python app
+# Test Python app
 test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "python-dependency-metacall" test_python_dependency_metacall
 #Test NodeJs app
 test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "auth-middleware-metacall" test_nodejs_dependency_app
 
 echo "Repository deployment tests completed."
+
+
+# Simultaneous deployment tests
+function test_simultaneous_deploy() {
+	echo "Testing simultaneous deployments..."
+	pids=()
+
+	# Run all tests simultaneously in background
+	run_tests "nodejs-base-app" test_nodejs_app &
+	pids+=($!)
+
+	run_tests "python-base-app" test_python_base_app &
+	pids+=($!)
+
+	run_tests "python-dependency-app" test_python_dependency_app &
+	pids+=($!)
+
+	run_tests "nodejs-dependency-app" test_nodejs_dependency_app &
+	pids+=($!)
+
+	for pid in "${pids[@]}"; do
+		if ! wait $pid; then
+			echo "Simultaneous deployment test failed - Test failed"
+			return 1
+			exit 1
+		fi
+	done
+
+	echo "Simultaneous deployment test passed - All tests passed"
+	return 0
+}
+
+echo "Testing simultaneous deployments..."
+test_simultaneous_deploy
