@@ -44,7 +44,8 @@ const handleRunners = async (repoPath: string): Promise<string[]> => {
 		if (file === 'package.json') runners.push('nodejs');
 
 		if (stat.isDirectory()) {
-			await handleRunners(fullPath);
+			const subRunners = await handleRunners(fullPath);
+			runners.push(...subRunners);
 		}
 	}
 	return runners;

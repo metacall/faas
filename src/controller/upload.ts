@@ -4,7 +4,7 @@ import path from 'path';
 
 import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
-import { Extract, ParseOptions } from 'unzipper';
+import { Extract } from 'unzipper';
 
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import { Application, Applications, Resource } from '../app';
@@ -56,10 +56,10 @@ export const uploadPackage = (
 		jsons: []
 	};
 
-	let handled = false; // TODO: Promisify the whole controller
+	let handled = false;
 
 	const errorHandler = (error: AppError) => {
-		if (handled == false) {
+		if (handled === false) {
 			req.unpipe(bb);
 			next(error);
 		}
@@ -88,8 +88,8 @@ export const uploadPackage = (
 			const { mimeType, filename } = info;
 
 			if (
-				mimeType != 'application/x-zip-compressed' &&
-				mimeType != 'application/zip'
+				mimeType !== 'application/x-zip-compressed' &&
+				mimeType !== 'application/zip'
 			) {
 				return errorHandler(
 					new AppError('Please upload a zip file', 404)
@@ -147,7 +147,7 @@ export const uploadPackage = (
 
 	eventHandler('finish', () => {
 		if (resource.blob === undefined) {
-			throw Error('Invalid file upload, blob path is not defined');
+			throw new Error('Invalid file upload, blob path is not defined');
 		}
 
 		const deleteBlob = () => {
@@ -201,33 +201,43 @@ export const uploadPackage = (
 			}
 		);
 
-		const options: ParseOptions = { path: resource.path };
+		const unzipAndResolve = () => {
+			return new Promise<void>((resolve, reject) => {
+				fs.createReadStream(resource.blob as string)
+					.pipe(Extract({ path: resource.path }))
+					.on('close', () => {
+						deleteBlob();
+						resolve();
+					})
+					.on('error', error => {
+						deleteBlob();
+						deleteFolder();
+						reject(
+							new AppError(
+								`Failed to unzip the resource at: ${error.toString()}`,
+								500
+							)
+						);
+					});
+			});
+		};
 
-		fs.createReadStream(resource.blob)
-			.pipe(Extract(options))
-			.on('close', () => {
-				deleteBlob();
+		unzipAndResolve()
+			.then(() => {
 				resourceResolve(resource);
 			})
-			.on('error', error => {
-				deleteBlob();
-				deleteFolder();
-				const appError = new AppError(
-					`Failed to unzip the resource at: ${error.toString()}`,
-					500
-				);
-				errorHandler(appError);
-				resourceReject(appError);
+			.catch(error => {
+				resourceReject(error);
+				errorHandler(error);
 			});
 	});
 
 	eventHandler('close', () => {
-		if (handled == false) {
+		if (handled === false) {
 			res.status(201).json({
 				id: resource.id
 			});
 		}
-
 		handled = true;
 	});
 
