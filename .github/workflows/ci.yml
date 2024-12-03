@@ -87,5 +87,5 @@ jobs:
 
       - name: Run Integration Tests
         shell: bash
-        run: ./test.sh
+        run: ./test/test.sh
         
