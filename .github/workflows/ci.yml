@@ -90,7 +90,12 @@ jobs:
         run: |
           npm start &
           
-
+      - name: Install Cygwin and Expect
+        run: |
+          choco install cygwin -y
+          choco install cyg-get -y
+          cyg-get expect   
+          
       - name: Run Integration Tests
         shell: bash
         run: |
