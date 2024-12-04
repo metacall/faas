@@ -93,6 +93,6 @@ jobs:
       - name: Run Integration Tests
         shell: bash
         run: |
-          chmod +x ./test/test.sh
+          git update-index --chmod=+x test/test.sh
           ./test/test.sh
         
