@@ -86,9 +86,10 @@ jobs:
           cmd.exe /c "powershell -NoProfile -ExecutionPolicy unrestricted -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))`""
 
       - name: Start Faas Server
+        shell: bash
         run: |
-          npm run start % 
-          timeout /t 30
+          npm start &
+          
 
       - name: Run Integration Tests
         shell: bash
