@@ -185,9 +185,6 @@ function test_nodejs_dependency_app() {
 	[[ $sum_response = 3 ]] || exit 1
 }
 
-
-echo "Integration tests for package deployment passed without errors."
-
 echo "Integration tests for deploy with repo url starts"
 function test_deploy_from_repo() {
 	local repo_url=$1
@@ -196,13 +193,11 @@ function test_deploy_from_repo() {
 
 	echo "Testing Deployment from repository: $repo_url"
 
-	# Deploy the repository using expect to handle the interactive prompts
-	expect <<EOF
-    spawn metacall-deploy --addrepo $repo_url --dev
-    expect "Select a container to get logs"
-    send "Deploy\r"
-    expect eof
-EOF
+	yes | NODE_ENV="testing" METACALL_DEPLOY_INTERACTIVE="0" metacall-deploy --addrepo $repo_url --dev &
+	DEPLOY_PID=$!
+
+	sleep 10
+	kill $DEPLOY_PID 2>/dev/null
 
 	# Get the prefix of the deployment
 	prefix=$(getPrefix $app_name)
@@ -318,7 +313,6 @@ test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "
 test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "auth-middleware-metacall" test_nodejs_dependency_app
 
 echo "Repository deployment tests completed."
-
 
 # Simultaneous deployment tests
 function test_simultaneous_deploy() {
