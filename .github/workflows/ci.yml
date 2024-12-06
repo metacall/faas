@@ -14,14 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
+  ci-ubuntu:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup MetaCall CLI
-        run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
@@ -46,6 +43,9 @@ jobs:
       #   run: |
       #     npm run test
 
+      - name: Setup MetaCall CLI
+        run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+
       - name: Run Integration Tests
         shell: bash
         run: ./test.sh
@@ -56,3 +56,52 @@ jobs:
         with:
           access: 'public'
           token: ${{ secrets.NPM_AUTH_TOKEN }}
+  
+  ci-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: https://registry.npmjs.org
+      
+      - name: Update NPM
+        run: npm install -g npm@latest
+
+      - name: Installing Dependencies
+        run:  npm i
+        
+      - name: Lint
+        run:  npm run lint
+        
+      - name: Build
+        run:  npm run build
+
+      - name: Install metacall Deploy
+        run: npm install -g @metacall/deploy
+      
+      - name: Setup MetaCall CLI
+        run: |
+          cmd.exe /c "powershell -NoProfile -ExecutionPolicy unrestricted -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; &([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/metacall/install/master/install.ps1')))`""
+
+      - name: Start Faas Server
+        shell: bash
+        run: |
+          npm start &
+          
+      - name: Install Cygwin and Expect
+        run: |
+          choco install cygwin -y
+          choco install cyg-get -y
+          cyg-get expect   
+          
+      - name: Run Integration Tests
+        shell: bash
+        run: |
+          git update-index --chmod=+x test/test.sh
+          ./test/test.sh
+        
