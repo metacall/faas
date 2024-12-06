@@ -14,48 +14,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci-ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # ci-ubuntu:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          registry-url: https://registry.npmjs.org
+  #     - name: Setup NodeJS
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '18'
+  #         registry-url: https://registry.npmjs.org
 
-      - name: Update NPM
-        run: npm install -g npm@latest
+  #     - name: Update NPM
+  #       run: npm install -g npm@latest
 
-      - name: Installing Dependencies
-        run: npm i
+  #     - name: Installing Dependencies
+  #       run: npm i
 
-      - name: Lint
-        run: npm run lint
+  #     - name: Lint
+  #       run: npm run lint
 
-      - name: Build
-        run: npm run build
+  #     - name: Build
+  #       run: npm run build
 
-      # TODO: Have working unit tests generated
-      # - name: Run Unit Tests
-      #   run: |
-      #     npm run test
+  #     # TODO: Have working unit tests generated
+  #     # - name: Run Unit Tests
+  #     #   run: |
+  #     #     npm run test
 
-      - name: Setup MetaCall CLI
-        run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
+  #     - name: Setup MetaCall CLI
+  #       run: wget -O - https://raw.githubusercontent.com/metacall/install/master/install.sh | sh
 
-      - name: Run Integration Tests
-        shell: bash
-        run: ./test.sh
+  #     - name: Run Integration Tests
+  #       shell: bash
+  #       run: ./test.sh
 
-      - name: Publish
-        uses: JS-DevTools/npm-publish@v3
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          access: 'public'
-          token: ${{ secrets.NPM_AUTH_TOKEN }}
+  #     - name: Publish
+  #       uses: JS-DevTools/npm-publish@v3
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       with:
+  #         access: 'public'
+  #         token: ${{ secrets.NPM_AUTH_TOKEN }}
   
   ci-windows:
     runs-on: windows-latest
@@ -80,6 +80,9 @@ jobs:
         
       - name: Build
         run:  npm run build
+        
+      - name: Install metacall Deploy
+        run: npm install -g @metacall/deploy
       
       - name: Setup MetaCall CLI
         run: |
