@@ -21,5 +21,3 @@ export class Application {
 }
 
 export const Applications: Record<string, Application> = {};
-
-export const unzipPromises: Record<string, Promise<void>> = {};

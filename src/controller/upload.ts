@@ -56,15 +56,14 @@ export const uploadPackage = (
 		jsons: []
 	};
 
-	let handled = false;
+	let fileResolve: (value?: unknown | PromiseLike<unknown>) => void;
+	const filePromise = new Promise<unknown>(resolve => {
+		fileResolve = resolve;
+	});
 
 	const errorHandler = (error: AppError) => {
-		if (handled === false) {
-			req.unpipe(bb);
-			next(error);
-		}
-
-		handled = true;
+		req.unpipe(bb);
+		next(error);
 	};
 
 	const eventHandler = <T>(type: keyof busboy.BusboyEvents, listener: T) => {
@@ -120,7 +119,9 @@ export const uploadPackage = (
 							// Create the write stream for storing the blob
 							file.pipe(
 								fs.createWriteStream(resource.blob as string)
-							);
+							).on('finish', () => {
+								fileResolve();
+							});
 						})
 						.catch((error: Error) => {
 							errorHandler(
@@ -222,23 +223,23 @@ export const uploadPackage = (
 			});
 		};
 
-		unzipAndResolve()
-			.then(() => {
-				resourceResolve(resource);
-			})
-			.catch(error => {
-				resourceReject(error);
-				errorHandler(error);
-			});
+		void filePromise.then(() => {
+			unzipAndResolve()
+				.then(() => {
+					resourceResolve(resource);
+					res.status(201).json({
+						id: resource.id
+					});
+				})
+				.catch(error => {
+					resourceReject(error);
+					errorHandler(error);
+				});
+		});
 	});
 
 	eventHandler('close', () => {
-		if (handled === false) {
-			res.status(201).json({
-				id: resource.id
-			});
-		}
-		handled = true;
+		// Do nothing
 	});
 
 	req.pipe(bb);

@@ -3,7 +3,7 @@ import { hostname } from 'os';
 
 import AppError from '../utils/appError';
 
-import { Applications, unzipPromises } from '../app';
+import { Applications } from '../app';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
@@ -25,8 +25,6 @@ export const deploy = catchAsync(
 		next: NextFunction
 	) => {
 		try {
-			await unzipPromises[req.body.suffix];
-
 			const application = Applications[req.body.suffix];
 
 			// Check if the application exists and it is stored
@@ -38,8 +36,6 @@ export const deploy = catchAsync(
 			}
 
 			const resource = await application.resource;
-
-			// Wait for the unzipping to complete
 
 			await installDependencies(resource);
 
