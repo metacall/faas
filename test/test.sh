@@ -63,11 +63,13 @@ echo "FaaS ready, starting tests."
 function run_tests() {
 	local app=$1
 	local test_func=$2
+	local delete="${3:-}"
 
 	pushd data/$app
 	deploy
 	prefix=$(getPrefix $app)
 	url=$BASE_URL/$prefix/$app/v1/call
+	echo "$url"
 	$test_func $url
 	popd
 
@@ -85,14 +87,14 @@ function run_tests() {
 
 	# Verify packages are included in the response
 	if [[ $inspect_response != *"packages"* ]]; then
-		echo "packages not found in inspection response."
+		echo "Field packages not found in inspection response."
 		exit 1
 	fi
 
 	echo "Inspection test passed."
 
 	# Call delete functionality
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]] || [[ "$delete" == "true" ]]; then
 		delete_functionality $app $prefix
 	fi
 }
@@ -148,47 +150,52 @@ function test_python_dependency_app() {
 	[[ $(curl -s $url/fetchJoke) == *"setup"* && $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
 }
 
-# Test function for nodejs-base-app
-function test_nodejs_app() {
-	local url=$1
-
-	local response1
-	response1=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["madam"]}' $url/isPalindrome)
-	[[ $response1 == "true" ]] || exit 1
-
-	local response2
-	response2=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["world"]}' $url/isPalindrome)
-	[[ $response2 == "false" ]] || exit 1
-}
-
 # Test function for nodejs-dependency-app
 function test_nodejs_dependency_app() {
 	local url=$1
 
-	local signin_response
-	signin_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"user":"viferga","password":"123"}' $url/signin)
+	# Test signin function
+	local signin_response=$(curl -s -X POST "$url/signin" -H "Content-Type: application/json" -d '{"user":"viferga","password":"123"}')
+	local token=$(echo $signin_response | sed 's/^"\(.*\)"$/\1/')
 
-	local token
-	token=$(echo $signin_response | sed 's/^"\(.*\)"$/\1/')
-
-	if [[ -z "$token" ]]; then
-		echo "Failed to extract token"
+	if [ -z "$token" ]; then
+		echo "Signin test failed for Node.js Dependency App"
 		exit 1
 	fi
 
-	local reverse_response
-	reverse_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"str":"hello"}}' $url/reverse)
-	[[ $reverse_response = '"olleh"' ]] || exit 1
+	# Test reverse function with middleware
+	local reverse_response=$(curl -s -X POST "$url/reverse" -H "Content-Type: application/json" -d "{\"token\":\"$token\",\"args\":{\"str\":\"hello\"}}")
+	if [ "$reverse_response" != '"olleh"' ]; then
+		echo "Reverse function test failed for Node.js Dependency App"
+		exit 1
+	fi
 
-	local sum_response
-	sum_response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"token":"'"$token"'","args":{"a":1,"b":2}}' $url/sum)
-	[[ $sum_response = 3 ]] || exit 1
+	# Test sum function with middleware
+	local sum_response=$(curl -s -X POST "$url/sum" -H "Content-Type: application/json" -d "{\"token\":\"$token\",\"args\":{\"a\":5,\"b\":3}}")
+	if [ "$sum_response" != "8" ]; then
+		echo "Sum function test failed for Node.js Dependency App"
+		exit 1
+	fi
 }
 
+# Test function for nodejs-base-app
+function test_nodejs_app() {
+	local url=$1
+
+	[[ "$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["madam"]}' $url/isPalindrome)" == "true" ]] || exit 1
+	[[ "$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["world"]}' $url/isPalindrome)" == "false" ]] || exit 1
+}
+
+# Run package tests
+echo "Running integration tests for package deployment."
+
+run_tests "nodejs-base-app" test_nodejs_app "true"
+run_tests "python-base-app" test_python_base_app "true"
+run_tests "python-dependency-app" test_python_dependency_app "true"
+run_tests "nodejs-dependency-app" test_nodejs_dependency_app "true"
 
 echo "Integration tests for package deployment passed without errors."
 
-echo "Integration tests for deploy with repo url starts"
 function test_deploy_from_repo() {
 	local repo_url=$1
 	local app_name=$2
@@ -208,29 +215,16 @@ EOF
 	prefix=$(getPrefix $app_name)
 	url=$BASE_URL/$prefix/$app_name/v1/call
 
-	#Run the test function
+	# Run the test function
 	$test_func $url
 
-	#Verify the deployment
+	# Verify the deployment
 	inspect_response=$(curl -s $BASE_URL/api/inspect)
-	if [[$inspect_response != *"$prefix"*]]; then
+	if [[ "$inspect_response" != *"$prefix"* ]]; then
 		echo "Inspection test failed for $app_name."
 		exit 1
 	fi
 	echo "Deployment test passed for $app_name."
-}
-
-function test_nodejs-parameter-example() {
-	local url=$1
-
-	local response1
-	response1=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["madam"]}' $url/isPalindrome)
-	[[ $response1 == "true" ]] || exit 1
-
-	local response2
-	response2=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["world"]}' $url/isPalindrome)
-	[[ $response2 == "false" ]] || exit 1
-	echo "Node.js base app test passed."
 }
 
 function test_python_time_app() {
@@ -272,45 +266,17 @@ function test_python_dependency_metacall() {
 	fi
 }
 
-function test_nodejs_dependency_app() {
-	local url=$1
+# Run repository tests
+echo "Running integration tests for repository deployment."
 
-	echo "Testing Node.js Dependency App at $url"
-
-	# Test signin function
-	local signin_response=$(curl -s -X POST "$url/signin" -H "Content-Type: application/json" -d '{"user":"viferga","password":"123"}')
-	local token=$(echo $signin_response | sed 's/^"\(.*\)"$/\1/')
-
-	if [ -z "$token" ]; then
-		echo "Signin test failed for Node.js Dependency App"
-		exit 1
-	fi
-
-	# Test reverse function with middleware
-	local reverse_response=$(curl -s -X POST "$url/reverse" -H "Content-Type: application/json" -d "{\"token\":\"$token\",\"args\":{\"str\":\"hello\"}}")
-	if [ "$reverse_response" != '"olleh"' ]; then
-		echo "Reverse function test failed for Node.js Dependency App"
-		exit 1
-	fi
-
-	# Test sum function with middleware
-	local sum_response=$(curl -s -X POST "$url/sum" -H "Content-Type: application/json" -d "{\"token\":\"$token\",\"args\":{\"a\":5,\"b\":3}}")
-	if [ "$sum_response" != "8" ]; then
-		echo "Sum function test failed for Node.js Dependency App"
-		exit 1
-	fi
-
-	echo "Node.js Dependency App tests passed"
-}
-
-# without Dependencies
+# Without dependencies
 
 # Test NodeJs app
-test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "nodejs-parameter-example" test_nodejs-parameter-example
+test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "nodejs-parameter-example" test_nodejs_app
 # Test Python app
 test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "metacall-python-example" test_python_time_app
 
-# With Dependencies
+# With dependencies
 
 # Test Python app
 test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "python-dependency-metacall" test_python_dependency_metacall
@@ -318,7 +284,6 @@ test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "
 test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "auth-middleware-metacall" test_nodejs_dependency_app
 
 echo "Repository deployment tests completed."
-
 
 # Simultaneous deployment tests
 function test_simultaneous_deploy() {
@@ -338,17 +303,19 @@ function test_simultaneous_deploy() {
 	run_tests "nodejs-dependency-app" test_nodejs_dependency_app &
 	pids+=($!)
 
+	proc=0
 	for pid in "${pids[@]}"; do
 		if ! wait $pid; then
-			echo "Simultaneous deployment test failed - Test failed"
-			return 1
+			echo "Simultaneous deployment test failed [$proc]: $pid."
 			exit 1
 		fi
+		((++proc))
 	done
-
-	echo "Simultaneous deployment test passed - All tests passed"
-	return 0
 }
 
-echo "Testing simultaneous deployments..."
+# Run concurrent tests
+echo "Running simultaneous deployments test."
+
 test_simultaneous_deploy
+
+echo "Simultaneous deployments test tests completed."

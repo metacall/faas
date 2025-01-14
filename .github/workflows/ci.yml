@@ -41,14 +41,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      # TODO: Have working unit tests generated
-      # - name: Run Unit Tests
-      #   run: |
-      #     npm run test
+      - name: Run Unit Tests
+        shell: bash
+        run: npm run test
 
       - name: Run Integration Tests
-        shell: bash
-        run: ./test.sh
+        run: npm run integration
 
       - name: Publish
         uses: JS-DevTools/npm-publish@v3

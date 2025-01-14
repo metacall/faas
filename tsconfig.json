@@ -5,11 +5,9 @@
 		"target": "ES2019",
 		"module": "CommonJS",
 		"outDir": "dist",
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"types": ["node", "mocha"]
 	},
-	"include": [
-		"types/*.ts",
-		"src/**/*.ts",
-		"test/**/*.js"
-	]
+	"include": ["types/*.ts", "src/**/*.ts", "test/**/*.js"]
 }
