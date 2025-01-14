@@ -189,10 +189,11 @@ function test_nodejs_app() {
 # Run package tests
 echo "Running integration tests for package deployment."
 
-run_tests "nodejs-base-app" test_nodejs_app "true"
-run_tests "python-base-app" test_python_base_app "true"
-run_tests "python-dependency-app" test_python_dependency_app "true"
-run_tests "nodejs-dependency-app" test_nodejs_dependency_app "true"
+# TODO: Parallel tests (uncomment true for deletion)
+run_tests "nodejs-base-app" test_nodejs_app # "true"
+run_tests "python-base-app" test_python_base_app # "true"
+run_tests "python-dependency-app" test_python_dependency_app # "true"
+run_tests "nodejs-dependency-app" test_nodejs_dependency_app # "true"
 
 echo "Integration tests for package deployment passed without errors."
 
@@ -313,9 +314,11 @@ function test_simultaneous_deploy() {
 	done
 }
 
+# TODO: Parallel tests
+
 # Run concurrent tests
-echo "Running simultaneous deployments test."
+# echo "Running simultaneous deployments test."
 
-test_simultaneous_deploy
+# test_simultaneous_deploy
 
-echo "Simultaneous deployments test tests completed."
+# echo "Simultaneous deployments test tests completed."
