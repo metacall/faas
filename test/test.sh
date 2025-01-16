@@ -59,11 +59,14 @@ done
 
 echo "FaaS ready, starting tests."
 
+# Declare arrays to store apps and prefixes globally
+declare -a DEPLOYED_APPS
+declare -a DEPLOYED_PREFIXES
+
 # Function to run tests
 function run_tests() {
 	local app=$1
 	local test_func=$2
-	local delete="${3:-}"
 
 	pushd data/$app
 	deploy
@@ -72,6 +75,11 @@ function run_tests() {
 	echo "$url"
 	$test_func $url
 	popd
+
+	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+		DEPLOYED_APPS+=("$app")
+		DEPLOYED_PREFIXES+=("$prefix")
+	fi
 
 	# Test inspect
 	echo "Testing inspect functionality."
@@ -92,11 +100,6 @@ function run_tests() {
 	fi
 
 	echo "Inspection test passed."
-
-	# Call delete functionality
-	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]] || [[ "$delete" == "true" ]]; then
-		delete_functionality $app $prefix
-	fi
 }
 
 # Function to test delete functionality
@@ -189,11 +192,10 @@ function test_nodejs_app() {
 # Run package tests
 echo "Running integration tests for package deployment."
 
-# TODO: Parallel tests (uncomment true for deletion)
-run_tests "nodejs-base-app" test_nodejs_app # "true"
-run_tests "python-base-app" test_python_base_app # "true"
-run_tests "python-dependency-app" test_python_dependency_app # "true"
-run_tests "nodejs-dependency-app" test_nodejs_dependency_app # "true"
+run_tests "nodejs-base-app" test_nodejs_app
+run_tests "python-base-app" test_python_base_app
+run_tests "python-dependency-app" test_python_dependency_app
+run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 
 echo "Integration tests for package deployment passed without errors."
 
@@ -314,11 +316,16 @@ function test_simultaneous_deploy() {
 	done
 }
 
-# TODO: Parallel tests
-
 # Run concurrent tests
-# echo "Running simultaneous deployments test."
+if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+	echo "Running simultaneous deployments test."
 
-# test_simultaneous_deploy
+	test_simultaneous_deploy
 
-# echo "Simultaneous deployments test tests completed."
+	echo "Simultaneous deployments test tests completed."
+
+	# Delete all deployed apps after tests complete
+	for i in "${!DEPLOYED_APPS[@]}"; do
+		delete_functionality "${DEPLOYED_APPS[$i]}" "${DEPLOYED_PREFIXES[$i]}"
+	done
+fi
