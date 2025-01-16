@@ -76,7 +76,6 @@ function run_tests() {
 	$test_func $url
 	popd
 
-	# Store the app and prefix information for later use
 	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
 		DEPLOYED_APPS+=("$app")
 		DEPLOYED_PREFIXES+=("$prefix")
