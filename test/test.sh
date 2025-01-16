@@ -317,14 +317,14 @@ function test_simultaneous_deploy() {
 }
 
 # Run concurrent tests
-echo "Running simultaneous deployments test."
-
-test_simultaneous_deploy
-
-echo "Simultaneous deployments test tests completed."
-
-# Delete all deployed apps after tests complete
 if [[ "${TEST_FAAS_STARTUP_DEPLOY}" == "true" ]]; then
+	echo "Running simultaneous deployments test."
+
+	test_simultaneous_deploy
+
+	echo "Simultaneous deployments test tests completed."
+
+	# Delete all deployed apps after tests complete
 	for i in "${!DEPLOYED_APPS[@]}"; do
 		delete_functionality "${DEPLOYED_APPS[$i]}" "${DEPLOYED_PREFIXES[$i]}"
 	done
