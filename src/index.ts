@@ -2,6 +2,8 @@
 
 import colors from 'colors';
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
+import path from 'path';
 import { initializeAPI } from './api';
 import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
@@ -20,6 +22,14 @@ void (async (): Promise<void> => {
 		colors.enable();
 
 		await ensureFolderExists(appsDirectory);
+
+		// Clear all deployments
+		if (args.includes('--prune')) {
+			// Delete appsDirectory files
+			for (const file of await fs.readdir(appsDirectory)) {
+				await fs.unlink(path.join(appsDirectory, file));
+			}
+		}
 
 		await autoDeployApps(appsDirectory);
 
