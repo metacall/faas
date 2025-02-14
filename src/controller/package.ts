@@ -43,7 +43,7 @@ const getUploadError = (
 	return new AppError(appError.message, appError.code);
 };
 
-export const uploadPackage = (
+export const packageUpload = (
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -53,7 +53,8 @@ export const uploadPackage = (
 		id: '',
 		type: '',
 		path: '',
-		jsons: []
+		jsons: [],
+		runners: []
 	};
 
 	let fileResolve: (value?: unknown | PromiseLike<unknown>) => void;

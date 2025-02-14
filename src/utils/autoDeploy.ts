@@ -18,7 +18,8 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 	const resources: Resource[] = directories.map(dir => ({
 		id: dir.name,
 		path: path.join(appsDir, dir.name),
-		jsons: []
+		jsons: [],
+		runners: []
 	}));
 
 	await Promise.all(

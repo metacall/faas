@@ -5,7 +5,7 @@ export interface Resource {
 	id: string;
 	path: string;
 	jsons: MetaCallJSON[];
-	runners?: string[];
+	runners: string[];
 	type?: string;
 	blob?: string;
 }

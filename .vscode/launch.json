@@ -12,6 +12,16 @@
 			"program": "${workspaceFolder}/dist/index.js",
 			"preLaunchTask": "npm: buildDebug",
 			"outFiles": ["${workspaceFolder}/dist/**/*.js"]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Launch Clean Program",
+			"skipFiles": ["<node_internals>/**"],
+			"program": "${workspaceFolder}/dist/index.js",
+			"args": ["--prune"],
+			"preLaunchTask": "npm: buildDebug",
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"]
 		}
 	]
 }

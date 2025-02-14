@@ -5,6 +5,7 @@ import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { exec } from '../utils/exec';
+import { findRunners } from '../utils/install';
 import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
@@ -18,19 +19,20 @@ type FetchBranchListBody = {
 	url: string;
 };
 
-const dirName = (gitUrl: string): string =>
+const repositoryName = (gitUrl: string): string =>
 	String(gitUrl.split('/').pop()).replace('.git', '');
 
-const deleteRepoFolderIfExist = async <Path extends string>(
+const repositoryDelete = async <Path extends string>(
 	path: Path,
 	url: string
 ): Promise<void> => {
-	const folder = dirName(url);
+	const folder = repositoryName(url);
 	const repoFilePath = join(path, folder);
 
 	await fs.rm(repoFilePath, { recursive: true, force: true });
 };
 
+/*
 const handleRunners = async (repoPath: string): Promise<string[]> => {
 	const runners: string[] = [];
 	const files = await fs.readdir(repoPath);
@@ -50,69 +52,9 @@ const handleRunners = async (repoPath: string): Promise<string[]> => {
 	}
 	return runners;
 };
+*/
 
-export const fetchFilesFromRepo = catchAsync(
-	async (
-		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
-		res: Response,
-		next: NextFunction
-	) => {
-		const { branch, url } = req.body;
-		const resource: Resource = {
-			id: '',
-			path: '',
-			jsons: [],
-			runners: []
-		};
-
-		try {
-			await deleteRepoFolderIfExist(appsDirectory, url);
-		} catch (err) {
-			return next(
-				new AppError(
-					'error occurred in deleting repository directory',
-					500
-				)
-			);
-		}
-
-		try {
-			// Clone the repository into the specified directory
-			await exec(
-				`git clone --single-branch --depth=1 --branch ${branch} ${url} ${join(
-					appsDirectory,
-					dirName(url)
-				)}`
-			);
-		} catch (err) {
-			return next(
-				new AppError('Error occurred while cloning the repository', 500)
-			);
-		}
-
-		const id = dirName(req.body.url);
-
-		resource.id = id;
-		resource.path = join(appsDirectory, id);
-
-		const detectedRunners = await handleRunners(resource.path);
-		if (detectedRunners.length > 0) {
-			resource.runners = detectedRunners;
-		} else {
-			console.warn('No runners detected');
-		}
-
-		// Create a new Application instance and assign the resource to it
-		const application = new Application();
-		application.resource = Promise.resolve(resource);
-
-		Applications[id] = application;
-
-		return res.status(201).send({ id });
-	}
-);
-
-export const fetchBranchList = catchAsync(
+export const repositoryBranchList = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: FetchBranchListBody },
 		res: Response,
@@ -138,26 +80,29 @@ export const fetchBranchList = catchAsync(
 	}
 );
 
-export const fetchFileList = catchAsync(
+export const repositoryFileList = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
 		res: Response,
 		next: NextFunction
 	) => {
 		const { url, branch } = req.body;
-		const repoDir = dirName(url);
-		const repoPath = `${appsDirectory}/${repoDir}`;
+		const repoDir = repositoryName(url);
+		const repoPath = path.join(appsDirectory, repoDir);
 
 		try {
 			// Delete existing repo folder if it exists
-			await deleteRepoFolderIfExist(appsDirectory, url);
+			await repositoryDelete(appsDirectory, url);
 
 			// Clone the repository
 			await exec(`git clone ${url} ${repoPath} --depth=1 --no-checkout`);
 
 			// List files in the specified branch
 			const { stdout } = await exec(
-				`cd ${repoPath} && git ls-tree -r ${branch} --name-only`
+				`git ls-tree -r ${branch} --name-only`,
+				{
+					cwd: repoPath
+				}
 			);
 
 			const files = stdout.trim().split('\n').filter(Boolean);
@@ -171,5 +116,60 @@ export const fetchFileList = catchAsync(
 				new AppError('Error fetching file list from repository', 500)
 			);
 		}
+	}
+);
+
+export const repositoryClone = catchAsync(
+	async (
+		req: Omit<Request, 'body'> & { body: FetchFilesFromRepoBody },
+		res: Response,
+		next: NextFunction
+	) => {
+		const { branch, url } = req.body;
+		const resource: Resource = {
+			id: '',
+			path: '',
+			jsons: [],
+			runners: []
+		};
+
+		try {
+			await repositoryDelete(appsDirectory, url);
+		} catch (err) {
+			return next(
+				new AppError(
+					'error occurred in deleting repository directory',
+					500
+				)
+			);
+		}
+
+		try {
+			// Clone the repository into the specified directory
+			await exec(
+				`git clone --single-branch --depth=1 --branch ${branch} ${url} ${join(
+					appsDirectory,
+					repositoryName(url)
+				)}`
+			);
+		} catch (err) {
+			return next(
+				new AppError('Error occurred while cloning the repository', 500)
+			);
+		}
+
+		const id = repositoryName(req.body.url);
+
+		resource.id = id;
+		resource.path = join(appsDirectory, id);
+		resource.runners = await findRunners(resource.path);
+
+		// Create a new Application instance and assign the resource to it
+		const application = new Application();
+		application.resource = Promise.resolve(resource);
+
+		Applications[id] = application;
+
+		return res.status(201).send({ id });
 	}
 );

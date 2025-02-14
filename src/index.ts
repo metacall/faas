@@ -27,7 +27,10 @@ void (async (): Promise<void> => {
 		if (args.includes('--prune')) {
 			// Delete appsDirectory files
 			for (const file of await fs.readdir(appsDirectory)) {
-				await fs.unlink(path.join(appsDirectory, file));
+				await fs.rm(path.join(appsDirectory, file), {
+					recursive: true,
+					force: true
+				});
 			}
 		}
 

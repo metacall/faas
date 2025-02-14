@@ -4,13 +4,13 @@ import { deploy } from './controller/deploy';
 import { globalError } from './controller/error';
 import { inspect } from './controller/inspect';
 import { logs } from './controller/logs';
+import { packageUpload } from './controller/package';
 import {
-	fetchBranchList,
-	fetchFileList,
-	fetchFilesFromRepo
+	repositoryBranchList,
+	repositoryClone,
+	repositoryFileList
 } from './controller/repository';
 import { serveStatic } from './controller/static';
-import { uploadPackage } from './controller/upload';
 import { validate } from './controller/validate';
 
 import { hostname } from 'os';
@@ -39,18 +39,17 @@ export function initializeAPI(): Express {
 		serveStatic
 	);
 
-	app.post('/api/package/create', uploadPackage);
-	app.post('/api/repository/add', fetchFilesFromRepo);
+	app.post('/api/package/create', packageUpload);
 
-	app.post('/api/repository/branchlist', fetchBranchList);
-	app.post('/api/repository/filelist', fetchFileList);
-	app.post('/api/deploy/logs', logs);
+	app.post('/api/repository/branchlist', repositoryBranchList);
+	app.post('/api/repository/filelist', repositoryFileList);
+	app.post('/api/repository/add', repositoryClone);
 
 	app.post('/api/deploy/create', deploy);
+	app.post('/api/deploy/logs', logs);
+	app.post('/api/deploy/delete', deployDelete);
 
 	app.get('/api/inspect', inspect);
-
-	app.post('/api/deploy/delete', deployDelete);
 
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {
