@@ -10,8 +10,9 @@
 		"test": "npm run buildDebug && mocha dist/test",
 		"integration": "./test.sh",
 		"prepublishOnly": "npm run build",
-		"buildDebug": "npm run lint && tsc --sourceMap true",
-		"build": "npm run lint && tsc",
+		"buildDebug": "npm run format && npm run fix && tsc --sourceMap true",
+		"build": "npm run format && npm run fix && tsc",
+		"format": "prettier --write .",
 		"lint": "eslint . --max-warnings=0 --ignore-pattern dist",
 		"fix": "eslint . --max-warnings=0 --ignore-pattern dist --fix",
 		"start": "npm run build && node dist/index.js"
