@@ -26,7 +26,8 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		resources.map(resource => {
 			Applications[resource.id] = new Application();
 			Applications[resource.id].resource = Promise.resolve(resource);
-			return deployProcess(resource);
+			// TODO: We should pass the environment variables here
+			return deployProcess(resource, {});
 		})
 	);
 
