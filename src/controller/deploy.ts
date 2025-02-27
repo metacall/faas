@@ -37,9 +37,17 @@ export const deploy = catchAsync(
 
 			const resource = await application.resource;
 
+			const env: Record<string, string> = {};
+			for (const envVar of req.body.env as unknown as {
+				name: string;
+				value: string;
+			}[]) {
+				env[envVar.name] = envVar.value;
+			}
+
 			await installDependencies(resource);
 
-			await deployProcess(resource);
+			await deployProcess(resource, env);
 
 			return res.status(200).json({
 				prefix: hostname(),
