@@ -28,13 +28,13 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 			Applications[resource.id] = new Application();
 			Applications[resource.id].resource = Promise.resolve(resource);
 
-			const envFilePath = path.join(
-				appsDirectory,
-				resource.id,
-				`${resource.id}.env`
-			);
+			const envFilePath = path.join(appsDirectory, resource.id, `.env`);
 			const envFileContent = readFileSync(envFilePath, 'utf-8');
-			const env = JSON.parse(envFileContent) as Record<string, string>;
+			const env = envFileContent.split('\n').reduce((acc, line) => {
+				const [name, value] = line.split('=');
+				acc[name] = value;
+				return acc;
+			}, {} as Record<string, string>);
 
 			return deployProcess(resource, env);
 		})

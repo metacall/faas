@@ -46,13 +46,12 @@ export const deploy = catchAsync(
 			}[]) {
 				env[envVar.name] = envVar.value;
 			}
-			const envFilePath = path.join(
-				appsDirectory,
-				resource.id,
-				`${resource.id}.env`
-			);
+			const envFilePath = path.join(appsDirectory, resource.id, `.env`);
+			const envFileContent = Object.entries(env)
+				.map(([key, value]) => `${key}=${value}`)
+				.join('\n');
 
-			fs.writeFileSync(envFilePath, JSON.stringify(env, null, 2));
+			fs.writeFileSync(envFilePath, envFileContent);
 			await installDependencies(resource);
 
 			await deployProcess(resource, env);
