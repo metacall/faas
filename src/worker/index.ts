@@ -4,6 +4,7 @@ import { Deployment, LanguageId, MetaCallJSON } from '@metacall/protocol';
 import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
 import { promises as fs } from 'fs';
 import {
+	metacall_execution_path,
 	metacall_inspect,
 	metacall_load_from_configuration_export
 } from 'metacall';
@@ -42,17 +43,25 @@ const loadDeployment = (
 	};
 
 	for (const path of jsonPaths) {
-		// Load the json into metacall
 		const fullPath = join(resource.path, path);
+		const json = require(fullPath) as MetaCallJSON;
+
+		if (!json.language_id) {
+			throw new Error(`Field language_id not found in ${fullPath}`);
+		}
+
+		// Load execution path
+		if (metacall_execution_path(json.language_id, fullPath) !== 0) {
+			throw new Error(
+				`Failed to load path ${fullPath} into ${json.language_id} loader`
+			);
+		}
+
+		// Load the json into metacall
 		const exports = metacall_load_from_configuration_export(fullPath);
 
 		// Get the inspect information
 		const inspect = metacall_inspect();
-		const json = require(fullPath);
-
-		if (!json.language_id) {
-			throw new Error(`language_id not found in ${path}`);
-		}
 
 		deployment.packages[json.language_id as LanguageId] =
 			inspect[json.language_id];

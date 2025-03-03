@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// TODO: Remove this file, use metacall as package directly
+
 declare module 'metacall' {
 	export function metacall(name: string, ...args: any): any;
 	export function metacall_await(name: string, ...args: any): any;
+	export function metacall_execution_path(tag: string, path: string): number;
 	export function metacall_inspect(): any;
 	export function metacall_load_from_file(
 		tag: string,
