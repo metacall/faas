@@ -28,7 +28,8 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 			Applications[resource.id] = new Application();
 			Applications[resource.id].resource = Promise.resolve(resource);
 
-			const envFilePath = path.join(appsDirectory, resource.id, `.env`);
+			// Read cached environment variables
+			const envFilePath = path.join(resource.path, `.env`);
 			const envFileContent = readFileSync(envFilePath, 'utf-8');
 			const env = envFileContent.split('\n').reduce((acc, line) => {
 				const [name, value] = line.split('=');
