@@ -1,9 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { hostname } from 'os';
 
-import AppError from '../utils/appError';
-
+import * as fs from 'fs';
+import path from 'path';
 import { Applications } from '../app';
+import AppError from '../utils/appError';
+import { appsDirectory } from '../utils/config';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
@@ -44,7 +46,13 @@ export const deploy = catchAsync(
 			}[]) {
 				env[envVar.name] = envVar.value;
 			}
+			const envFilePath = path.join(
+				appsDirectory,
+				resource.id,
+				`${resource.id}.env`
+			);
 
+			fs.writeFileSync(envFilePath, JSON.stringify(env, null, 2));
 			await installDependencies(resource);
 
 			await deployProcess(resource, env);

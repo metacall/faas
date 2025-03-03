@@ -1,7 +1,8 @@
-import { Dirent } from 'fs';
+import { Dirent, readFileSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
+import { appsDirectory } from '../utils/config';
 import { deployProcess } from './deploy';
 
 export const autoDeployApps = async (appsDir: string): Promise<void> => {
@@ -26,8 +27,16 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		resources.map(resource => {
 			Applications[resource.id] = new Application();
 			Applications[resource.id].resource = Promise.resolve(resource);
-			// TODO: We should pass the environment variables here
-			return deployProcess(resource, {});
+
+			const envFilePath = path.join(
+				appsDirectory,
+				resource.id,
+				`${resource.id}.env`
+			);
+			const envFileContent = readFileSync(envFilePath, 'utf-8');
+			const env = JSON.parse(envFileContent) as Record<string, string>;
+
+			return deployProcess(resource, env);
 		})
 	);
 
