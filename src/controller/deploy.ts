@@ -39,6 +39,7 @@ export const deploy = catchAsync(
 
 			const resource = await application.resource;
 
+			// Store the environment variables for when reloading the FaaS
 			const env: Record<string, string> = {};
 			for (const envVar of req.body.env as unknown as {
 				name: string;
@@ -46,12 +47,13 @@ export const deploy = catchAsync(
 			}[]) {
 				env[envVar.name] = envVar.value;
 			}
-			const envFilePath = path.join(appsDirectory, resource.id, `.env`);
+			const envFilePath = path.join(resource.path, `.env`);
 			const envFileContent = Object.entries(env)
 				.map(([key, value]) => `${key}=${value}`)
 				.join('\n');
 
-			fs.writeFileSync(envFilePath, envFileContent);
+			fs.appendFileSync(envFilePath, envFileContent, 'utf-8');
+
 			await installDependencies(resource);
 
 			await deployProcess(resource, env);
