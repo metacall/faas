@@ -36,14 +36,14 @@ function check_readiness() {
 
 # Get the prefix of a deployment
 function getPrefix() {
-	prefix=$(metacall-deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
+	prefix=$(metacall deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
 	echo $prefix
 }
 
 # Deploy only if we are not testing startup deployments, otherwise the deployments have been loaded already
 function deploy() {
 	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
-		metacall-deploy --dev
+		metacall deploy --dev
 	fi
 }
 
@@ -126,6 +126,9 @@ function delete_functionality() {
 	"nodejs-dependency-app")
 		endpoint="signin"
 		;;
+	"nodejs-env-app")
+		endpoint="env"
+		;;
 	*)
 		echo "Unknown application: $app"
 		exit 1
@@ -150,7 +153,7 @@ function test_python_base_app() {
 # Test function for python-dependency-app
 function test_python_dependency_app() {
 	local url=$1
-	[[ $(curl -s $url/fetchJoke) == *"setup"* && $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
+	[[ $(curl -s $url/fetchJoke) == *"setup"* ]] && [[ $(curl -s $url/fetchJoke) == *"punchline"* ]] || exit 1
 }
 
 # Test function for nodejs-dependency-app
@@ -181,6 +184,12 @@ function test_nodejs_dependency_app() {
 	fi
 }
 
+# Test function for nodejs-env-app
+function test_nodejs_env_app() {
+	local url=$1
+	[[ $(curl -s $url/env) == "\"hello\"" ]] || exit 1
+}
+
 # Test function for nodejs-base-app
 function test_nodejs_app() {
 	local url=$1
@@ -196,6 +205,7 @@ run_tests "nodejs-base-app" test_nodejs_app
 run_tests "python-base-app" test_python_base_app
 run_tests "python-dependency-app" test_python_dependency_app
 run_tests "nodejs-dependency-app" test_nodejs_dependency_app
+run_tests "nodejs-env-app" test_nodejs_env_app
 
 echo "Integration tests for package deployment passed without errors."
 
@@ -208,7 +218,7 @@ function test_deploy_from_repo() {
 
 	# Deploy the repository using expect to handle the interactive prompts
 	expect <<EOF
-    spawn metacall-deploy --addrepo $repo_url --dev
+    spawn metacall deploy --addrepo $repo_url --dev
     expect "Select a container to get logs"
     send "Deploy\r"
     expect eof
