@@ -2,7 +2,6 @@ import { Dirent, readFileSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
-import { appsDirectory } from '../utils/config';
 import { deployProcess } from './deploy';
 
 export const autoDeployApps = async (appsDir: string): Promise<void> => {
