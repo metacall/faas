@@ -36,14 +36,14 @@ function check_readiness() {
 
 # Get the prefix of a deployment
 function getPrefix() {
-	prefix=$(metacall deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
+	prefix=$(metacall-deploy --dev --inspect Raw | jq -r ".[] | select(.suffix == \"$1\") | .prefix")
 	echo $prefix
 }
 
 # Deploy only if we are not testing startup deployments, otherwise the deployments have been loaded already
 function deploy() {
 	if [[ "${TEST_FAAS_STARTUP_DEPLOY}" != "true" ]]; then
-		metacall deploy --dev
+		metacall-deploy --dev
 	fi
 }
 
@@ -218,7 +218,7 @@ function test_deploy_from_repo() {
 
 	# Deploy the repository using expect to handle the interactive prompts
 	expect <<EOF
-    spawn metacall deploy --addrepo $repo_url --dev
+    spawn metacall-deploy --addrepo $repo_url --dev
     expect "Select a container to get logs"
     send "Deploy\r"
     expect eof
