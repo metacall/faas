@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import path from 'path';
 import { Applications } from '../app';
 import AppError from '../utils/appError';
-import { appsDirectory } from '../utils/config';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
