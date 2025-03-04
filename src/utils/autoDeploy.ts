@@ -1,4 +1,4 @@
-import { Dirent } from 'fs';
+import { Dirent, readFileSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
@@ -26,7 +26,17 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		resources.map(resource => {
 			Applications[resource.id] = new Application();
 			Applications[resource.id].resource = Promise.resolve(resource);
-			return deployProcess(resource);
+
+			// Read cached environment variables
+			const envFilePath = path.join(resource.path, `.env`);
+			const envFileContent = readFileSync(envFilePath, 'utf-8');
+			const env = envFileContent.split('\n').reduce((acc, line) => {
+				const [name, value] = line.split('=');
+				acc[name] = value;
+				return acc;
+			}, {} as Record<string, string>);
+
+			return deployProcess(resource, env);
 		})
 	);
 

@@ -6,7 +6,10 @@ import { WorkerMessageType, WorkerMessageUnknown } from '../worker/protocol';
 import { invokeQueue } from './invoke';
 import { logProcessOutput } from './logger';
 
-export const deployProcess = async (resource: Resource): Promise<void> => {
+export const deployProcess = async (
+	resource: Resource,
+	env: Record<string, string>
+): Promise<void> => {
 	// Spawn a new process
 	const desiredPath = path.join(
 		path.resolve(__dirname, '..'),
@@ -15,7 +18,11 @@ export const deployProcess = async (resource: Resource): Promise<void> => {
 	);
 
 	const proc = spawn('metacall', [desiredPath], {
-		stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+		env: {
+			...process.env,
+			...env
+		}
 	});
 
 	// Send load message with the deploy information

@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { hostname } from 'os';
 
-import AppError from '../utils/appError';
-
+import * as fs from 'fs';
+import path from 'path';
 import { Applications } from '../app';
+import AppError from '../utils/appError';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
@@ -37,9 +38,24 @@ export const deploy = catchAsync(
 
 			const resource = await application.resource;
 
+			// Store the environment variables for when reloading the FaaS
+			const env: Record<string, string> = {};
+			for (const envVar of req.body.env as unknown as {
+				name: string;
+				value: string;
+			}[]) {
+				env[envVar.name] = envVar.value;
+			}
+			const envFilePath = path.join(resource.path, `.env`);
+			const envFileContent = Object.entries(env)
+				.map(([key, value]) => `${key}=${value}`)
+				.join('\n');
+
+			fs.appendFileSync(envFilePath, envFileContent, 'utf-8');
+
 			await installDependencies(resource);
 
-			await deployProcess(resource);
+			await deployProcess(resource, env);
 
 			return res.status(200).json({
 				prefix: hostname(),
