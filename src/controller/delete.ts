@@ -44,6 +44,6 @@ export const deployDelete = catchAsync(
 		await rm(appLocation, { recursive: true, force: true });
 
 		// Send response based on whether there was an error during deletion
-		return res.send('Deploy delete succeed!');
+		return res.send('Deploy Delete Succeed');
 	}
 );
