@@ -1,19 +1,24 @@
-import { Dirent, existsSync, readFileSync } from 'fs';
+import { Dirent } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
 
-const readEnvFile = (envFilePath: string): Record<string, string> => {
-	if (!existsSync(envFilePath)) {
-		return {};
+const readEnvFile = async (envFilePath: string): Promise<Record<string, string>> => {
+	try {
+		const envFileContent = await fs.readFile(envFilePath, 'utf-8');
+
+		return envFileContent.split('\n').reduce((acc, line) => {
+			const [name, value] = line.split('=');
+			if (name?.trim()) acc[name.trim()] = (value ?? '').trim();
+			return acc;
+		}, {} as Record<string, string>);
+	} catch (err: any) {
+		if (err.code === 'ENOENT') {
+			return {};
+		}
+		throw err;
 	}
-	const envFileContent = readFileSync(envFilePath, 'utf-8');
-	return envFileContent.split('\n').reduce((acc, line) => {
-		const [name, value] = line.split('=');
-		if (name?.trim()) acc[name.trim()] = (value ?? '').trim();
-		return acc;
-	}, {} as Record<string, string>);
 };
 
 export const autoDeployApps = async (appsDir: string): Promise<void> => {
@@ -40,7 +45,7 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		Applications[resource.id].resource = Promise.resolve(resource);
 
 		const envFilePath = path.join(resource.path, `.env`);
-		const env = readEnvFile(envFilePath);
+		const env = await readEnvFile(envFilePath);
 
 		try {
 			await deployProcess(resource, env);
