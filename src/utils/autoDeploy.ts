@@ -18,7 +18,7 @@ const readEnvFile = async (
 			return acc;
 		}, {} as Record<string, string>);
 	} catch (error: Error) {
-		if (error.code === 'ENOENT') {
+		if (error?.code === 'ENOENT') {
 			return {};
 		}
 		throw error;
