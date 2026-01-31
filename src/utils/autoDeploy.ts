@@ -17,9 +17,12 @@ const readEnvFile = async (
 			}
 			return acc;
 		}, {} as Record<string, string>);
-	} catch (error: Error) {
-		if (error?.code === 'ENOENT') {
-			return {};
+	} catch (err: unknown) {
+		if (err instanceof Error && 'code' in err) {
+			if (err.code === 'ENOENT') {
+				// File does not exist
+				return {};
+			}
 		}
 		throw error;
 	}
