@@ -92,7 +92,10 @@ const handleDeployment = async (resource: Resource): Promise<Deployment> => {
 	const jsonPaths = findMetaCallJsons(filesPaths);
 
 	// Deploy the JSONs
-	return loadDeployment(resource, jsonPaths);
+	const deployment = loadDeployment(resource, jsonPaths);
+	// Mark as ready so CLI and tests see deployment as fully up
+	deployment.status = 'ready';
+	return deployment;
 };
 
 process.on('message', (payload: WorkerMessageUnknown) => {

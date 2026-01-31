@@ -51,6 +51,31 @@ export function initializeAPI(): Express {
 
 	app.get('/api/inspect', inspect);
 
+	app.get(
+		'/api/billing/list-subscriptions',
+		(_req: Request, res: Response) => {
+			return res.status(200).json(['Essential', 'Essential']);
+		}
+	);
+	app.post(
+		'/api/billing/list-subscriptions',
+		(_req: Request, res: Response) => {
+			return res.status(200).json(['Essential', 'Essential']);
+		}
+	);
+	app.get(
+		'/api/billing/list-subscriptions-deploys',
+		(_req: Request, res: Response) => {
+			return res.status(200).json([]);
+		}
+	);
+	app.post(
+		'/api/billing/list-subscriptions-deploys',
+		(_req: Request, res: Response) => {
+			return res.status(200).json([]);
+		}
+	);
+
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {
 		next(
