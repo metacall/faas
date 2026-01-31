@@ -5,7 +5,7 @@ import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
 
 const readEnvFile = async (
-	envFilePath: string,
+	envFilePath: string
 ): Promise<Record<string, string>> => {
 	try {
 		const envFileContent = await fs.readFile(envFilePath, 'utf-8');
