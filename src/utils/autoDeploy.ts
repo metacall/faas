@@ -17,15 +17,10 @@ const readEnvFile = async (
 			}
 			return acc;
 		}, {} as Record<string, string>);
-	} catch (error: unknown) {
-		if (
-			error instanceof Error &&
-			'code' in error &&
-			error.code === 'ENOENT'
-		) {
+	} catch (error: Error) {
+		if (error.code === 'ENOENT') {
 			return {};
 		}
-
 		throw error;
 	}
 };
