@@ -4,20 +4,29 @@ import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
 
-const readEnvFile = async (envFilePath: string): Promise<Record<string, string>> => {
+const readEnvFile = async (
+	envFilePath: string,
+): Promise<Record<string, string>> => {
 	try {
 		const envFileContent = await fs.readFile(envFilePath, 'utf-8');
 
 		return envFileContent.split('\n').reduce((acc, line) => {
 			const [name, value] = line.split('=');
-			if (name?.trim()) acc[name.trim()] = (value ?? '').trim();
+			if (name?.trim()) {
+				acc[name.trim()] = (value ?? '').trim();
+			}
 			return acc;
 		}, {} as Record<string, string>);
-	} catch (err: any) {
-		if (err.code === 'ENOENT') {
+	} catch (error: unknown) {
+		if (
+			error instanceof Error &&
+			'code' in error &&
+			error.code === 'ENOENT'
+		) {
 			return {};
 		}
-		throw err;
+
+		throw error;
 	}
 };
 
