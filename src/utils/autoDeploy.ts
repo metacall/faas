@@ -4,6 +4,9 @@ import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
 
+const isErrnoException = (err: unknown): err is NodeJS.ErrnoException =>
+	err instanceof Error && 'code' in err;
+
 const readEnvFile = async (
 	envFilePath: string
 ): Promise<Record<string, string>> => {
@@ -18,13 +21,10 @@ const readEnvFile = async (
 			return acc;
 		}, {} as Record<string, string>);
 	} catch (err: unknown) {
-		if (err instanceof Error && 'code' in err) {
-			if (err.code === 'ENOENT') {
-				// File does not exist
-				return {};
-			}
+		if (isErrnoException(err) && err.code === 'ENOENT') {
+			return {};
 		}
-		throw error;
+		throw err;
 	}
 };
 
