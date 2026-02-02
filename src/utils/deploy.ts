@@ -6,6 +6,12 @@ import { WorkerMessageType, WorkerMessageUnknown } from '../worker/protocol';
 import { invokeQueue } from './invoke';
 import { logProcessOutput } from './logger';
 
+/**
+ * Spawns a metacall worker process to deploy the given resource.
+ *
+ * NOTE: This function is responsible only for reporting success/failure.
+ * Cleanup of Applications entries on failure is handled by autoDeploy.ts.
+ */
 export const deployProcess = async (
 	resource: Resource,
 	env: Record<string, string>
@@ -25,22 +31,42 @@ export const deployProcess = async (
 		}
 	});
 
-	// Send load message with the deploy information
-	proc.send({
-		type: WorkerMessageType.Load,
-		data: resource
-	});
-
-	// Pipe the stdout and stderr to the logger
-	logProcessOutput(proc, resource.id);
-
-	// Wait for load result
+	// Setup promise for deployment result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
 
 	const promise = new Promise<void>((resolve, reject) => {
 		deployResolve = resolve;
 		deployReject = reject;
+	});
+
+	// Prevents multiple promise settlements (handles error+exit race, and reject-after-resolve)
+	let settled = false;
+	const safeResolve = (): void => {
+		if (settled) return;
+		settled = true;
+		deployResolve();
+	};
+	const safeReject = (error: Error): void => {
+		if (settled) return;
+		settled = true;
+		deployReject(error);
+	};
+
+	// Handle spawn errors (e.g., metacall not found in PATH)
+	proc.on('error', (err: NodeJS.ErrnoException) => {
+		if (err.code === 'ENOENT') {
+			safeReject(
+				new Error(
+					`Failed to spawn metacall: executable not found in PATH. ` +
+						`Ensure MetaCall is installed and accessible via 'metacall' command.`
+				)
+			);
+		} else {
+			safeReject(
+				new Error(`Failed to spawn metacall worker: ${err.message}`)
+			);
+		}
 	});
 
 	proc.on('message', (payload: WorkerMessageUnknown) => {
@@ -52,7 +78,7 @@ export const deployProcess = async (
 
 				application.proc = proc;
 				application.deployment = deployment;
-				deployResolve();
+				safeResolve();
 				break;
 			}
 
@@ -75,21 +101,24 @@ export const deployProcess = async (
 	});
 
 	proc.on('exit', code => {
-		// The application may have been ended unexpectedly,
-		// probably segmentation fault (exit code 139 in Linux)
-		deployReject(
+		// Only reject if not already settled (handles normal exit after success)
+		safeReject(
 			new Error(
 				`Deployment '${resource.id}' process exited with code: ${
 					code || 'unknown'
 				}`
 			)
 		);
-
-		// TODO: How to implement the exit properly? We cannot reject easily
-		// the promise from the call if the process exits during the call.
-		// Also if exits during the call it will try to call deployReject
-		// which is completely out of scope and the promise was fullfilled already
 	});
+
+	// Handlers must be attached before sending load message to avoid race conditions
+	proc.send({
+		type: WorkerMessageType.Load,
+		data: resource
+	});
+
+	// Pipe the stdout and stderr to the logger
+	logProcessOutput(proc, resource.id);
 
 	return promise;
 };

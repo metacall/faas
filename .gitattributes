@@ -1,0 +1,10 @@
+# Handle line endings automatically for files detected as text
+* text=auto
+
+# Force shell scripts to always use LF line endings (required for Docker/Linux)
+*.sh text eol=lf
+test.sh text eol=lf
+
+# Force batch files to use CRLF (Windows)
+*.bat text eol=crlf
+*.cmd text eol=crlf

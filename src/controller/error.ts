@@ -12,11 +12,13 @@ export const globalError = (
 
 	if (process.env.NODE_ENV === 'development') {
 		console.log(
-			`Status Code: ${err.statusCode}\nStatus: ${err.status}\n${
-				err.stack || ''
+			`Status Code: ${err.statusCode}\nStatus: ${err.status}\n${err.stack || ''
 			}`
 		);
 	}
 
-	return res.status(err.statusCode).send(err.message);
+	return res.status(err.statusCode).json({
+		status: err.status,
+		message: err.message
+	});
 };

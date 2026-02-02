@@ -8,6 +8,7 @@ import { initializeAPI } from './api';
 import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
 import { ensureFolderExists } from './utils/filesystem';
+import { checkMetacallInstallation } from './utils/metacallCheck';
 import { printVersionAndExit } from './utils/version';
 
 // Initialize the FaaS
@@ -20,6 +21,15 @@ void (async (): Promise<void> => {
 
 		dotenv.config();
 		colors.enable();
+
+		// Validate metacall is available (early warning only - won't block startup)
+		const metacallCheck = await checkMetacallInstallation();
+		if (!metacallCheck.available) {
+			console.warn(
+				'Warning: MetaCall CLI not found in PATH. Deployments will fail until it is installed.'
+					.yellow
+			);
+		}
 
 		await ensureFolderExists(appsDirectory);
 
