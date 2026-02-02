@@ -19,8 +19,12 @@ type FetchBranchListBody = {
 	url: string;
 };
 
-const repositoryName = (gitUrl: string): string =>
-	String(gitUrl.split('/').pop()).replace('.git', '');
+const repositoryName = (url: string): string =>
+	url
+		.replace(/\.git$/, '')
+		.split('/')
+		.slice(-2)
+		.join('-');
 
 const repositoryDelete = async <Path extends string>(
 	path: Path,

@@ -4,6 +4,7 @@ import { Deployment, LanguageId, MetaCallJSON } from '@metacall/protocol';
 import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
 import { promises as fs } from 'fs';
 import {
+	metacall_execution_path,
 	metacall_inspect,
 	metacall_load_from_configuration_export
 } from 'metacall';
@@ -41,25 +42,35 @@ const loadDeployment = (
 		ports: []
 	};
 
-	for (const path of jsonPaths) {
+	const configurations = jsonPaths.map(path => {
 		const jsonPath = join(resource.path, path);
-		const json = require(jsonPath) as MetaCallJSON;
+		return {
+			path: jsonPath,
+			json: require(jsonPath) as MetaCallJSON
+		};
+	});
 
+	const languages = new Set(
+		configurations.map(({ json }) => json.language_id)
+	);
+
+	// Load resource path for each language
+	for (const tag of languages) {
+		metacall_execution_path(tag, resource.path);
+	}
+
+	for (const { path, json } of configurations) {
 		if (!json.language_id) {
-			throw new Error(`Field language_id not found in ${jsonPath}`);
+			throw new Error(`Field language_id not found in ${path}`);
 		}
 
-		// TODO: Not working, this is required for python to work properly
-		// const executionPath = join(resource.path, json.path);
-		// // Load execution path
-		// if (metacall_execution_path(json.language_id, executionPath) !== 0) {
-		// 	throw new Error(
-		// 		`Failed to load path '${executionPath}' into '${json.language_id}' loader`
-		// 	);
-		// }
+		// Load execution path for each json
+		const executionPath = join(resource.path, json.path);
+
+		metacall_execution_path(json.language_id, executionPath);
 
 		// Load the json into metacall
-		const exports = metacall_load_from_configuration_export(jsonPath);
+		const exports = metacall_load_from_configuration_export(path);
 
 		// Get the inspect information
 		const inspect = metacall_inspect();
@@ -93,8 +104,10 @@ const handleDeployment = async (resource: Resource): Promise<Deployment> => {
 
 	// Deploy the JSONs
 	const deployment = loadDeployment(resource, jsonPaths);
+
 	// Mark as ready so CLI and tests see deployment as fully up
 	deployment.status = 'ready';
+
 	return deployment;
 };
 
