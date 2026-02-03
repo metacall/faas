@@ -285,16 +285,16 @@ echo "Running integration tests for repository deployment."
 # Without dependencies
 
 # Test NodeJs app
-test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "nodejs-parameter-example" test_nodejs_app
+test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "heemansu-nodejs-parameter-example" test_nodejs_app
 # Test Python app
-test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "metacall-python-example" test_python_time_app
+test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "heemansu-metacall-python-example" test_python_time_app
 
 # With dependencies
 
 # Test Python app
-test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "python-dependency-metacall" test_python_dependency_metacall
+test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "heemansu-python-dependency-metacall" test_python_dependency_metacall
 #Test NodeJs app
-test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "auth-middleware-metacall" test_nodejs_dependency_app
+test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "heemansu-auth-middleware-metacall" test_nodejs_dependency_app
 
 echo "Repository deployment tests completed."
 
