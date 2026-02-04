@@ -24,7 +24,8 @@ const repositoryName = (url: string): string =>
 		.replace(/\.git$/, '')
 		.split('/')
 		.slice(-2)
-		.join('-');
+		.join('-')
+		.toLowerCase();
 
 const repositoryDelete = async <Path extends string>(
 	path: Path,

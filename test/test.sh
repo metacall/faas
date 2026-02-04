@@ -20,8 +20,8 @@
 
 set -exuo pipefail
 
-# Maximum number of retries
-MAX_RETRIES=5
+# Maximum number of retries (higher for TEST_FAAS_STARTUP_DEPLOY when FaaS loads prior deployments)
+MAX_RETRIES=30
 RETRY_COUNT=0
 
 # FaaS base URL
@@ -224,8 +224,18 @@ function test_deploy_from_repo() {
     expect eof
 EOF
 
-	# Get the prefix of the deployment
+	# Get the prefix of the deployment (retry a few times in case FaaS is still loading)
 	prefix=$(getPrefix $app_name)
+	local retries=0
+	while [[ -z "$prefix" && $retries -lt 10 ]]; do
+		sleep 2
+		prefix=$(getPrefix $app_name)
+		retries=$((retries + 1))
+	done
+	if [[ -z "$prefix" ]]; then
+		echo "Failed to get prefix for $app_name after retries."
+		exit 1
+	fi
 	url=$BASE_URL/$prefix/$app_name/v1/call
 
 	# Run the test function
