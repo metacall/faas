@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 
-describe('TODO', function () {
-	it('Implement unit testing for the components needed', () => {
-		assert.strictEqual([1, 2, 3].indexOf(4), -1);
+describe('test scaffold', () => {
+	it('basic sanity check', () => {
+		assert.equal(1 + 1, 2);
 	});
 });
