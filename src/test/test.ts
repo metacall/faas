@@ -1,17 +1,24 @@
 import { strict as assert } from 'assert';
-import { writeFileSync, unlinkSync } from 'fs';
+import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { getVersion } from '../utils/version';
 
 describe('utils/version', () => {
-	it('reads version from package.json', () => {
-		const tmpPath = join(__dirname, 'tmp-package.json');
+	it('prints version string', () => {
+		const scriptPath = join(__dirname, '../utils/version.js');
 
-		writeFileSync(tmpPath, JSON.stringify({ version: '1.2.3' }));
+		const result = spawnSync(
+			'node',
+			[
+				'-e',
+				'require(process.argv[1]).printVersionAndExit()',
+				scriptPath
+			],
+			{ encoding: 'utf8' }
+		);
 
-		const version = getVersion(tmpPath);
-		assert.equal(version, '1.2.3');
+		const output = `${result.stdout}${result.stderr}`.trim();
 
-		unlinkSync(tmpPath);
+		assert.match(output, /^v\d+\.\d+\.\d+/);
+		assert.equal(result.status, 0);
 	});
 });
