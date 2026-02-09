@@ -1,19 +1,16 @@
 /**
- * Helpers for FaaS integration tests.
- * Uses fetch (no axios). Base URL is e.g. http://localhost:9000
+ * FaaS integration test helpers (fetch only).
+ * Same API as protocol faasTestHelpers; re-export from protocol once that version is published.
+ * getDeployment returns the full deployment object (use .prefix, .suffix, .version).
  */
 
 import type { Deployment } from '@metacall/protocol';
 
 const defaultMaxRetries = 30;
 const defaultRetryIntervalMs = 1000;
-const defaultPrefixRetries = 10;
-const defaultPrefixIntervalMs = 2000;
+const defaultGetDeploymentRetries = 10;
+const defaultGetDeploymentIntervalMs = 2000;
 
-/**
- * Poll GET /readiness until 200 or max retries.
- * If the first attempt fails with a connection error, throws a hint to start the FaaS.
- */
 export async function waitForReadiness(
 	baseUrl: string,
 	maxRetries = defaultMaxRetries,
@@ -34,7 +31,6 @@ export async function waitForReadiness(
 					`Cannot reach FaaS at ${url}. Start it first (e.g. "npm start" in another terminal), then run "npm run integration:ts".`
 				);
 			}
-			// Re-throw on last attempt
 			if (i === maxRetries - 1) throw err;
 		}
 		await new Promise(r => setTimeout(r, intervalMs));
@@ -42,9 +38,6 @@ export async function waitForReadiness(
 	throw new Error(`Readiness check failed after ${maxRetries} retries.`);
 }
 
-/**
- * GET /api/inspect and return deployments.
- */
 export async function getDeployments(baseUrl: string): Promise<Deployment[]> {
 	const url = `${baseUrl.replace(/\/$/, '')}/api/inspect`;
 	const res = await fetch(url);
@@ -53,31 +46,25 @@ export async function getDeployments(baseUrl: string): Promise<Deployment[]> {
 	return (await res.json()) as Deployment[];
 }
 
-/**
- * Get prefix for a deployment by suffix. Retries until found or max retries.
- */
-export async function getPrefix(
+/** Returns the full deployment object for a given suffix (use .prefix, .suffix, .version). */
+export async function getDeployment(
 	baseUrl: string,
 	suffix: string,
-	maxRetries = defaultPrefixRetries,
-	intervalMs = defaultPrefixIntervalMs
-): Promise<string> {
+	maxRetries = defaultGetDeploymentRetries,
+	intervalMs = defaultGetDeploymentIntervalMs
+): Promise<Deployment> {
 	const base = baseUrl.replace(/\/$/, '');
 	for (let i = 0; i < maxRetries; i++) {
 		const deployments = await getDeployments(base);
 		const dep = deployments.find(d => d.suffix === suffix);
-		if (dep?.prefix) return dep.prefix;
+		if (dep) return dep;
 		await new Promise(r => setTimeout(r, intervalMs));
 	}
 	throw new Error(
-		`Failed to get prefix for ${suffix} after ${maxRetries} retries.`
+		`Failed to get deployment for suffix "${suffix}" after ${maxRetries} retries.`
 	);
 }
 
-/**
- * Call a deployed function: POST to /prefix/suffix/version/call/funcName with args as JSON body.
- * Returns parsed JSON response body.
- */
 export async function callFunction(
 	baseUrl: string,
 	prefix: string,
