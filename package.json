@@ -7,7 +7,7 @@
 		"metacall-faas": "dist/index.js"
 	},
 	"scripts": {
-		"test": "npm run buildDebug && mocha dist/test",
+		"test": "npm run buildDebug && mocha dist/src/test dist/test",
 		"integration": "./test.sh",
 		"integration:ts": "mocha --require ts-node/register 'test/integration/**/*.spec.ts'",
 		"prepublishOnly": "npm run build",
