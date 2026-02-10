@@ -17,7 +17,7 @@
 #	limitations under the License.
 #
 
-# Use linux/amd64 so MetaCall install script succeeds (it does not support aarch64 and falls back to Docker, which is not available in-build)
+# TODO: Remove --platform=linux/amd64 once we add support to it in metacall/distributable-linux
 FROM --platform=linux/amd64 node:20-bookworm-slim AS base
 
 # Image descriptor
