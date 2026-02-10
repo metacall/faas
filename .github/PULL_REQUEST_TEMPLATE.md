@@ -1,8 +1,3 @@
-<!--
-Basic PR template for this repository. Keep it concise and include required sections
-so the CI can validate or maintainers can review quickly.
--->
-
 ## Summary
 A short description of what this PR changes and why.
 
@@ -26,7 +21,6 @@ Steps to reproduce or verify the change locally:
 - [ ] I have read the contributing guidelines
 - [ ] I added tests that prove my fix is effective or that my feature works
 - [ ] I updated documentation if necessary
-- [ ] I updated CHANGELOG.md (if applicable)
 
 ## Notes for reviewers
 Any additional context for the reviewer, design decisions, or tradeoffs.
