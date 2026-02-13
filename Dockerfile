@@ -17,7 +17,8 @@
 #	limitations under the License.
 #
 
-FROM node:20-bookworm-slim AS base
+# TODO: Remove --platform=linux/amd64 once we add support to it in metacall/distributable-linux
+FROM --platform=linux/amd64 node:20-bookworm-slim AS base
 
 # Image descriptor
 LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \

@@ -26,7 +26,7 @@ export function initializeAPI(): Express {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 
-	app.get('/readiness', (_req: Request, res: Response) =>
+	app.get('/api/readiness', (_req: Request, res: Response) =>
 		res.sendStatus(200)
 	);
 	app.get('/validate', validate);
@@ -50,6 +50,31 @@ export function initializeAPI(): Express {
 	app.post('/api/deploy/delete', deployDelete);
 
 	app.get('/api/inspect', inspect);
+
+	app.get(
+		'/api/billing/list-subscriptions',
+		(_req: Request, res: Response) => {
+			return res.status(200).json(['Essential', 'Essential']);
+		}
+	);
+	app.post(
+		'/api/billing/list-subscriptions',
+		(_req: Request, res: Response) => {
+			return res.status(200).json(['Essential', 'Essential']);
+		}
+	);
+	app.get(
+		'/api/billing/list-subscriptions-deploys',
+		(_req: Request, res: Response) => {
+			return res.status(200).json([]);
+		}
+	);
+	app.post(
+		'/api/billing/list-subscriptions-deploys',
+		(_req: Request, res: Response) => {
+			return res.status(200).json([]);
+		}
+	);
 
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {

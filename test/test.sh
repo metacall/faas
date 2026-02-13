@@ -20,8 +20,8 @@
 
 set -exuo pipefail
 
-# Maximum number of retries
-MAX_RETRIES=5
+# Maximum number of retries (higher for TEST_FAAS_STARTUP_DEPLOY when FaaS loads prior deployments)
+MAX_RETRIES=30
 RETRY_COUNT=0
 
 # FaaS base URL
@@ -30,7 +30,7 @@ BASE_URL="http://localhost:9000"
 # Function to check readiness
 function check_readiness() {
 	local status_code
-	status_code=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/readiness)
+	status_code=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/readiness)
 	echo "$status_code"
 }
 
@@ -224,8 +224,18 @@ function test_deploy_from_repo() {
     expect eof
 EOF
 
-	# Get the prefix of the deployment
+	# Get the prefix of the deployment (retry a few times in case FaaS is still loading)
 	prefix=$(getPrefix $app_name)
+	local retries=0
+	while [[ -z "$prefix" && $retries -lt 10 ]]; do
+		sleep 2
+		prefix=$(getPrefix $app_name)
+		retries=$((retries + 1))
+	done
+	if [[ -z "$prefix" ]]; then
+		echo "Failed to get prefix for $app_name after retries."
+		exit 1
+	fi
 	url=$BASE_URL/$prefix/$app_name/v1/call
 
 	# Run the test function
@@ -285,16 +295,16 @@ echo "Running integration tests for repository deployment."
 # Without dependencies
 
 # Test NodeJs app
-test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "nodejs-parameter-example" test_nodejs_app
+test_deploy_from_repo "https://github.com/HeeManSu/nodejs-parameter-example" "heemansu-nodejs-parameter-example" test_nodejs_app
 # Test Python app
-test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "metacall-python-example" test_python_time_app
+test_deploy_from_repo "https://github.com/HeeManSu/metacall-python-example" "heemansu-metacall-python-example" test_python_time_app
 
 # With dependencies
 
 # Test Python app
-test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "python-dependency-metacall" test_python_dependency_metacall
+test_deploy_from_repo "https://github.com/HeeManSu/python-dependency-metacall" "heemansu-python-dependency-metacall" test_python_dependency_metacall
 #Test NodeJs app
-test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "auth-middleware-metacall" test_nodejs_dependency_app
+test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "heemansu-auth-middleware-metacall" test_nodejs_dependency_app
 
 echo "Repository deployment tests completed."
 

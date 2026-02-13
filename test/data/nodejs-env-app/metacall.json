@@ -1,7 +1,5 @@
 {
 	"language_id": "node",
 	"path": ".",
-	"scripts": [
-		"env.js"
-	]
+	"scripts": ["env.js"]
 }

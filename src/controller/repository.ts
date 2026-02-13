@@ -19,8 +19,13 @@ type FetchBranchListBody = {
 	url: string;
 };
 
-const repositoryName = (gitUrl: string): string =>
-	String(gitUrl.split('/').pop()).replace('.git', '');
+const repositoryName = (url: string): string =>
+	url
+		.replace(/\.git$/, '')
+		.split('/')
+		.slice(-2)
+		.join('-')
+		.toLowerCase();
 
 const repositoryDelete = async <Path extends string>(
 	path: Path,
@@ -75,7 +80,8 @@ export const repositoryBranchList = catchAsync(
 
 			return res.status(200).json({ branches });
 		} catch (err) {
-			next(new AppError('Error fetching branch list', 500));
+			const message = err instanceof Error ? err.message : String(err);
+			next(new AppError(`Error fetching branch list: ${message}`, 500));
 		}
 	}
 );
@@ -94,8 +100,10 @@ export const repositoryFileList = catchAsync(
 			// Delete existing repo folder if it exists
 			await repositoryDelete(appsDirectory, url);
 
-			// Clone the repository
-			await exec(`git clone ${url} ${repoPath} --depth=1 --no-checkout`);
+			// Clone the repository with the requested branch so ls-tree can resolve it
+			await exec(
+				`git clone --depth=1 --no-checkout --branch ${branch} ${url} ${repoPath}`
+			);
 
 			// List files in the specified branch
 			const { stdout } = await exec(
@@ -112,8 +120,12 @@ export const repositoryFileList = catchAsync(
 
 			return res.status(200).json({ files });
 		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
 			return next(
-				new AppError('Error fetching file list from repository', 500)
+				new AppError(
+					`Error fetching file list from repository: ${message}`,
+					500
+				)
 			);
 		}
 	}
@@ -136,9 +148,10 @@ export const repositoryClone = catchAsync(
 		try {
 			await repositoryDelete(appsDirectory, url);
 		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
 			return next(
 				new AppError(
-					'error occurred in deleting repository directory',
+					`Error deleting repository directory: ${message}`,
 					500
 				)
 			);
@@ -153,8 +166,9 @@ export const repositoryClone = catchAsync(
 				)}`
 			);
 		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
 			return next(
-				new AppError('Error occurred while cloning the repository', 500)
+				new AppError(`Error cloning repository: ${message}`, 500)
 			);
 		}
 
