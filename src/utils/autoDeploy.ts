@@ -1,4 +1,4 @@
-﻿import { Dirent } from 'fs';
+import { Dirent } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
