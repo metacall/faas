@@ -59,6 +59,9 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 			succeeded++;
 		} catch (err) {
 			delete Applications[resource.id];
+			// Log the failure but keep the files in cache.
+			// This allows the server to start successfully and lets the user
+			// fix their environment/app without losing their deployed files.
 			// eslint-disable-next-line no-console
 			console.warn(
 				`Failed to load app "${resource.id}":`,

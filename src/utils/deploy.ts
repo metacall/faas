@@ -43,6 +43,10 @@ export const deployProcess = async (
 		deployReject = reject;
 	});
 
+	proc.on('error', (err: Error) => {
+		deployReject(err);
+	});
+
 	proc.on('message', (payload: WorkerMessageUnknown) => {
 		switch (payload.type) {
 			case WorkerMessageType.MetaData: {
