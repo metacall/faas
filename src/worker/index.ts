@@ -6,7 +6,8 @@ import { promises as fs } from 'fs';
 import {
 	metacall_execution_path,
 	metacall_inspect,
-	metacall_load_from_configuration_export
+	metacall_load_from_configuration,
+	metacallfms
 } from 'metacall';
 import { hostname } from 'os';
 import { join } from 'path';
@@ -16,8 +17,6 @@ import {
 	WorkerMessageType,
 	WorkerMessageUnknown
 } from './protocol';
-
-const functions: Record<string, (...args: any[]) => any> = {};
 
 const createMetacallJsonFiles = async (
 	path: string,
@@ -69,19 +68,14 @@ const loadDeployment = (
 
 		metacall_execution_path(json.language_id, executionPath);
 
-		// Load the json into metacall
-		const exports = metacall_load_from_configuration_export(path);
+		// Load the json into metacall (registers functions globally)
+		metacall_load_from_configuration(path);
 
 		// Get the inspect information
 		const inspect = metacall_inspect();
 
 		deployment.packages[json.language_id as LanguageId] =
 			inspect[json.language_id];
-
-		// Store the functions
-		Object.keys(exports).forEach(func => {
-			functions[func] = exports[func];
-		});
 	}
 
 	return deployment;
@@ -138,15 +132,16 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 				payload as WorkerMessage<{
 					id: string;
 					name: string;
-					args: unknown[];
+					args: string;
 				}>
 			).data;
 			if (process.send) {
+				const result = metacallfms(fn.name, fn.args);
 				process.send({
 					type: WorkerMessageType.InvokeResult,
 					data: {
 						id: fn.id,
-						result: functions[fn.name](...fn.args)
+						result
 					}
 				});
 			}
