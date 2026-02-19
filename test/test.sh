@@ -198,10 +198,41 @@ function test_nodejs_app() {
 	[[ "$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["world"]}' $url/isPalindrome)" == "false" ]] || exit 1
 }
 
+# Test for POST request fix
+function test_post_request_fix() {
+	local url=$1
+
+	echo "Testing POST request fix"
+
+	local status_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST --data 'aaa' $url/isPalindrome)
+	if [ "$status_code" != "400" ]; then
+		echo "FAIL: POST with invalid Content-Type should return 400, got $status_code"
+		exit 1
+	fi
+	echo "PASS: Invalid Content-Type returns 400"
+
+	local readiness=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/readiness)
+	if [ "$readiness" != "200" ]; then
+		echo "FAIL: Server should stay alive after rejecting invalid request"
+		exit 1
+	fi
+	echo "PASS: Server stays alive after invalid request"
+
+	local result=$(curl -s -X POST -H "Content-Type: application/json" -d '{"params":["racecar"]}' $url/isPalindrome)
+	if [ "$result" != "true" ]; then
+		echo "FAIL: Valid JSON POST should return true, got $result"
+		exit 1
+	fi
+	echo "PASS: Valid JSON POST works correctly"
+
+	echo "All POST request fix tests passed"
+}
+
 # Run package tests
 echo "Running integration tests for package deployment."
 
 run_tests "nodejs-base-app" test_nodejs_app
+run_tests "nodejs-base-app" test_post_request_fix
 run_tests "python-base-app" test_python_base_app
 run_tests "python-dependency-app" test_python_dependency_app
 run_tests "nodejs-dependency-app" test_nodejs_dependency_app
