@@ -141,15 +141,36 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 					args: unknown[];
 				}>
 			).data;
-			if (process.send) {
-				process.send({
-					type: WorkerMessageType.InvokeResult,
-					data: {
-						id: fn.id,
-						result: functions[fn.name](...fn.args)
+
+			void (async () => {
+				try {
+					const result = await functions[fn.name](...fn.args);
+					if (process.send) {
+						process.send({
+							type: WorkerMessageType.InvokeResult,
+							data: {
+								id: fn.id,
+								result: result
+							}
+						});
 					}
-				});
-			}
+				} catch (err) {
+					// We must inform the master about the error or handle it gracefully.
+					// Since there wasn't an explicit InvokeError type, we'll mimic the old
+					// behavior but at least prevent the worker from crashing silently.
+					console.error(`Error executing function ${fn.name}:`, err);
+					if (process.send) {
+						process.send({
+							type: WorkerMessageType.InvokeResult,
+							data: {
+								id: fn.id,
+								result: { error: String(err) }
+							}
+						});
+					}
+				}
+			})();
+
 			break;
 		}
 
