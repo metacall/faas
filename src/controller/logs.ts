@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const logFilePath = path.join(__dirname, '../../logs/');
+import { logsDirectory } from '../utils/config';
+
 const logFileName = 'app.log';
-const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
+const logFileFullPath = path.resolve(path.join(logsDirectory, logFileName));
 
 export const logs = (req: Request, res: Response): Response => {
 	const { suffix } = req.body as { suffix?: string };

@@ -2,6 +2,8 @@ import { ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { logsDirectory } from './config';
+
 interface LogMessage {
 	deploymentName: string;
 	workerPID: number;
@@ -26,9 +28,8 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 // Tracks whether a color code is assigned
 const assignedColorCodes: AssignedColorCodesType = {};
 
-const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
-const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
+const logFileFullPath = path.resolve(path.join(logsDirectory, logFileName));
 
 // TODO: Implement this properly?
 // const maxWorkerWidth = (maxIndexWidth = 3): number => {
@@ -95,8 +96,8 @@ class Logger {
 		const timeStamp = new Date().toISOString();
 		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
 
-		if (!fs.existsSync(logFilePath)) {
-			fs.mkdirSync(logFilePath, { recursive: true });
+		if (!fs.existsSync(logsDirectory)) {
+			fs.mkdirSync(logsDirectory, { recursive: true });
 		}
 		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
