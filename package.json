@@ -106,11 +106,22 @@
 					"@typescript-eslint/no-var-requires": "off",
 					"@typescript-eslint/no-unsafe-return": "off"
 				}
+			},
+			{
+				"files": [
+					"src/test/integration/**/*.ts"
+				],
+				"rules": {
+					"@typescript-eslint/no-unsafe-assignment": "off",
+					"@typescript-eslint/no-unsafe-member-access": "off",
+					"@typescript-eslint/no-unsafe-call": "off",
+					"@typescript-eslint/no-unsafe-return": "off"
+				}
 			}
 		]
 	},
 	"dependencies": {
-		"@metacall/protocol": "^0.1.26",
+		"@metacall/protocol": "^0.1.27",
 		"busboy": "^1.4.0",
 		"colors": "^1.4.0",
 		"dotenv": "^16.0.3",
