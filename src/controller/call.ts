@@ -34,9 +34,7 @@ export const callFunction = (
 	) {
 		return res
 			.status(400)
-			.send(
-				'Content-Type must be application/json for POST requests'
-			);
+			.send('Content-Type must be application/json for POST requests');
 	}
 
 	const body = req.body ? JSON.stringify(req.body) : '{}';
