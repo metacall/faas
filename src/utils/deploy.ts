@@ -16,7 +16,8 @@ export const deployProcess = async (
 		'worker',
 		'index.js'
 	);
-	// prepare the environment variables
+
+	// Prepare the environment variables
 	const envStringified: Record<string, string> = {
 		...(process.env as Record<string, string>)
 	};
@@ -29,9 +30,9 @@ export const deployProcess = async (
 	}
 
 	const proc = spawn('metacall', [desiredPath], {
-		cwd: resource.path, // Fix: Package Resolution
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-		env: envStringified // Fix: Env Variable Injection
+		cwd: resource.path, // Current working directory resolution
+		env: envStringified // Environment variable injection
 	});
 
 	// Send load message with the deploy information
