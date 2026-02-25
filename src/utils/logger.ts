@@ -28,7 +28,7 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 // Tracks whether a color code is assigned
 const assignedColorCodes: AssignedColorCodesType = {};
 
-const logFileName = 'app.log';
+const logFileName = 'faas.log';
 const logFileFullPath = path.resolve(path.join(logsDirectory, logFileName));
 
 // TODO: Implement this properly?
