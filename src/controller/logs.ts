@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import { logsDirectory } from '../utils/config';
 
-const logFileName = 'app.log';
+const logFileName = 'faas.log';
 const logFileFullPath = path.resolve(path.join(logsDirectory, logFileName));
 
 export const logs = (req: Request, res: Response): Response => {

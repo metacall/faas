@@ -74,7 +74,7 @@ class Logger {
 			const logEntry = this.logQueue.shift();
 			if (logEntry) {
 				const { deploymentName, workerPID, message } = logEntry;
-				this.store(deploymentName, message);
+				await this.store(deploymentName, message);
 				this.present(deploymentName, workerPID, message);
 				await new Promise(resolve => setTimeout(resolve, 0));
 			}
@@ -92,15 +92,20 @@ class Logger {
 		this.processQueue().catch(console.error);
 	}
 
-	private async store(deploymentName: string, message: string): Promise<void> {
+	private async store(
+		deploymentName: string,
+		message: string
+	): Promise<void> {
 		const timeStamp = new Date().toISOString();
 		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
-	
+
 		try {
 			await fs.mkdir(logsDirectory, { recursive: true });
-			await fs.appendFile(logFileFullPath, logMessage, { encoding: 'utf-8' });
+			await fs.appendFile(logFileFullPath, logMessage, {
+				encoding: 'utf-8'
+			});
 		} catch (error) {
-			console.error("Failed to write log:", error);
+			console.error('Failed to write log:', error);
 		}
 	}
 
