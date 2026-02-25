@@ -28,4 +28,5 @@ declare module 'metacall' {
 	export function metacall_logs(): void;
 	export function metacall_load_from_configuration(path: string): any;
 	export function metacall_load_from_configuration_export(path: string): any;
+	export function metacallfms(name: string, buffer: string): any;
 }

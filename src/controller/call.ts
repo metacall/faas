@@ -26,7 +26,18 @@ export const callFunction = (
 	}
 
 	const { suffix, func } = req.params;
-	const args = Object.values(req.body);
+
+	if (
+		req.method === 'POST' &&
+		req.headers['content-type'] &&
+		!req.headers['content-type'].includes('application/json')
+	) {
+		return res
+			.status(400)
+			.send('Content-Type must be application/json for POST requests');
+	}
+
+	const body = req.body ? JSON.stringify(req.body) : '{}';
 	const application = Applications[suffix];
 
 	// Check if the application exists and it is running
@@ -52,7 +63,7 @@ export const callFunction = (
 				}
 			}),
 			name: func,
-			args
+			args: body
 		}
 	});
 };
