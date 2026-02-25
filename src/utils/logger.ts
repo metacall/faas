@@ -1,5 +1,5 @@
 import { ChildProcess } from 'child_process';
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 
 import { logsDirectory } from './config';
@@ -92,14 +92,16 @@ class Logger {
 		this.processQueue().catch(console.error);
 	}
 
-	private store(deploymentName: string, message: string): void {
+	private async store(deploymentName: string, message: string): Promise<void> {
 		const timeStamp = new Date().toISOString();
 		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
-
-		if (!fs.existsSync(logsDirectory)) {
-			fs.mkdirSync(logsDirectory, { recursive: true });
+	
+		try {
+			await fs.mkdir(logsDirectory, { recursive: true });
+			await fs.appendFile(logFileFullPath, logMessage, { encoding: 'utf-8' });
+		} catch (error) {
+			console.error("Failed to write log:", error);
 		}
-		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
 
 	private present(
