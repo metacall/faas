@@ -48,7 +48,20 @@ export const packageUpload = (
 	res: Response,
 	next: NextFunction
 ): void => {
-	const bb = busboy({ headers: req.headers });
+	let bb: busboy.Busboy;
+	try {
+		bb = busboy({ headers: req.headers });
+	} catch (e) {
+		return next(
+			new AppError(
+				`Invalid request headers for file upload: ${
+					(e as Error).message
+				}`,
+				400
+			)
+		);
+	}
+
 	const resource: Resource = {
 		id: '',
 		type: '',
@@ -147,9 +160,24 @@ export const packageUpload = (
 		}
 	});
 
+	bb.on('error', (err: Error) => {
+		errorHandler(
+			new AppError(
+				`Failed to parse multipart upload: ${err.message}`,
+				400
+			)
+		);
+	});
+
 	eventHandler('finish', () => {
 		if (resource.blob === undefined) {
 			throw new Error('Invalid file upload, blob path is not defined');
+		}
+
+		if (!resource.id) {
+			throw new Error(
+				'Missing required field: id. The multipart form data may be malformed.'
+			);
 		}
 
 		const deleteBlob = () => {
