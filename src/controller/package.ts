@@ -6,11 +6,14 @@ import busboy from 'busboy';
 import { NextFunction, Request, Response } from 'express';
 import { Extract } from 'unzipper';
 
+import { Runner, Runners } from '@metacall/protocol';
 import { MetaCallJSON } from '@metacall/protocol/deployment';
 import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { ensureFolderExists } from '../utils/filesystem';
+
+const isRunner = (value: string): value is Runner => value in Runners;
 
 const getUploadError = (
 	on: keyof busboy.BusboyEvents,
@@ -73,6 +76,10 @@ export const packageUpload = (
 				const fn = listener as unknown as (...args: unknown[]) => void;
 				fn(...args);
 			} catch (e) {
+				if (e instanceof AppError) {
+					errorHandler(e);
+					return;
+				}
 				errorHandler(getUploadError(type, e as Error));
 			}
 		});
@@ -138,12 +145,33 @@ export const packageUpload = (
 	);
 
 	eventHandler('field', (name: keyof Resource, val: string) => {
-		if (name === 'runners') {
-			resource.runners = JSON.parse(val) as string[];
-		} else if (name === 'jsons') {
-			resource.jsons = JSON.parse(val) as MetaCallJSON[];
-		} else {
-			resource[name] = val;
+		try {
+			if (name === 'runners') {
+				const parsed: unknown = JSON.parse(val);
+
+				if (
+					!Array.isArray(parsed) ||
+					!parsed.every(
+						entry => typeof entry === 'string' && isRunner(entry)
+					)
+				) {
+					throw new AppError(
+						'Invalid runners field, expected Runner[]',
+						400
+					);
+				}
+
+				resource.runners = parsed as Runner[];
+			} else if (name === 'jsons') {
+				resource.jsons = JSON.parse(val) as MetaCallJSON[];
+			} else {
+				resource[name] = val;
+			}
+		} catch (error) {
+			if (error instanceof AppError) {
+				throw error;
+			}
+			throw new AppError('Invalid JSON payload', 400);
 		}
 	});
 

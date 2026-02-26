@@ -1,3 +1,4 @@
+import { Runner } from '@metacall/protocol';
 import { Deployment, MetaCallJSON } from '@metacall/protocol/deployment';
 import { ChildProcess } from 'child_process';
 
@@ -5,7 +6,7 @@ export interface Resource {
 	id: string;
 	path: string;
 	jsons: MetaCallJSON[];
-	runners: string[];
+	runners: Runner[];
 	type?: string;
 	blob?: string;
 }

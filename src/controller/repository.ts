@@ -1,3 +1,4 @@
+import { detectRunners } from '@metacall/protocol';
 import { NextFunction, Request, Response } from 'express';
 import { promises as fs } from 'fs';
 import path, { join } from 'path';
@@ -5,7 +6,6 @@ import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { exec } from '../utils/exec';
-import { findRunners } from '../utils/install';
 import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
@@ -176,7 +176,7 @@ export const repositoryClone = catchAsync(
 
 		resource.id = id;
 		resource.path = join(appsDirectory, id);
-		resource.runners = await findRunners(resource.path);
+		resource.runners = await detectRunners(resource.path);
 
 		// Create a new Application instance and assign the resource to it
 		const application = new Application();
