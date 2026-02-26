@@ -51,7 +51,10 @@ export const deployProcess = async (
 		switch (payload.type) {
 			case WorkerMessageType.MetaData: {
 				// Get the deploy data and store the process and app into our tables
-				const application = Applications[resource.id];
+				const application = Applications[resource.id] as Record<
+					string,
+					unknown
+				>;
 				const deployment = payload.data as Deployment;
 
 				application.proc = proc;
@@ -68,7 +71,9 @@ export const deployProcess = async (
 
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
-				const invoke = invokeQueue.get(invokeResult.id);
+				const invoke = invokeQueue.get(invokeResult.id) as unknown as {
+					resolve: (value: string) => void;
+				};
 				invoke.resolve(JSON.stringify(invokeResult.result));
 				break;
 			}
