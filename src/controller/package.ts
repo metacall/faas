@@ -15,6 +15,41 @@ import { ensureFolderExists } from '../utils/filesystem';
 
 const isRunner = (value: string): value is Runner => value in Runners;
 
+export const parseResourceField = (
+	resource: Resource,
+	name: keyof Resource,
+	val: string
+): void => {
+	try {
+		if (name === 'runners') {
+			const parsed: unknown = JSON.parse(val);
+
+			if (
+				!Array.isArray(parsed) ||
+				!parsed.every(
+					entry => typeof entry === 'string' && isRunner(entry)
+				)
+			) {
+				throw new AppError(
+					'Invalid runners field, expected Runner[]',
+					400
+				);
+			}
+
+			resource.runners = parsed as Runner[];
+		} else if (name === 'jsons') {
+			resource.jsons = JSON.parse(val) as MetaCallJSON[];
+		} else {
+			resource[name] = val;
+		}
+	} catch (error) {
+		if (error instanceof AppError) {
+			throw error;
+		}
+		throw new AppError('Invalid JSON payload', 400);
+	}
+};
+
 const getUploadError = (
 	on: keyof busboy.BusboyEvents,
 	error: Error
@@ -145,34 +180,7 @@ export const packageUpload = (
 	);
 
 	eventHandler('field', (name: keyof Resource, val: string) => {
-		try {
-			if (name === 'runners') {
-				const parsed: unknown = JSON.parse(val);
-
-				if (
-					!Array.isArray(parsed) ||
-					!parsed.every(
-						entry => typeof entry === 'string' && isRunner(entry)
-					)
-				) {
-					throw new AppError(
-						'Invalid runners field, expected Runner[]',
-						400
-					);
-				}
-
-				resource.runners = parsed as Runner[];
-			} else if (name === 'jsons') {
-				resource.jsons = JSON.parse(val) as MetaCallJSON[];
-			} else {
-				resource[name] = val;
-			}
-		} catch (error) {
-			if (error instanceof AppError) {
-				throw error;
-			}
-			throw new AppError('Invalid JSON payload', 400);
-		}
+		parseResourceField(resource, name, val);
 	});
 
 	eventHandler('finish', () => {

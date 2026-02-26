@@ -1,6 +1,9 @@
 import { strict as assert } from 'assert';
 import { ChildProcess, spawn } from 'child_process';
 import path from 'path';
+import { Resource } from '../app';
+import { parseResourceField } from '../controller/package';
+import AppError from '../utils/appError';
 
 // Helper: build the envStringified object the same way deployProcess does.
 // This is a pure-function extraction of the logic we fixed, so we can unit-test
@@ -253,5 +256,50 @@ describe('Fix: Asynchronous Function Execution', function () {
 			['world']
 		);
 		assert.strictEqual(r2.result, false);
+	});
+});
+
+describe('Runner Payload Validation', function () {
+	const makeResource = (): Resource => ({
+		id: 'app-id',
+		type: '',
+		path: '/tmp/app-id',
+		jsons: [],
+		runners: []
+	});
+
+	it('should parse valid protocol runners', () => {
+		const resource = makeResource();
+		parseResourceField(resource, 'runners', '["nodejs","python"]');
+		assert.deepStrictEqual(resource.runners, ['nodejs', 'python']);
+	});
+
+	it('should reject unknown runners with AppError 400', () => {
+		const resource = makeResource();
+		assert.throws(
+			() => parseResourceField(resource, 'runners', '["nodejs","go"]'),
+			error => {
+				assert.ok(error instanceof AppError);
+				assert.strictEqual(error.statusCode, 400);
+				assert.strictEqual(
+					error.message,
+					'Invalid runners field, expected Runner[]'
+				);
+				return true;
+			}
+		);
+	});
+
+	it('should reject malformed runners payload with AppError 400', () => {
+		const resource = makeResource();
+		assert.throws(
+			() => parseResourceField(resource, 'runners', '{bad-json'),
+			error => {
+				assert.ok(error instanceof AppError);
+				assert.strictEqual(error.statusCode, 400);
+				assert.strictEqual(error.message, 'Invalid JSON payload');
+				return true;
+			}
+		);
 	});
 });
