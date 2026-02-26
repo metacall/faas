@@ -15,7 +15,7 @@ export const logs = async (req: Request, res: Response): Promise<Response> => {
 		const deploymentFilter = ` - ${suffix} | `;
 		const filteredLines = allLogs
 			.split('\n')
-			.filter((line) => line.includes(deploymentFilter))
+			.filter(line => line.includes(deploymentFilter))
 			.join('\n');
 
 		return res.send(filteredLines);

@@ -1,6 +1,5 @@
 import { ChildProcess } from 'child_process';
 import { promises as fs } from 'fs';
-import * as path from 'path';
 
 import { logFileFullPath, logsDirectory } from './config';
 
