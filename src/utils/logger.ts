@@ -2,7 +2,7 @@ import { ChildProcess } from 'child_process';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
-import { logsDirectory } from './config';
+import { logFileFullPath, logsDirectory } from './config';
 
 interface LogMessage {
 	deploymentName: string;
@@ -27,9 +27,6 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 
 // Tracks whether a color code is assigned
 const assignedColorCodes: AssignedColorCodesType = {};
-
-const logFileName = 'faas.log';
-const logFileFullPath = path.resolve(path.join(logsDirectory, logFileName));
 
 // TODO: Implement this properly?
 // const maxWorkerWidth = (maxIndexWidth = 3): number => {

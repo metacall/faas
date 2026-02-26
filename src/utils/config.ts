@@ -1,5 +1,5 @@
 import { platform } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 const missing = (name: string): Error =>
 	new Error(`Missing ${name} environment variable! Unable to load config`);
@@ -22,3 +22,5 @@ export const basePath = configDir(join('metacall', 'faas'));
 
 export const appsDirectory = join(basePath, 'apps');
 export const logsDirectory = join(basePath, 'logs');
+export const logFileName = 'faas.log';
+export const logFileFullPath = resolve(join(logsDirectory, logFileName));
