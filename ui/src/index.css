@@ -1,1 +1,110 @@
 @import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-bg: #f5f8f8;
+  --color-surface: #ffffff;
+  --color-card-header: #f8f9fa;
+  --color-elevated: #f1f5f9;
+
+  /* Brand — exact from deploy_wizard HTML */
+  --color-primary: #05b2d1;
+  --color-primary-hover: #039db9;
+  --color-secondary: #1d4ed8;
+
+  /* Text — exact from deploy_wizard HTML */
+  --color-text-primary: #24292e;
+  --color-text-muted: #586069;
+
+  /* Borders */
+  --color-border: #e1e4e8;
+  --color-border-dark: #30363d;
+
+  /* Status */
+  --color-status-ready: #22c55e;
+  --color-status-building: #f59e0b;
+  --color-status-failed: #ef4444;
+
+  /* Log levels */
+  --color-log-info: #05b2d1;
+  --color-log-success: #22c55e;
+  --color-log-warn: #f59e0b;
+  --color-log-error: #ef4444;
+
+  /* Fonts */
+  --font-family-sans: "Inter", system-ui, sans-serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Sharp edges everywhere — exact from HTML references */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+/* Allow only full circles (step indicators, status dots) */
+.rounded-full {
+  border-radius: 9999px !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Underline-only inputs — exact from account_settings HTML */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+  border: none !important;
+  border-bottom: 1px solid var(--color-border-dark) !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  font-family: var(--font-family-sans);
+  color: var(--color-text-primary);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus {
+  border-bottom: 2px solid var(--color-primary) !important;
+  box-shadow: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-elevated);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-elevated);
+}
+
+/* Selection color — from deploy_wizard HTML */
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
+}
