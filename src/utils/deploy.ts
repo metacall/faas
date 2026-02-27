@@ -17,6 +17,18 @@ export const deployProcess = async (
 		'index.js'
 	);
 
+	// Prepare the environment variables
+	const envStringified: Record<string, string> = {
+		...(process.env as Record<string, string>)
+	};
+
+	// Ensure all values are explicitly cast to string to prevent TypeError in spawn
+	if (env) {
+		for (const [key, value] of Object.entries(env)) {
+			envStringified[key] = String(value);
+		}
+	}
+
 	const proc = spawn('metacall', [desiredPath], {
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
 		cwd: resource.path,
@@ -42,6 +54,10 @@ export const deployProcess = async (
 	const promise = new Promise<void>((resolve, reject) => {
 		deployResolve = resolve;
 		deployReject = reject;
+	});
+
+	proc.on('error', (err: Error) => {
+		deployReject(err);
 	});
 
 	proc.on('message', (payload: WorkerMessageUnknown) => {
