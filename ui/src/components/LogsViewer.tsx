@@ -3,10 +3,10 @@ import type { LogEntry } from '@/types';
 
 interface LogsViewerProps {
     logs: LogEntry[];
-    isLive?: boolean;
+    className?: string;
 }
 
-const LEVEL_CLASSES: Record<LogEntry['level'], string> = {
+const LEVEL_CLASS: Record<LogEntry['level'], string> = {
     info: 'text-[--color-log-info]',
     success: 'text-[--color-log-success]',
     warn: 'text-[--color-log-warn]',
@@ -14,38 +14,38 @@ const LEVEL_CLASSES: Record<LogEntry['level'], string> = {
     http: 'text-[--color-text-muted]',
 };
 
-const LEVEL_LABELS: Record<LogEntry['level'], string> = {
-    info: 'INFO',
-    success: 'OK  ',
-    warn: 'WARN',
-    error: 'ERR ',
-    http: 'HTTP',
+const LEVEL_PREFIX: Record<LogEntry['level'], string> = {
+    info: '[INFO]',
+    success: '[OK]  ',
+    warn: '[WARN]',
+    error: '[ERR] ',
+    http: '[HTTP]',
 };
 
-export function LogsViewer({ logs, isLive = false }: LogsViewerProps) {
+export function LogsViewer({ logs, className }: LogsViewerProps) {
+    if (logs.length === 0) {
+        return (
+            <div className={clsx('flex items-center justify-center py-12 bg-[--color-elevated] border border-[--color-border]', className)}>
+                <p className="text-sm text-[--color-text-muted] font-mono">No logs available</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="h-full overflow-y-auto rounded-lg bg-[--color-bg] border border-[--color-border] font-mono text-xs p-4 space-y-0.5">
-            {isLive && (
-                <div className="mb-3 flex items-center gap-2 text-[--color-text-muted]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[--color-log-success] animate-pulse" />
-                    <span>Live</span>
-                </div>
-            )}
-            {logs.length === 0 ? (
-                <p className="text-[--color-text-muted]">No logs available yet.</p>
-            ) : (
-                logs.map((entry, i) => (
+        <div className={clsx('overflow-y-auto bg-[--color-elevated] border border-[--color-border] p-4', className)}>
+            <pre className="text-xs font-mono leading-6 space-y-0">
+                {logs.map((entry, i) => (
                     <div key={i} className="flex gap-3">
                         {entry.timestamp && (
-                            <span className="shrink-0 text-[--color-text-muted]">{entry.timestamp}</span>
+                            <span className="shrink-0 text-[--color-text-muted] select-none">{entry.timestamp}</span>
                         )}
-                        <span className={clsx('shrink-0 font-semibold', LEVEL_CLASSES[entry.level])}>
-                            {LEVEL_LABELS[entry.level]}
+                        <span className={clsx('shrink-0 select-none font-bold', LEVEL_CLASS[entry.level])}>
+                            {LEVEL_PREFIX[entry.level]}
                         </span>
                         <span className="text-[--color-text-primary] break-all">{entry.message}</span>
                     </div>
-                ))
-            )}
+                ))}
+            </pre>
         </div>
     );
 }

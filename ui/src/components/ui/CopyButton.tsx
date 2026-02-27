@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
-import { clsx } from 'clsx';
+import { Check, Copy } from 'lucide-react';
 
 interface CopyButtonProps {
     text: string;
-    className?: string;
 }
 
-export function CopyButton({ text, className }: CopyButtonProps) {
+export function CopyButton({ text }: CopyButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -20,12 +18,9 @@ export function CopyButton({ text, className }: CopyButtonProps) {
         <button
             onClick={handleCopy}
             title="Copy to clipboard"
-            className={clsx(
-                'inline-flex items-center justify-center h-7 w-7 rounded-md border border-[--color-border] text-[--color-text-muted] transition-colors hover:text-[--color-text-primary] hover:bg-[--color-elevated]',
-                className,
-            )}
+            className="p-1 text-[--color-text-muted] hover:text-[--color-primary] transition-colors"
         >
-            {copied ? <Check size={13} className="text-[--color-log-success]" /> : <Copy size={13} />}
+            {copied ? <Check size={13} className="text-[--color-status-ready]" /> : <Copy size={13} />}
         </button>
     );
 }

@@ -1,4 +1,4 @@
-import type { Deployment } from '@metacall/protocol/deployment';
+import type { Deployment } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, ExternalLink } from 'lucide-react';
 import { StatusBadge } from './ui/StatusBadge';
