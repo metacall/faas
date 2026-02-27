@@ -88,16 +88,20 @@ const loadDeployment = (
 };
 
 const handleDeployment = async (resource: Resource): Promise<Deployment> => {
-	// Check if the deploy comes with extra JSONs and store them
+	let jsonPaths: string[];
+
 	if (resource.jsons.length > 0) {
+		// Create metacall-{lang}.json files from the API-provided configuration
 		await createMetacallJsonFiles(resource.path, resource.jsons);
+		// Only load the files we explicitly created to avoid double-loading
+		// a pre-existing metacall.json from the uploaded package (which would
+		// cause MetaCall to report "handle already loaded" for the same scripts)
+		jsonPaths = resource.jsons.map(el => `metacall-${el.language_id}.json`);
+	} else {
+		// No jsons provided: discover metacall JSON files from the package
+		const filesPaths = await findFilesPath(resource.path);
+		jsonPaths = findMetaCallJsons(filesPaths);
 	}
-
-	// List all files except by the ignored ones
-	const filesPaths = await findFilesPath(resource.path);
-
-	// Get the JSONs from the list of files
-	const jsonPaths = findMetaCallJsons(filesPaths);
 
 	// Deploy the JSONs
 	const deployment = loadDeployment(resource, jsonPaths);

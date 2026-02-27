@@ -4,13 +4,15 @@ import { Resource } from '../app';
 import { exec } from './exec';
 
 // TODO: Unify this with metacall/protocol
-const runnerList = ['nodejs', 'python', 'ruby', 'csharp'];
+// 'node' is accepted as an alias for 'nodejs' (MetaCall language_id vs runner name)
+const runnerList = ['node', 'nodejs', 'python', 'ruby', 'csharp'];
 
 // TODO: Unify this with metacall/protocol
 type Runner = typeof runnerList[number];
 
 // TODO: Unify this with metacall/protocol
 const targetFiles: Record<Runner, string> = {
+	node: 'package.json',
 	nodejs: 'package.json',
 	python: 'requirements.txt',
 	ruby: 'Gemfile',
@@ -18,8 +20,9 @@ const targetFiles: Record<Runner, string> = {
 };
 
 const installCommand: Record<Runner, string> = {
-	python: 'metacall pip3 install -r requirements.txt',
+	node: 'metacall npm i',
 	nodejs: 'metacall npm i',
+	python: 'metacall pip3 install -r requirements.txt',
 	ruby: 'metacall bundle install',
 	csharp: 'metacall dotnet restore && metacall dotnet release'
 };
