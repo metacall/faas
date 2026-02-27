@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import DashboardPage from '@/pages/DashboardPage';
+import DeploymentsPage from '@/pages/DeploymentsPage';
+import DeployWizardPage from '@/pages/DeployWizard';
+
+import DeployHubPage from '@/pages/DeployHubPage';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -17,10 +21,11 @@ export default function App() {
       <AppShell>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/deployments" element={<PlaceholderPage title="Deployments" />} />
+          <Route path="/deployments" element={<DeploymentsPage />} />
           <Route path="/deployments/:suffix" element={<PlaceholderPage title="Deployment Detail" />} />
           <Route path="/deployments/:suffix/logs" element={<PlaceholderPage title="Logs" />} />
-          <Route path="/deploy/new" element={<PlaceholderPage title="Deploy New" />} />
+          <Route path="/deploy/new" element={<DeployHubPage />} />
+          <Route path="/deploy/wizard" element={<DeployWizardPage />} />
           <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
         </Routes>
       </AppShell>

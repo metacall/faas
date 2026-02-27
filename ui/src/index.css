@@ -97,7 +97,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus {
-  border-bottom: 2px solid var(--color-primary) !important;
+  border-bottom: 2px solid #3b82f6 !important;
   box-shadow: none !important;
 }
 
