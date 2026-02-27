@@ -1,4 +1,4 @@
-  /* eslint-disable */
+/* eslint-disable */
 
   import { Deployment, LanguageId, MetaCallJSON } from '@metacall/protocol';
   import { findFilesPath, findMetaCallJsons } from '@metacall/protocol/package';
@@ -141,20 +141,6 @@
             args: unknown[];
           }>
         ).data;
-  <<<<<<< Github_Action
-        void Promise.resolve(functions[fn.name](...fn.args))
-          .then(result => {
-            if (process.send) {
-              process.send({
-                type: WorkerMessageType.InvokeResult,
-                data: { id: fn.id, result }
-              });
-            }
-          })
-          .catch(err => {
-            console.error(`Error invoking ${fn.name}:`, err);
-          });
-  =======
 
         void (async () => {
           try {
@@ -185,7 +171,6 @@
           }
         })();
 
-  >>>>>>> master
         break;
       }
 
