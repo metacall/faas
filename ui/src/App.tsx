@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import DashboardPage from '@/pages/DashboardPage';
 import DeploymentsPage from '@/pages/DeploymentsPage';
 import DeployWizardPage from '@/pages/DeployWizard';
+import DeploymentDetailPage from '@/pages/DeploymentDetailPage';
 
 import DeployHubPage from '@/pages/DeployHubPage';
 
@@ -22,7 +23,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/deployments" element={<DeploymentsPage />} />
-          <Route path="/deployments/:suffix" element={<PlaceholderPage title="Deployment Detail" />} />
+          <Route path="/deployments/:suffix" element={<DeploymentDetailPage />} />
           <Route path="/deployments/:suffix/logs" element={<PlaceholderPage title="Logs" />} />
           <Route path="/deploy/new" element={<DeployHubPage />} />
           <Route path="/deploy/wizard" element={<DeployWizardPage />} />

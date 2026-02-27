@@ -117,91 +117,96 @@ export default function DeploymentsPage() {
                 />
             )}
 
-            <div className="flex flex-col gap-6">
+            <div className="flex-grow flex flex-col items-center justify-start p-4 sm:p-8 pt-6 sm:pt-10 bg-slate-50/50 min-h-[calc(100vh-80px)] animate-in fade-in duration-500">
+                <div className="w-full max-w-6xl flex flex-col gap-6 relative">
 
-                {/* Page header */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-lg font-bold text-gray-800">Deployments</h1>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                            {loading ? 'Loading…' : `${deployments.length} total deployment${deployments.length !== 1 ? 's' : ''}`}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="flex items-center gap-1.5 p-2 text-gray-400 border border-gray-200 hover:bg-gray-50 transition-colors"
-                            onClick={refetch}
-                            title="Refresh"
-                        >
-                            <RefreshCw size={14} />
-                        </button>
-                        <button
-                            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 transition-colors"
-                            onClick={() => navigate('/deploy/new')}
-                        >
-                            <Plus size={14} strokeWidth={2.5} />
-                            New Deploy
-                        </button>
-                    </div>
-                </div>
-
-                {/* Error banner */}
-                {error && (
-                    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-red-50 border border-red-200 text-xs text-red-600">
-                        <span>{error}</span>
-                        <button onClick={() => setError(null)}><X size={13} /></button>
-                    </div>
-                )}
-
-                {/* Search and filter row */}
-                <div className="flex flex-wrap items-center gap-3">
-                    {/* Search box */}
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 flex-1 min-w-[200px] max-w-xs">
-                        <Search size={13} className="text-gray-400 shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Search deployments…"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="flex-1 text-xs outline-none bg-transparent placeholder-gray-400 text-gray-700"
-                        />
-                        {search && (
-                            <button onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600">
-                                <X size={12} />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Status filter chips */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        {STATUS_FILTERS.map(f => (
+                    {/* Page header */}
+                    <div className="flex flex-wrap items-end justify-between gap-4 pb-2 border-b-2 border-slate-500">
+                        <div>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Deployments Hub</h1>
+                            <p className="text-sm font-semibold text-gray-500 mt-1">
+                                {loading ? 'Fetching active deployments…' : `Tracking ${deployments.length} running deployment${deployments.length !== 1 ? 's' : ''}`}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
                             <button
-                                key={f.value}
-                                onClick={() => setFilter(f.value)}
-                                className={`px-3 py-1.5 text-xs font-semibold border transition-all ${filter === f.value
-                                        ? 'bg-gray-800 text-white border-gray-800'
-                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700'
-                                    }`}
+                                className="flex items-center justify-center p-2.5 bg-white border border-gray-300 shadow-sm hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.1)] text-gray-600 active:shadow-none active:translate-y-[2px] active:translate-x-[2px] transition-all"
+                                onClick={refetch}
+                                title="Refresh"
                             >
-                                {f.label}
+                                <RefreshCw size={16} />
                             </button>
-                        ))}
+                            <button
+                                className="flex items-center gap-2 px-5 py-2.5 font-bold text-black bg-gray-50 border border-gray-300 shadow-sm hover:bg-gray-600 hover:text-white active:shadow-none active:translate-y-[2px] active:translate-x-[2px] transition-all"
+                                onClick={() => navigate('/deploy/new')}
+                            >
+                                <Plus size={16} strokeWidth={3} />
+                                Mount New
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Table */}
-                {loading ? (
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Spinner size={14} /><span>Fetching deployments…</span>
+                    {/* Error banner */}
+                    {error && (
+                        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-red-50 border-l-4 border-red-500 text-sm font-semibold text-red-700 shadow-sm">
+                            <span>{error}</span>
+                            <button onClick={() => setError(null)} className="hover:bg-red-100 p-1 transition-colors"><X size={16} /></button>
+                        </div>
+                    )}
+
+                    {/* Search and filter row */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        {/* Search box */}
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] flex-1 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                            <Search size={16} className="text-gray-400 shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Search definitions..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="flex-1 text-sm font-medium outline-none bg-transparent placeholder-gray-400 text-slate-800"
+                            />
+                            {search && (
+                                <button onClick={() => setSearch('')} className="text-gray-400 hover:text-slate-700 transition-colors">
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Status filter chips */}
+                        <div className="flex items-center gap-0 overflow-hidden border border-gray-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] bg-white shrink-0">
+                            {STATUS_FILTERS.map((f, i) => (
+                                <button
+                                    key={f.value}
+                                    onClick={() => setFilter(f.value)}
+                                    className={`px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all
+                                        ${i !== 0 ? 'border-l border-gray-200' : ''} 
+                                        ${filter === f.value
+                                            ? 'bg-slate-800 text-white'
+                                            : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-slate-800'
+                                        }`}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                ) : (
-                    <div className="bg-white border border-gray-200">
+
+                    {/* Table Container */}
+                    <div className="bg-white border border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] w-full relative">
+                        {loading && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                <div className="bg-white border border-gray-200 shadow-lg px-4 py-3 flex items-center gap-3 font-semibold text-sm text-slate-700">
+                                    <Spinner size={16} /> Syncing network...
+                                </div>
+                            </div>
+                        )}
                         <DeploymentTable
                             deployments={filtered}
                             onDelete={suffix => setPending(suffix)}
                         />
                     </div>
-                )}
+                </div>
             </div>
         </>
     );

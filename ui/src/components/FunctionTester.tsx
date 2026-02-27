@@ -1,109 +1,140 @@
 import { useState } from 'react';
-import { X, Play, Loader2 } from 'lucide-react';
-import { clsx } from 'clsx';
+import type { Deployment } from '@/types';
 import { api } from '@/api/client';
-import { Button } from './ui/Button';
+import { Spinner } from './ui/Spinner';
 
 interface FunctionTesterProps {
-    functionName: string;
-    suffix: string;
-    prefix: string;
-    isOpen: boolean;
-    onClose: () => void;
+    deployment: Deployment;
 }
 
-type CallMode = 'call' | 'await';
-
-export function FunctionTester({ functionName, suffix, prefix, isOpen, onClose }: FunctionTesterProps) {
-    const [args, setArgs] = useState('[]');
-    const [mode, setMode] = useState<CallMode>('call');
+export function FunctionTester({ deployment }: FunctionTesterProps) {
+    const [selectedFunc, setSelectedFunc] = useState<string | null>(null);
+    const [argsInput, setArgsInput] = useState<string>('[]');
     const [result, setResult] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleRun = async () => {
+    // Flatten all functions from all packages into a single list
+    const allFuncs = Object.entries(deployment.packages ?? {}).flatMap(([lang, handles]) =>
+        handles.flatMap(handle =>
+            handle.scope.funcs.map(f => ({
+                ...f,
+                lang,
+                handleName: handle.name
+            }))
+        )
+    );
+
+    if (allFuncs.length === 0) {
+        return (
+            <div className="bg-white border md:rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 text-sm h-full">
+                No exported functions found in this deployment.
+            </div>
+        );
+    }
+
+    const currentFunc = allFuncs.find(f => f.name === selectedFunc) || allFuncs[0];
+
+    const handleTest = async () => {
+        if (!currentFunc) return;
         setLoading(true);
         setError(null);
         setResult(null);
+
         try {
-            const parsedArgs = JSON.parse(args) as unknown[];
-            const response = await api.call(prefix, suffix, 'v1', functionName, parsedArgs);
-            setResult(JSON.stringify(response, null, 2));
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Call failed');
+            let parsedArgs: unknown[] = [];
+            if (argsInput.trim()) {
+                parsedArgs = JSON.parse(argsInput);
+                if (!Array.isArray(parsedArgs)) {
+                    throw new Error("Arguments must be a valid JSON array.");
+                }
+            }
+
+            const res = await api.call(deployment.prefix, deployment.suffix, deployment.version, currentFunc.name, parsedArgs);
+            setResult(JSON.stringify(res, null, 2));
+        } catch (err: unknown) {
+            setError((err as Error).message || "An unknown error occurred.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <>
-            {isOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
-            )}
-            <div
-                className={clsx(
-                    'fixed inset-y-0 right-0 z-50 w-[420px] flex flex-col bg-[--color-surface] border-l border-[--color-border] transition-transform duration-300',
-                    isOpen ? 'translate-x-0' : 'translate-x-full',
-                )}
-            >
-                <div className="flex items-center justify-between border-b border-[--color-border] px-5 py-4">
+        <div className="bg-white flex flex-col md:flex-row h-full max-h-[700px] overflow-hidden border-l border-gray-200">
+            {/* Function List (Left) */}
+            <div className="w-full md:w-[240px] shrink-0 bg-gray-50/50 flex flex-col border-b md:border-b-0 md:border-r border-gray-200 overflow-y-auto">
+                <div className="p-4 border-b border-gray-200 text-xs font-bold text-slate-800 uppercase tracking-widest bg-white sticky top-0 z-10">
+                    Exported Functions
+                </div>
+                <div className="flex flex-col">
+                    {allFuncs.map(func => {
+                        const isSelected = (selectedFunc || allFuncs[0].name) === func.name;
+                        return (
+                            <button
+                                key={`${func.lang}-${func.handleName}-${func.name}`}
+                                onClick={() => {
+                                    setSelectedFunc(func.name);
+                                    setResult(null);
+                                    setError(null);
+                                }}
+                                className={`text-left px-4 py-3 border-b border-gray-100 transition-colors text-[13px] font-mono truncate
+                                    ${isSelected ? 'bg-blue-50 text-blue-700 font-semibold border-l-2 border-l-blue-500' : 'text-slate-600 hover:bg-white border-l-2 border-l-transparent'}
+                                `}
+                            >
+                                {func.name}()
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Test Panel (Right) */}
+            <div className="flex-1 flex flex-col bg-white">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                     <div>
-                        <p className="text-xs text-[--color-text-muted]">Function Tester</p>
-                        <p className="text-sm font-semibold text-[--color-text-primary] font-mono">{functionName}</p>
+                        <h3 className="text-sm font-bold text-slate-800 font-mono">{currentFunc.name}</h3>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                            Language: <span className="uppercase text-blue-500 font-bold">{currentFunc.lang}</span>
+                        </p>
                     </div>
-                    <button onClick={onClose} className="text-[--color-text-muted] hover:text-[--color-text-primary] transition-colors">
-                        <X size={18} />
-                    </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                    <div>
-                        <div className="mb-2 flex items-center gap-1 rounded-lg border border-[--color-border] p-1 bg-[--color-elevated] w-fit">
-                            {(['call', 'await'] as CallMode[]).map(m => (
-                                <button
-                                    key={m}
-                                    onClick={() => setMode(m)}
-                                    className={clsx(
-                                        'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                                        mode === m ? 'bg-[--color-surface] text-[--color-text-primary] shadow-sm' : 'text-[--color-text-muted] hover:text-[--color-text-primary]',
-                                    )}
-                                >
-                                    {m.charAt(0).toUpperCase() + m.slice(1)}
-                                </button>
-                            ))}
-                        </div>
-                        <label className="block text-xs text-[--color-text-muted] mb-1">Arguments (JSON array)</label>
+                <div className="p-5 flex-grow flex flex-col gap-5 overflow-y-auto bg-gray-50/20">
+                    {/* Arguments Input */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Execute with Payload (JSON Array)</label>
                         <textarea
-                            value={args}
-                            onChange={e => setArgs(e.target.value)}
-                            rows={6}
-                            className="w-full rounded-lg border border-[--color-border] bg-[--color-bg] px-3 py-2 text-xs font-mono text-[--color-text-primary] focus:outline-none focus:border-[--color-primary] resize-none"
-                            placeholder='["arg1", 42, true]'
+                            value={argsInput}
+                            onChange={(e) => setArgsInput(e.target.value)}
+                            placeholder="e.g. [1, 2, &quot;test&quot;]"
+                            className="bg-white border border-gray-300 shadow-inner px-3 py-2.5 font-mono text-xs min-h-[120px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-shadow custom-scrollbar resize-y"
+                            spellCheck={false}
                         />
                     </div>
 
-                    {result !== null && (
-                        <div>
-                            <p className="text-xs text-[--color-text-muted] mb-1">Response</p>
-                            <pre className="rounded-lg bg-[--color-bg] border border-[--color-border] p-3 text-xs font-mono text-[--color-log-success] overflow-x-auto">{result}</pre>
+                    {/* Action */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleTest}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-2 bg-slate-800 text-white text-[13px] font-bold shadow hover:bg-slate-900 transition-colors disabled:opacity-50"
+                        >
+                            {loading ? <Spinner size={14} /> : null}
+                            Run Function
+                        </button>
+                    </div>
+
+                    {/* Output */}
+                    {(result !== null || error !== null) && (
+                        <div className="flex flex-col gap-2 mt-2 animate-in fade-in pt-4 border-t border-gray-200">
+                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Execution Result</label>
+                            <div className={`p-4 font-mono text-xs overflow-x-auto whitespace-pre custom-scrollbar border ${error ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-900 text-green-400 border-slate-800 shadow-inner'}`}>
+                                {error ? error : result}
+                            </div>
                         </div>
                     )}
-
-                    {error && (
-                        <div className="rounded-lg border border-[--color-status-failed]/30 bg-[--color-status-failed]/10 p-3">
-                            <p className="text-xs text-[--color-status-failed] font-mono">{error}</p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="border-t border-[--color-border] p-4">
-                    <Button onClick={handleRun} loading={loading} className="w-full justify-center">
-                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                        Run {mode === 'await' ? '(await)' : ''}
-                    </Button>
                 </div>
             </div>
-        </>
+        </div>
     );
 }

@@ -104,21 +104,20 @@ export default function DeployHubPage() {
                         </div>
                     </label>
                 </div>
-
-                <div className="mt-8 text-center">
-                    <p className="text-xs text-slate-400">
-                        Need help? Check out our <a className="text-[--color-secondary] hover:underline" href="#">documentation</a> or join our <a className="text-[--color-secondary] hover:underline hover:text" href="#">community</a>.
-                    </p>
-                </div>
             </div>
 
             {/* Floating chat icon from the HTML request */}
             <div className="fixed bottom-6 right-6 z-50">
-                <button className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 shadow-lg text-[--color-primary] hover:text-white hover:bg-[--color-primary] transition-all duration-200 group">
+                <button className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 shadow-sm text-[--color-primary] hover:text-blue-500 rounded-full border-1 border-gray-200 transition-all duration-200 group">
                     <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="square" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                 </button>
+            </div>
+            <div className="mt-8 text-center fixed bottom-6 left-6 z-50">
+                <p className="text-xs text-slate-400">
+                    Need help? Check out our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">documentation</a> or join our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">community</a>.
+                </p>
             </div>
         </div>
     );
