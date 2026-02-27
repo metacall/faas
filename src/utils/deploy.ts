@@ -19,6 +19,7 @@ export const deployProcess = async (
 
 	const proc = spawn('metacall', [desiredPath], {
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+		cwd: resource.path,
 		env: {
 			...process.env,
 			...env

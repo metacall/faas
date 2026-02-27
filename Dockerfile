@@ -54,4 +54,4 @@ FROM base AS test
 
 RUN apt-get update \
 	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
-	&& npm install -g @metacall/deploy
+	&& npm install -g @metacall/deploy @metacall/protocol@0.1.26

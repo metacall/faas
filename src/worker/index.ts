@@ -90,7 +90,7 @@ const loadDeployment = (
 const handleDeployment = async (resource: Resource): Promise<Deployment> => {
 	// Check if the deploy comes with extra JSONs and store them
 	if (resource.jsons.length > 0) {
-		const jsonPaths = await createMetacallJsonFiles(
+		await createMetacallJsonFiles(
 			resource.path,
 			resource.jsons
 		);
@@ -141,15 +141,18 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 					args: unknown[];
 				}>
 			).data;
-			if (process.send) {
-				process.send({
-					type: WorkerMessageType.InvokeResult,
-					data: {
-						id: fn.id,
-						result: functions[fn.name](...fn.args)
+			void Promise.resolve(functions[fn.name](...fn.args))
+				.then(result => {
+					if (process.send) {
+						process.send({
+							type: WorkerMessageType.InvokeResult,
+							data: { id: fn.id, result }
+						});
 					}
+				})
+				.catch(err => {
+					console.error(`Error invoking ${fn.name}:`, err);
 				});
-			}
 			break;
 		}
 
