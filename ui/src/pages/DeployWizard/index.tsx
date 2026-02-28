@@ -47,6 +47,7 @@ export default function DeployWizardPage() {
 
     // Local State
     const [deploying, setDeploying] = useState(false);
+    const [deployError, setDeployError] = useState('');
     const [tree, setTree] = useState<TreeNode | null>(null);
     const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
     const [loadingZip, setLoadingZip] = useState(true);
@@ -132,6 +133,7 @@ export default function DeployWizardPage() {
     const handleDeploy = async () => {
         if (!file) return;
         setDeploying(true);
+        setDeployError('');
 
         try {
             // In a real scenario we'd rebuild the zip based on `selectedPaths`,
@@ -148,13 +150,14 @@ export default function DeployWizardPage() {
             navigate('/deployments');
         } catch (error) {
             console.error('Deploy failed', error);
-            alert('Failed to deploy: ' + (error as Error).message);
+            const err = error as { response?: { data?: string }, message?: string };
+            setDeployError(err?.response?.data || err?.message || 'Failed to deploy package.');
         } finally {
             setDeploying(false);
         }
     };
 
-    let nextEnvId = envRows.length > 0 ? Math.max(...envRows.map(r => r.id)) + 1 : 1;
+    const nextEnvId = envRows.length > 0 ? Math.max(...envRows.map(r => r.id)) + 1 : 1;
     const selectedFilesArray = Array.from(selectedPaths);
 
     if (!file) return null;
@@ -282,7 +285,7 @@ export default function DeployWizardPage() {
                                     {envRows.map((row, idx) => (
                                         <div key={row.id} className="flex gap-2 sm:gap-3 items-center group flex-wrap sm:flex-nowrap">
                                             <input
-                                                placeholder="VARIABLE_NAME"
+                                                placeholder="Key"
                                                 value={row.name}
                                                 onChange={e => {
                                                     const newRow = [...envRows];
@@ -293,7 +296,7 @@ export default function DeployWizardPage() {
                                             />
                                             <span className="text-gray-400 font-mono hidden sm:block">=</span>
                                             <input
-                                                placeholder="value"
+                                                placeholder="Value"
                                                 value={row.value}
                                                 onChange={e => {
                                                     const newRow = [...envRows];
@@ -316,7 +319,17 @@ export default function DeployWizardPage() {
                         </div>
 
                         {/* Footer Action */}
-                        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50/80 flex justify-end items-center mt-auto">
+                        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50/80 mt-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex-1 w-full">
+                                {deployError && (
+                                    <div className="p-4 bg-white border border-l-2 border-slate-200 border-l-red-500 text-slate-700 text-[13px] shadow-sm flex items-start gap-3 w-full max-w-[500px]">
+                                        <div className="flex-1">
+                                            <strong className="block font-bold text-red-600 mb-1">Deployment Error</strong>
+                                            {deployError}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <button
                                 onClick={handleDeploy}
                                 disabled={deploying}

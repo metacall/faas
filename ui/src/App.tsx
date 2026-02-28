@@ -1,34 +1,47 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
-import DashboardPage from '@/pages/DashboardPage';
-import DeploymentsPage from '@/pages/DeploymentsPage';
-import DeployWizardPage from '@/pages/DeployWizard';
-import DeploymentDetailPage from '@/pages/DeploymentDetailPage';
+import { Spinner } from '@/components/ui/Spinner';
 
-import DeployHubPage from '@/pages/DeployHubPage';
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const DeploymentsPage = lazy(() => import('@/pages/DeploymentsPage'));
+const DeployWizardPage = lazy(() => import('@/pages/DeployWizard'));
+const DeployRepositoryPage = lazy(() => import('@/pages/DeployRepositoryPage'));
+const DeploymentDetailPage = lazy(() => import('@/pages/DeploymentDetailPage'));
+const LogsViewerPage = lazy(() => import('@/pages/LogsViewerPage'));
+const DeployHubPage = lazy(() => import('@/pages/DeployHubPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const PlanPage = lazy(() => import('@/pages/PlanPage'));
+const ChatPage = lazy(() => import('@/pages/ChatPage'));
 
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold text-[--color-text-primary]">{title}</h2>
-      <p className="text-sm text-[--color-text-muted]">Coming in the next phase.</p>
+// Simple loading fallback
+const PageLoader = () => (
+  <div className="flex-grow flex items-center justify-center min-h-[50vh]">
+    <div className="flex flex-col items-center gap-3">
+      <Spinner size={24} className="text-blue-500" />
+      <span className="text-sm font-medium text-slate-500 animate-pulse tracking-widest uppercase">Loading route...</span>
     </div>
-  );
-}
+  </div>
+);
 
 export default function App() {
   return (
     <BrowserRouter>
       <AppShell>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/deployments" element={<DeploymentsPage />} />
-          <Route path="/deployments/:suffix" element={<DeploymentDetailPage />} />
-          <Route path="/deployments/:suffix/logs" element={<PlaceholderPage title="Logs" />} />
-          <Route path="/deploy/new" element={<DeployHubPage />} />
-          <Route path="/deploy/wizard" element={<DeployWizardPage />} />
-          <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/deployments" element={<DeploymentsPage />} />
+            <Route path="/deployments/:suffix" element={<DeploymentDetailPage />} />
+            <Route path="/deployments/:suffix/logs" element={<LogsViewerPage />} />
+            <Route path="/deploy/new" element={<DeployHubPage />} />
+            <Route path="/deploy/wizard" element={<DeployWizardPage />} />
+            <Route path="/deploy/repository" element={<DeployRepositoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/plans" element={<PlanPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Routes>
+        </Suspense>
       </AppShell>
     </BrowserRouter>
   );

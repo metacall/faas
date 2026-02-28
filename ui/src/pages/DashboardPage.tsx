@@ -8,9 +8,9 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 // Plan styles
 const PLAN_CLASSES: Record<string, { headerBg: string; plusHover: string }> = {
-    'Free Plan': { headerBg: 'bg-blue-500', plusHover: 'hover:bg-blue-500  hover:text-white hover:border-blue-500' },
-    'Essential Plan': { headerBg: 'bg-gray-400', plusHover: 'hover:bg-gray-600  hover:text-white hover:border-gray-600' },
-    'Balanced Plan': { headerBg: 'bg-indigo-500', plusHover: 'hover:bg-indigo-500 hover:text-white hover:border-indigo-500' },
+    'Free Plan': { headerBg: 'bg-gray-500', plusHover: 'hover:bg-gray-500  hover:text-white hover:border-gray-500' },
+    'Essential Plan': { headerBg: 'bg-blue-500', plusHover: 'hover:bg-blue-500  hover:text-white hover:border-blue-500' },
+    'Standard Plan': { headerBg: 'bg-purple-500', plusHover: 'hover:bg-purple-500 hover:text-white hover:border-purple-500' },
     'Premium Plan': { headerBg: 'bg-pink-500', plusHover: 'hover:bg-pink-500  hover:text-white hover:border-pink-500' },
 };
 function getPlanClasses(plan?: string) {
@@ -41,7 +41,7 @@ function NewDeployCard() {
             className="flex flex-col cursor-pointer border border-gray-200 bg-white hover:shadow-sm transition-all"
             onClick={() => navigate('/deploy/new')}
         >
-            <div className="flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-white bg-blue-500">
+            <div className="flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-white bg-gray-500">
                 <span>New Deploy</span>
                 <span className="opacity-80">Free Plan</span>
             </div>
@@ -183,7 +183,7 @@ export default function DashboardPage() {
         (acc, dep) => acc + Object.values(dep.packages ?? {}).reduce(
             (a, handles) => a + handles.reduce((b, h) => b + (h.scope?.funcs?.length ?? 0), 0), 0), 0);
     const emptyCount = deployments.filter(d => !d.suffix || d.status === 'create').length;
-    const placeholderPlans = ['Essential Plan', 'Premium Plan', 'Premium Plan'] as const;
+    const placeholderPlans = ['Essential Plan', 'Standard Plan', 'Premium Plan'] as const;
 
     return (
         <div className="flex flex-col gap-8">

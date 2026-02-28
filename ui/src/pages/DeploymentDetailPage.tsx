@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { RefreshCw, ArrowLeft, Trash2, Box, Cpu } from 'lucide-react';
 import { api } from '@/api/client';
@@ -19,7 +19,7 @@ export default function DeploymentDetailPage() {
     const [deleting, setDeleting] = useState(false);
 
     // Initial Fetch
-    const fetchDeployment = async () => {
+    const fetchDeployment = useCallback(async () => {
         if (!suffix) return;
         setLoading(true);
         setError(null);
@@ -31,11 +31,11 @@ export default function DeploymentDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [suffix]);
 
     useEffect(() => {
         fetchDeployment();
-    }, [suffix]);
+    }, [fetchDeployment]);
 
     const handleDelete = async () => {
         if (!deployment) return;

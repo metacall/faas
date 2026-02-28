@@ -6,7 +6,7 @@
   --color-black: #525252;
   --color-light-black: #686868;
 
-  --color-bg: #f9f9f9;
+  --color-bg: #ffffff;
   /* --c-lighterGrey */
   --color-surface: #ffffff;
   /* --c-white */
@@ -102,25 +102,12 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-elevated);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-grey);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
+  display: none;
 }
 
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-grey) var(--color-elevated);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 ::selection {

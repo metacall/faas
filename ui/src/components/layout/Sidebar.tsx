@@ -8,7 +8,7 @@ const NAV_ITEMS = [
     { to: '/deploy/new', label: 'Deploy New', icon: PlusSquare, end: false },
     { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ];
-
+// we don't have a to implement sidebar items yet
 function MetaCallLogo() {
     return (
         <div className="flex items-center gap-2.5">

@@ -21,7 +21,11 @@ export function EditorView({ selectedFiles, onClear }: { selectedFiles: string[]
                     <button className="px-4 py-2 bg-blue-500 text-white text-[13px] font-semibold flex items-center gap-1">
                         MC-0
                     </button>
-                    <button className="px-3 py-2 text-gray-500 hover:bg-gray-200 transition-colors">
+                    <button
+                        className="px-3 py-2 text-gray-500 hover:bg-gray-200 transition-colors"
+                        onClick={() => alert('Inline file creation is currently under development. Please add files directly to your zip archive before uploading.')}
+                        title="Add file (coming soon)"
+                    >
                         <Plus size={14} />
                     </button>
                 </div>
@@ -51,7 +55,7 @@ export function EditorView({ selectedFiles, onClear }: { selectedFiles: string[]
                             const highlighted = line
                                 .replace(/"([^"]+)"(?=:)/g, '<span class="text-blue-600">"$1"</span>') // keys
                                 .replace(/: "([^"]+)"/g, ': <span class="text-green-600">"$1"</span>') // values
-                                .replace(/    "([^"]+)"/g, '    <span class="text-green-600">"$1"</span>'); // array items
+                                .replace(/ {4}"([^"]+)"/g, '    <span class="text-green-600">"$1"</span>'); // array items
 
                             return <div key={idx} dangerouslySetInnerHTML={{ __html: highlighted || ' ' }} />;
                         })}

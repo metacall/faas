@@ -121,9 +121,9 @@ export default function DeploymentsPage() {
                 <div className="w-full max-w-6xl flex flex-col gap-6 relative">
 
                     {/* Page header */}
-                    <div className="flex flex-wrap items-end justify-between gap-4 pb-2 border-b-2 border-slate-500">
+                    <div className="flex flex-wrap items-end justify-between gap-4 pb-2 border-b-1 border-slate-500">
                         <div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Deployments Hub</h1>
+                            <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Deployments Hub</h1>
                             <p className="text-sm font-semibold text-gray-500 mt-1">
                                 {loading ? 'Fetching active deployments…' : `Tracking ${deployments.length} running deployment${deployments.length !== 1 ? 's' : ''}`}
                             </p>
@@ -157,14 +157,14 @@ export default function DeploymentsPage() {
                     {/* Search and filter row */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         {/* Search box */}
-                        <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] flex-1 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-white flex-1 transition-all">
                             <Search size={16} className="text-gray-400 shrink-0" />
                             <input
                                 type="text"
                                 placeholder="Search definitions..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="flex-1 text-sm font-medium outline-none bg-transparent placeholder-gray-400 text-slate-800"
+                                className="flex-1 text-sm font-medium border-none bg-transparent placeholder-gray-400 text-slate-800"
                             />
                             {search && (
                                 <button onClick={() => setSearch('')} className="text-gray-400 hover:text-slate-700 transition-colors">
@@ -174,7 +174,7 @@ export default function DeploymentsPage() {
                         </div>
 
                         {/* Status filter chips */}
-                        <div className="flex items-center gap-0 overflow-hidden border border-gray-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] bg-white shrink-0">
+                        <div className="flex items-center gap-0 overflow-hidden border border-gray-300 bg-white shrink-0">
                             {STATUS_FILTERS.map((f, i) => (
                                 <button
                                     key={f.value}
@@ -193,7 +193,7 @@ export default function DeploymentsPage() {
                     </div>
 
                     {/* Table Container */}
-                    <div className="bg-white border border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] w-full relative">
+                    <div className="bg-white border border-gray-300 w-full relative">
                         {loading && (
                             <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
                                 <div className="bg-white border border-gray-200 shadow-lg px-4 py-3 flex items-center gap-3 font-semibold text-sm text-slate-700">

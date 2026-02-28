@@ -6,7 +6,7 @@ import { Plans } from '@metacall/protocol/plan';
 export default function DeployHubPage() {
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
-    const [plan] = useState<Plans>(Plans.Essential); // Kept default to Essential for now, UI doesn't show plan selection here anymore
+    const [plan] = useState<Plans>(Plans.Essential);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -17,7 +17,7 @@ export default function DeployHubPage() {
 
     return (
         <div className="flex-grow flex flex-col items-center justify-start p-6 pt-20 relative overflow-hidden animate-in fade-in duration-500 min-h-[calc(100vh-80px)] bg-slate-50/50">
-            {/* Very subtle background glows from the image */}
+
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] right-[10%] w-[500px] h-[500px] bg-[--color-primary]/[0.02] rounded-full blur-[80px]"></div>
                 <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-blue-500/[0.02] rounded-full blur-[80px]"></div>
@@ -32,7 +32,10 @@ export default function DeployHubPage() {
                 {/* Deployment Source Selection */}
                 <div className="grid md:grid-cols-2 gap-8 max-w-[800px] mx-auto w-full">
                     {/* Deploy Repository */}
-                    <button className="text-left group relative flex items-center justify-between sm:block bg-white border border-blue-400 sm:border-gray-900 p-4 sm:p-8 transition-all duration-300 hover:border-blue-500 shadow-sm hover:shadow-md">
+                    <button
+                        onClick={() => navigate('/deploy/repository')}
+                        className="text-left group relative flex items-center justify-between sm:block bg-white border border-blue-400 sm:border-gray-900 p-4 sm:p-8 transition-all duration-300 hover:border-blue-500 shadow-sm hover:shadow-md"
+                    >
                         {/* Mobile left-aligned content */}
                         <div className="flex items-center gap-3 sm:hidden">
                             <h2 className="text-lg font-bold text-blue-500">Deploy Repository</h2>
@@ -104,6 +107,11 @@ export default function DeployHubPage() {
                         </div>
                     </label>
                 </div>
+                <div className="mt-8 text-center fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                    <p className="text-xs text-slate-400">
+                        Need help? Check out our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">documentation</a> or join our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">community</a>.
+                    </p>
+                </div>
             </div>
 
             {/* Floating chat icon from the HTML request */}
@@ -113,11 +121,6 @@ export default function DeployHubPage() {
                         <path strokeLinecap="square" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                 </button>
-            </div>
-            <div className="mt-8 text-center fixed bottom-6 left-6 z-50">
-                <p className="text-xs text-slate-400">
-                    Need help? Check out our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">documentation</a> or join our <a className="text-[--color-secondary] hover:underline hover:text-blue-500" href="update_soon">community</a>.
-                </p>
             </div>
         </div>
     );
