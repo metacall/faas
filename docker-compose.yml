@@ -31,6 +31,7 @@ services:
       - "9000:9000"
     volumes:
       - ./logs:/metacall/logs
+      - faas_apps:/root/.metacall/faas/apps
 
   test:
     image: metacall/faas:test
@@ -49,3 +50,6 @@ services:
       - ./test/integration:/metacall/test/integration
       - ./test/fixtures:/metacall/test/fixtures
     command: npx vitest run --color --reporter verbose --config vitest.integration.config.ts
+
+volumes:
+  faas_apps:

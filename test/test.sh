@@ -46,7 +46,9 @@ echo "[phase 1] normal mode (deploy + repo)"
 ${DOCKER_CMD} up --build --abort-on-container-exit --exit-code-from test test
 
 # Start FaaS again from the same container filesystem (persisted apps on disk).
-${DOCKER_CMD} up -d faas
+# Use --no-recreate so the existing stopped container is started as-is,
+# preserving the deployed apps written to it during phase 1.
+${DOCKER_CMD} up -d --no-recreate faas
 
 echo "[phase 2] startup mode (prefix reuse + concurrent + delete)"
 TEST_FAAS_STARTUP_DEPLOY=true ${DOCKER_CMD} up --abort-on-container-exit --exit-code-from test test
