@@ -53,5 +53,10 @@ CMD ["node", "dist/index.js"]
 FROM base AS test
 
 RUN apt-get update \
-	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
-	&& npm install -g @metacall/deploy
+	&& apt-get install ca-certificates git -y --no-install-recommends
+
+COPY package.json *.tgz ./
+RUN npm install
+
+COPY vitest.integration.config.ts ./
+COPY test/ test/

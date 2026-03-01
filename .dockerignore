@@ -4,3 +4,8 @@
 !package.json
 !package-lock.json
 !tsconfig.json
+!tsconfig.eslint.json
+!test
+!vitest.integration.config.ts
+!*.tgz
+

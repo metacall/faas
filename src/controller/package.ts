@@ -11,6 +11,7 @@ import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { ensureFolderExists } from '../utils/filesystem';
+import { findRunners } from '../utils/install';
 
 const getUploadError = (
 	on: keyof busboy.BusboyEvents,
@@ -226,7 +227,10 @@ export const packageUpload = (
 
 		void filePromise.then(() => {
 			unzipAndResolve()
-				.then(() => {
+				.then(async () => {
+					if (resource.runners.length === 0) {
+						resource.runners = await findRunners(resource.path);
+					}
 					resourceResolve(resource);
 					res.status(201).json({
 						id: resource.id
