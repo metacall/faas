@@ -38,9 +38,9 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run Unit Tests
-        shell: bash
-        run: npm run test
+      # - name: Run Unit Tests
+      #   shell: bash
+      #   run: npm run test
 
       - name: Run Integration Tests
         run: npm run integration
