@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, Applications, Resource } from '../app';
 import { deployProcess } from './deploy';
+import { installDependencies } from './install';
 
 const isErrnoException = (err: unknown): err is NodeJS.ErrnoException =>
 	err instanceof Error && 'code' in err;
@@ -55,6 +56,7 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 		const env = await readEnvFile(envFilePath);
 
 		try {
+			await installDependencies(resource);
 			await deployProcess(resource, env);
 			succeeded++;
 		} catch (err) {

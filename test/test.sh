@@ -51,6 +51,6 @@ ${DOCKER_CMD} up --build --abort-on-container-exit --exit-code-from test test
 ${DOCKER_CMD} up -d --no-recreate faas
 
 echo "[phase 2] startup mode (prefix reuse + concurrent + delete)"
-TEST_FAAS_STARTUP_DEPLOY=true ${DOCKER_CMD} up --abort-on-container-exit --exit-code-from test test
+TEST_FAAS_STARTUP_DEPLOY=true ${DOCKER_CMD} up --no-recreate --abort-on-container-exit --exit-code-from test test
 
 ${DOCKER_CMD} down
