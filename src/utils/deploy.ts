@@ -71,9 +71,7 @@ export const deployProcess = async (
 
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
-				const invoke = invokeQueue.get(invokeResult.id) as unknown as {
-					resolve: (value: string) => void;
-				};
+				const invoke = invokeQueue.get(invokeResult.id);
 				invoke.resolve(JSON.stringify(invokeResult.result));
 				break;
 			}
