@@ -50,6 +50,10 @@ ${DOCKER_CMD} up --build --abort-on-container-exit --exit-code-from test test
 # preserving the deployed apps written to it during phase 1.
 ${DOCKER_CMD} up -d --no-recreate faas
 
+# Remove only the test container so it is recreated fresh with the correct
+# TEST_FAAS_STARTUP_DEPLOY=true env var. The faas container is left running.
+${DOCKER_CMD} rm -f test
+
 echo "[phase 2] startup mode (prefix reuse + concurrent + delete)"
 TEST_FAAS_STARTUP_DEPLOY=true ${DOCKER_CMD} up --no-recreate --abort-on-container-exit --exit-code-from test test
 
