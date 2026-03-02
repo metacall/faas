@@ -2,7 +2,11 @@ import { Deployment } from '@metacall/protocol';
 import { spawn } from 'child_process';
 import path from 'path';
 import { Applications, Resource } from '../app';
-import { WorkerMessageType, WorkerMessageUnknown } from '../worker/protocol';
+import {
+	WorkerMessage,
+	WorkerMessageType,
+	WorkerMessageUnknown
+} from '../worker/protocol';
 import { invokeQueue } from './invoke';
 import { logProcessOutput } from './logger';
 
@@ -56,8 +60,7 @@ export const deployProcess = async (
 					string,
 					unknown
 				>;
-				const deploymentData: unknown = payload.data;
-				const deployment = deploymentData as Deployment;
+				const deployment = (payload as WorkerMessage<Deployment>).data;
 
 				application.proc = proc;
 				application.deployment = deployment;
@@ -66,11 +69,9 @@ export const deployProcess = async (
 			}
 
 			case WorkerMessageType.InvokeResult: {
-				const data: unknown = payload.data;
-				const invokeResult = data as {
-					id: string;
-					result: unknown;
-				};
+				const invokeResult = (
+					payload as WorkerMessage<{ id: string; result: unknown }>
+				).data;
 
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
