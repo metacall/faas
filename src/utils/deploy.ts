@@ -56,7 +56,8 @@ export const deployProcess = async (
 					string,
 					unknown
 				>;
-				const deployment = payload.data as Deployment;
+				const deploymentData: unknown = payload.data;
+				const deployment = deploymentData as Deployment;
 
 				application.proc = proc;
 				application.deployment = deployment;
@@ -65,7 +66,8 @@ export const deployProcess = async (
 			}
 
 			case WorkerMessageType.InvokeResult: {
-				const invokeResult = payload.data as {
+				const data: unknown = payload.data;
+				const invokeResult = data as {
 					id: string;
 					result: unknown;
 				};
