@@ -47,7 +47,8 @@ export const deployProcess = async (
 		deployReject(err);
 	});
 
-	proc.on('message', (payload: WorkerMessageUnknown) => {
+	proc.on('message', (rawPayload: unknown) => {
+		const payload = rawPayload as WorkerMessageUnknown;
 		switch (payload.type) {
 			case WorkerMessageType.MetaData: {
 				// Get the deploy data and store the process and app into our tables
