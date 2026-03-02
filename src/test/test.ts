@@ -15,6 +15,21 @@ import { invokeQueue } from '../utils/invoke';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {};
 
+// Check once at module load whether the metacall binary is on PATH.
+// Integration suites that spawn workers skip themselves when it isn't.
+let _metacallAvailable: boolean | undefined;
+function hasMetacall(): boolean {
+	if (_metacallAvailable === undefined) {
+		try {
+			execSync('which metacall', { stdio: 'pipe' });
+			_metacallAvailable = true;
+		} catch (_e) {
+			_metacallAvailable = false;
+		}
+	}
+	return _metacallAvailable;
+}
+
 // Helper: build the envStringified object the same way deployProcess does.
 function buildEnv(env: Record<string, string>): Record<string, string> {
 	const envStringified: Record<string, string> = {
@@ -549,6 +564,7 @@ describe('Integration: nodejs-base-app', function () {
 	let prefix = '';
 
 	before(function () {
+		if (!hasMetacall()) return this.skip();
 		makeZip(testDir, zipPath);
 	});
 
@@ -660,6 +676,7 @@ describe('Integration: nodejs-env-app', function () {
 	let prefix = '';
 
 	before(function () {
+		if (!hasMetacall()) return this.skip();
 		makeZip(testDir, zipPath);
 	});
 
@@ -739,6 +756,7 @@ describe('Integration: nodejs-dependency-app', function () {
 	let token = '';
 
 	before(function () {
+		if (!hasMetacall()) return this.skip();
 		makeZip(testDir, zipPath);
 	});
 
@@ -874,6 +892,7 @@ describe('Integration: Simultaneous deployments', function () {
 	const prefixes: Record<string, string> = {};
 
 	before(function () {
+		if (!hasMetacall()) return this.skip();
 		for (const a of simApps) {
 			makeZip(a.dir, a.zipPath);
 		}
