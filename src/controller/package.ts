@@ -85,6 +85,13 @@ export const packageUpload = (
 			file: fs.ReadStream,
 			info: { encoding: string; filename: string; mimeType: string }
 		) => {
+			// Attach error handler immediately to prevent unhandled 'error'
+			// event crash when busboy's FileStream emits (e.g. "Unexpected end
+			// of form") before any async setup completes.
+			file.on('error', (err: Error) => {
+				errorHandler(getUploadError('file', err));
+			});
+
 			const { mimeType, filename } = info;
 
 			if (
@@ -241,6 +248,13 @@ export const packageUpload = (
 
 	eventHandler('close', () => {
 		// Do nothing
+	});
+
+	// Busboy (Multipart) itself can emit 'error' (e.g. "Unexpected end of
+	// form") as an unhandled event, crashing the process. Catch it here so
+	// it is routed through errorHandler → next() instead.
+	bb.on('error', (err: Error) => {
+		errorHandler(getUploadError('finish', err));
 	});
 
 	req.pipe(bb);
