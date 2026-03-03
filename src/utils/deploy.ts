@@ -21,12 +21,22 @@ export const deployProcess = async (
 		'index.js'
 	);
 
+	// Prepare the environment variables
+	const envStringified: Record<string, string> = {
+		...(process.env as Record<string, string>)
+	};
+
+	// Ensure all values are explicitly cast to string to prevent TypeError in spawn
+	if (env) {
+		for (const [key, value] of Object.entries(env)) {
+			envStringified[key] = String(value);
+		}
+	}
+
 	const proc = spawn('metacall', [desiredPath], {
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-		env: {
-			...process.env,
-			...env
-		}
+		cwd: resource.path, // Current working directory resolution
+		env: envStringified // Environment variable injection
 	});
 
 	// Send load message with the deploy information
