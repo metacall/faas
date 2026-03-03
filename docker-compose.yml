@@ -20,30 +20,30 @@
 version: '3.7'
 
 services:
-  faas:
-    image: metacall/faas
-    container_name: metacall_faas
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: faas
-    ports:
-      - "9000:9000"
-    volumes:
-      - ./logs:/metacall/logs
+    faas:
+        image: metacall/faas
+        container_name: metacall_faas
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: faas
+        ports:
+            - '9000:9000'
+        volumes:
+            - ./logs:/metacall/logs
 
-  test:
-    image: metacall/faas:test
-    container_name: metacall_faas_test
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
-    environment:
-      TEST_FAAS_STARTUP_DEPLOY: ${TEST_FAAS_STARTUP_DEPLOY:-false}
-    network_mode: host
-    depends_on:
-      - faas
-    volumes:
-      - ./test/:/metacall/
-    command: /metacall/test.sh
+    test:
+        image: metacall/faas:test
+        container_name: metacall_faas_test
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: test
+        environment:
+            TEST_FAAS_STARTUP_DEPLOY: ${TEST_FAAS_STARTUP_DEPLOY:-false}
+        network_mode: host
+        depends_on:
+            - faas
+        volumes:
+            - ./test/:/metacall/
+        command: /metacall/test.sh

@@ -5,12 +5,14 @@ Reimplementation of MetaCall FaaS platform written in TypeScript. This project r
 ### Development
 
 To start the local FaaS backend:
+
 ```sh
 npm install
 npm start
 ```
 
 To start the new local FaaS UI Dashboard:
+
 ```sh
 cd ui
 npm install

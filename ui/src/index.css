@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   /* Real MetaCall production color tokens */
@@ -51,8 +51,8 @@
   --color-border-dark: #30363d;
 
   /* Typography */
-  --font-family-sans: "Myriad Pro", "Trebuchet MS", system-ui, sans-serif;
-  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-family-sans: 'Myriad Pro', 'Trebuchet MS', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* Global resets */
@@ -85,7 +85,7 @@ body {
 }
 
 /* Underline-only inputs */
-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+input:not([type='checkbox']):not([type='radio']):not([type='file']) {
   border: none !important;
   border-bottom: 1px solid var(--color-border) !important;
   background: transparent !important;
@@ -96,7 +96,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
   color: var(--color-text-primary);
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus {
+input:not([type='checkbox']):not([type='radio']):not([type='file']):focus {
   border-bottom: 2px solid #3b82f6 !important;
   box-shadow: none !important;
 }
