@@ -11,16 +11,16 @@ const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const DeploymentsPage = lazy(() => import('@/pages/DeploymentsPage'));
 const DeployWizardPage = lazy(() => import('@/pages/DeployWizard'));
 const DeployRepositoryPage = lazy(() => import('@/pages/DeployRepositoryPage'));
-const DeploymentDetailPage = lazy(() => import('@/pages/DeploymentDetailPage'));
+const DeploymentDetailPage = lazy(() => import('@/pages/DeploymentFunctionPage'));
 const LogsViewerPage = lazy(() => import('@/pages/LogsViewerPage'));
-const DeployHubPage = lazy(() => import('@/pages/DeployHubPage'));
+const DeployHubPage = lazy(() => import('@/pages/DeployPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const PlanPage = lazy(() => import('@/pages/PlanPage'));
 const ChatPage = lazy(() => import('@/pages/ChatPage'));
 
 // Simple loading fallback
 const PageLoader = () => (
-  <div className="flex-grow flex items-center justify-center min-h-[50vh]">
+  <div className="grow flex items-center justify-center min-h-[50vh]">
     <div className="flex flex-col items-center gap-3">
       <Spinner size={24} className="text-blue-500" />
       <span className="text-sm font-medium text-slate-500 animate-pulse tracking-widest uppercase">
@@ -30,9 +30,9 @@ const PageLoader = () => (
   </div>
 );
 
-// ─── Protected Route Guard ────────────────────────────────────────────────────
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('faas_token');
+  const token =
+    localStorage.getItem('faas_token') ?? (import.meta.env.VITE_FAAS_TOKEN as string | undefined);
   if (!token) {
     return <Navigate to="/login" replace />;
   }

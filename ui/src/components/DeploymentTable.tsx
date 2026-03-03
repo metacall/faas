@@ -81,7 +81,7 @@ export function DeploymentTable({ deployments, onDelete }: DeploymentTableProps)
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <code className="max-w-[180px] sm:max-w-[240px] truncate text-[11px] text-gray-500 font-mono bg-gray-50 border border-gray-200 px-1.5 py-0.5 shadow-inner">
+                    <code className="max-w-45 sm:max-w-60 truncate text-[11px] text-gray-500 font-mono bg-gray-50 border border-gray-200 px-1.5 py-0.5 shadow-inner">
                       {endpoint}
                     </code>
                     <CopyButton text={endpoint} />

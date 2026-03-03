@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useDeployments } from '@/hooks/useDeployments';
 import { useServerStatus } from '@/hooks/useServerStatus';
+import { api } from '@/api/client';
 import type { Deployment } from '@/types';
 import {
   Plus,
@@ -10,31 +11,30 @@ import {
   Code2,
   ExternalLink,
   Trash2,
-  CheckCircle2,
-  Clock,
+  Server,
+  Layers,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
-// Plan styles
+// Plan config
 const PLAN_CLASSES: Record<string, { headerBg: string; plusHover: string }> = {
-  'Free Plan': {
-    headerBg: 'bg-gray-500',
-    plusHover: 'hover:bg-gray-500  hover:text-white hover:border-gray-500',
-  },
   'Essential Plan': {
-    headerBg: 'bg-blue-500',
-    plusHover: 'hover:bg-blue-500  hover:text-white hover:border-blue-500',
+    headerBg: 'bg-gradient-to-r from-blue-600 to-blue-400',
+    plusHover: 'hover:bg-blue-500 hover:text-white hover:border-blue-500',
   },
   'Standard Plan': {
-    headerBg: 'bg-purple-500',
-    plusHover: 'hover:bg-purple-500 hover:text-white hover:border-purple-500',
+    headerBg: 'bg-gradient-to-r from-violet-600 to-purple-400',
+    plusHover: 'hover:bg-violet-500 hover:text-white hover:border-violet-500',
   },
   'Premium Plan': {
-    headerBg: 'bg-pink-500',
-    plusHover: 'hover:bg-pink-500  hover:text-white hover:border-pink-500',
+    headerBg: 'bg-gradient-to-r from-rose-500 to-pink-400',
+    plusHover: 'hover:bg-rose-500 hover:text-white hover:border-rose-500',
   },
 };
+
+const PLAN_ORDER = ['Essential Plan', 'Standard Plan', 'Premium Plan'] as const;
+
 function getPlanClasses(plan?: string) {
   return PLAN_CLASSES[plan ?? ''] ?? PLAN_CLASSES['Essential Plan'];
 }
@@ -74,7 +74,7 @@ function NewDeployCard() {
   );
 }
 
-// Launchpad card
+// Launchpad card (active deployment)
 function LaunchpadCard({ dep, onDeploy }: { dep: Deployment; onDeploy: () => void }) {
   const navigate = useNavigate();
   const plan =
@@ -96,7 +96,7 @@ function LaunchpadCard({ dep, onDeploy }: { dep: Deployment; onDeploy: () => voi
   );
 }
 
-// Empty placeholder
+// Empty plan slot
 function EmptyLaunchpadCard({ plan, onClick }: { plan: string; onClick: () => void }) {
   const { headerBg, plusHover } = getPlanClasses(plan);
   return (
@@ -115,7 +115,7 @@ function EmptyLaunchpadCard({ plan, onClick }: { plan: string; onClick: () => vo
   );
 }
 
-// Stat Card
+// Stat card
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
@@ -123,11 +123,11 @@ interface StatCardProps {
   sub: string;
   trend?: { label: string; up?: boolean };
 }
-// Status card
+
 function StatCard({ icon, label, value, sub, trend }: StatCardProps) {
   return (
-    <div className="flex items-start gap-4 bg-white border border-gray-200 px-5 py-4 flex-1 min-w-[180px]">
-      <span className="flex items-center justify-center w-10 h-10 shrink-0 text-gray-400">
+    <div className="flex items-start gap-4 bg-white border border-gray-200 px-5 py-4 flex-1 min-w-45">
+      <span className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg bg-slate-50 border border-slate-100">
         {icon}
       </span>
       <div className="flex flex-col gap-0.5 min-w-0">
@@ -138,9 +138,7 @@ function StatCard({ icon, label, value, sub, trend }: StatCardProps) {
         <span className="text-[11px] text-gray-400 leading-none">{sub}</span>
         {trend && (
           <span
-            className={`text-[10px] font-semibold mt-1 ${
-              trend.up ? 'text-teal-500' : 'text-red-400'
-            }`}
+            className={`text-[10px] font-semibold mt-1 ${trend.up ? 'text-teal-500' : 'text-red-400'}`}
           >
             {trend.up ? '↑' : '↓'} {trend.label}
           </span>
@@ -151,7 +149,7 @@ function StatCard({ icon, label, value, sub, trend }: StatCardProps) {
 }
 
 // Recent deployments table
-function RecentDeploymentsTable({ deployments }: { deployments: Deployment[] }) {
+function RecentDeploymentsTable({ deployments, onDelete }: { deployments: Deployment[]; onDelete: (dep: Deployment) => void }) {
   const navigate = useNavigate();
   const recent = deployments.slice(0, 5);
   if (recent.length === 0) return null;
@@ -161,8 +159,8 @@ function RecentDeploymentsTable({ deployments }: { deployments: Deployment[] }) 
       <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
         Recent Deployments
       </h2>
-      <div className="bg-white border border-gray-200 overflow-x-auto shadow-sm">
-        <table className="w-full text-xs min-w-[400px]">
+      <div className="bg-white border border-gray-200 overflow-x-auto">
+        <table className="w-full text-xs min-w-100">
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -190,7 +188,7 @@ function RecentDeploymentsTable({ deployments }: { deployments: Deployment[] }) 
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => navigate(`/deployments/${dep.suffix}`)}
                 >
-                  <td className="px-4 py-2.5 font-mono text-gray-700 truncate max-w-[140px]">
+                  <td className="px-4 py-2.5 font-mono text-gray-700 truncate max-w-35">
                     {dep.suffix}
                   </td>
                   <td className="px-4 py-2.5">
@@ -214,6 +212,7 @@ function RecentDeploymentsTable({ deployments }: { deployments: Deployment[] }) 
                         className="p-1 text-gray-300 hover:text-red-400 transition-colors"
                         onClick={e => {
                           e.stopPropagation();
+                          onDelete(dep);
                         }}
                       >
                         <Trash2 size={12} />
@@ -233,8 +232,18 @@ function RecentDeploymentsTable({ deployments }: { deployments: Deployment[] }) 
 // Dashboard Page
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { deployments, loading } = useDeployments();
+  const { deployments, loading, refetch } = useDeployments();
   const { online, loading: statusLoading } = useServerStatus();
+
+  const handleDelete = async (dep: Deployment) => {
+    if (!confirm(`Delete deployment "${dep.suffix}"?`)) return;
+    try {
+      await api.deployDelete(dep.prefix, dep.suffix, dep.version);
+      refetch();
+    } catch (err: unknown) {
+      alert('Failed to delete: ' + (err as Error).message);
+    }
+  };
 
   const activeDeployments = deployments.filter(d => d.status === 'ready').length;
   const totalFunctions = deployments.reduce(
@@ -247,31 +256,61 @@ export default function DashboardPage() {
     0,
   );
   const emptyCount = deployments.filter(d => !d.suffix || d.status === 'create').length;
-  const placeholderPlans = ['Essential Plan', 'Standard Plan', 'Premium Plan'] as const;
+
+  // Build one slot per plan occupied slots show the real deployment, empty ones show placeholder
+  const launchpadSlots = PLAN_ORDER.map(planId => {
+    const dep = deployments.find(
+      d =>
+        ((d as unknown as Record<string, unknown>).plan as string | undefined) === planId,
+    );
+    return { planId, dep: dep ?? null };
+  });
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Stat cards */}
       <div className="flex flex-wrap gap-4">
         <StatCard
-          icon={online ? <CheckCircle2 size={20} /> : <WifiOff size={20} />}
+          icon={
+            online ? (
+              <span className="relative flex items-center justify-center">
+                <Server size={20} className="text-gray-500" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white" />
+              </span>
+            ) : (
+              <span className="relative flex items-center justify-center">
+                <WifiOff size={20} className="text-red-400" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-white" />
+              </span>
+            )
+          }
           label="Server"
           value={statusLoading ? <Spinner size={18} /> : online ? 'Online' : 'Offline'}
           sub={online ? 'FaaS is responding' : 'Cannot reach server'}
         />
         <StatCard
-          icon={<Package size={20} />}
+          icon={<Package size={20} className="text-gray-400" />}
           label="Active Deployments"
           value={loading ? <Spinner size={18} /> : activeDeployments}
           sub={`${deployments.length} total`}
         />
         <StatCard
-          icon={<Code2 size={20} />}
+          icon={<Code2 size={20} className="text-gray-400" />}
           label="Functions"
           value={loading ? <Spinner size={18} /> : totalFunctions}
           sub="across all deployments"
         />
         <StatCard
-          icon={<Clock size={20} />}
+          icon={
+            <span className="relative flex items-center justify-center">
+              <Layers size={20} className="text-gray-400" />
+              {emptyCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-bold text-white leading-none">
+                  {emptyCount > 9 ? '9+' : emptyCount}
+                </span>
+              )}
+            </span>
+          }
           label="Idle Slots"
           value={loading ? <Spinner size={18} /> : emptyCount}
           sub="empty subscriptions"
@@ -297,7 +336,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Launchpad grid */}
+      {/* Launchpad grid always shows all plan slots */}
       {!loading && (
         <div className="flex flex-col gap-3">
           <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -305,19 +344,27 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <NewDeployCard />
-            {deployments.map(dep => (
-              <LaunchpadCard key={dep.suffix} dep={dep} onDeploy={() => navigate('/deploy/new')} />
-            ))}
-            {deployments.length === 0 &&
-              placeholderPlans.map((plan, i) => (
-                <EmptyLaunchpadCard key={i} plan={plan} onClick={() => navigate('/deploy/new')} />
-              ))}
+            {launchpadSlots.map(({ planId, dep }) =>
+              dep ? (
+                <LaunchpadCard
+                  key={planId}
+                  dep={dep}
+                  onDeploy={() => navigate('/deploy/new')}
+                />
+              ) : (
+                <EmptyLaunchpadCard
+                  key={planId}
+                  plan={planId}
+                  onClick={() => navigate('/deploy/new')}
+                />
+              ),
+            )}
           </div>
         </div>
       )}
 
       {/* Recent deployments table */}
-      {!loading && deployments.length > 0 && <RecentDeploymentsTable deployments={deployments} />}
+      {!loading && deployments.length > 0 && <RecentDeploymentsTable deployments={deployments} onDelete={handleDelete} />}
     </div>
   );
 }

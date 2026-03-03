@@ -26,6 +26,7 @@ export default function LoginPage() {
         return;
       }
       localStorage.setItem('faas_token', data.token);
+      localStorage.setItem('faas_user_email', email);
       navigate('/');
     } catch {
       setError('Unable to reach the FaaS server. Make sure it is running.');

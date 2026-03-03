@@ -26,6 +26,11 @@ export function Navbar() {
 
   const isSettingsPage = location.pathname.startsWith('/settings');
 
+  const handleLogout = () => {
+    localStorage.removeItem('faas_token');
+    navigate('/', { replace: true });
+  };
+
   return (
     <header className="w-full bg-[--color-surface]">
       <div
@@ -35,7 +40,7 @@ export function Navbar() {
         {/* Logo */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0"
+          className="flex flex-col items-start gap-0.5 mt-4 cursor-pointer bg-transparent border-none p-0"
         >
           <img src="/metacall.svg" alt="MetaCall" className="h-8 sm:h-12 w-auto" />
           <span className="font-mono leading-none text-xs text-blue-500">v0.6.0</span>
@@ -63,10 +68,7 @@ export function Navbar() {
           )}
 
           <button
-            onClick={() => {
-              localStorage.removeItem('faas_token');
-              navigate('/login');
-            }}
+            onClick={handleLogout}
             className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold tracking-wide transition-all duration-150"
             style={navBtnStyle}
             onMouseEnter={hoverOn}
@@ -89,14 +91,14 @@ export function Navbar() {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 shadow-sm transition-all duration-150">
-          <div className="flex flex-col divide-y divide-gray-100 max-w-[1200px] mx-auto">
+          <div className="flex flex-col divide-y divide-gray-100 max-w-300 mx-auto">
             {isSettingsPage ? (
               <button
                 onClick={() => {
                   setMenuOpen(false);
                   navigate('/');
                 }}
-                className="flex items-center gap-2 px-5 py-3 text-sm text-slate-800 font-medium text-gray-600 hover:bg-gray-50 transition-colors text-left"
+                className="flex items-center gap-2 px-5 py-3 text-sm text-slate-800 font-medium hover:bg-gray-50 transition-colors text-left"
               >
                 <Eye size={15} strokeWidth={1.8} />
                 Deploys
@@ -115,8 +117,7 @@ export function Navbar() {
             <button
               onClick={() => {
                 setMenuOpen(false);
-                localStorage.removeItem('faas_token');
-                navigate('/login');
+                handleLogout();
               }}
               className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors text-left"
             >

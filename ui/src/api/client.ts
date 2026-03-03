@@ -2,11 +2,14 @@ import axios from 'axios';
 import type { Deployment, Plans } from '@/types';
 
 const BASE_URL = (import.meta.env.VITE_FAAS_URL as string | undefined) ?? 'http://localhost:9000';
+const LOCAL_STORAGE_KEYS = {
+  TOKEN: 'faas_token',
+} as const;
 
 /** Get the current auth token — prefers localStorage over .env fallback */
 function getToken(): string {
   return (
-    localStorage.getItem('faas_token') ??
+    localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN) ??
     (import.meta.env.VITE_FAAS_TOKEN as string | undefined) ??
     'local'
   );
@@ -25,7 +28,7 @@ http.interceptors.response.use(
   res => res,
   err => {
     if (axios.isAxiosError(err) && err.response?.status === 401) {
-      localStorage.removeItem('faas_token');
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
       window.location.href = '/login';
     }
     return Promise.reject(err);

@@ -13,7 +13,7 @@ export function FloatingChat() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
-        <div className="w-[320px] sm:w-[380px] h-[500px] bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200 overflow-hidden flex flex-col mb-4 animate-in slide-in-from-bottom-5 fade-in duration-200 origin-bottom-right">
+        <div className="w-[320px] sm:w-[380px] h-[500px] bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col mb-4 animate-in slide-in-from-bottom-5 fade-in duration-200 origin-bottom-right">
           <div className="bg-slate-900 px-4 py-3 flex justify-between items-center text-white relative overflow-hidden">
             {/* Subtle background glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-2xl rounded-full translate-x-10 -translate-y-10"></div>

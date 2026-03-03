@@ -2,12 +2,17 @@ import { ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Types
+export type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'HTTP';
+
 interface LogMessage {
 	deploymentName: string;
 	workerPID: number;
 	message: string;
+	level: LogLevel;
 }
 
+// ANSI Color Palette
 const ANSICode: number[] = [
 	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
 ];
@@ -16,51 +21,48 @@ interface PIDToColorCodeMapType {
 	[key: string]: number;
 }
 
-interface AssignedColorCodesType {
-	[key: string]: boolean;
-}
-
-// Maps a PID to a color code
 const PIDToColorCodeMap: PIDToColorCodeMapType = {};
+let nextColorIndex = 0;
 
-// Tracks whether a color code is assigned
-const assignedColorCodes: AssignedColorCodesType = {};
-
+// File Paths
 const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
 const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 
-// TODO: Implement this properly?
-// const maxWorkerWidth = (maxIndexWidth = 3): number => {
-// 	const workerLengths = Object.keys(Applications).map(
-// 		worker => worker.length
-// 	);
-// 	return Math.max(...workerLengths) + maxIndexWidth;
-// };
+// Level Detection
+function detectLevel(message: string): LogLevel {
+	const m = message.toLowerCase();
+	if (/\berror\b|failed|exception|fatal|stderr/.test(m)) return 'ERROR';
+	if (/\bwarn(ing)?\b|deprecated/.test(m)) return 'WARN';
+	if (/get |post |put |delete |patch |http\//.test(m)) return 'HTTP';
+	if (/debug|verbose|trace/.test(m)) return 'DEBUG';
+	return 'INFO';
+}
 
-// TODO: There is a problem with this code, looking randomly for an unique code
-// will end in an endless loop whenever all color codes are allocated, we should
-// use a better way of managing this
-const assignColorToWorker = (
-	deploymentName: string,
-	workerPID: number
-): string => {
+// Level Styling
+const LEVEL_COLORS: Record<LogLevel, string> = {
+	INFO: '\x1b[36m',
+	WARN: '\x1b[33m',
+	ERROR: '\x1b[31m',
+	DEBUG: '\x1b[35m',
+	HTTP: '\x1b[90m'
+};
+const RESET = '\x1b[0m';
+const DIM = '\x1b[2m';
+const BOLD = '\x1b[1m';
+
+// Worker Color Assignment
+const assignColorToWorker = (label: string, workerPID: number): string => {
 	if (!PIDToColorCodeMap[workerPID]) {
-		let colorCode: number;
-
-		// Keep looking for unique code
-		do {
-			colorCode = ANSICode[Math.floor(Math.random() * ANSICode.length)];
-		} while (assignedColorCodes[colorCode]);
-
-		// Assign the unique code and mark it as used
+		const colorCode = ANSICode[nextColorIndex % ANSICode.length];
 		PIDToColorCodeMap[workerPID] = colorCode;
-		assignedColorCodes[colorCode] = true;
+		nextColorIndex += 1;
 	}
-	const assignColorCode = PIDToColorCodeMap[workerPID];
-	return `\x1b[38;5;${assignColorCode}m${deploymentName}\x1b[0m`;
+	const colorCode = PIDToColorCodeMap[workerPID];
+	return `\x1b[38;5;${colorCode}m${label}${RESET}`;
 };
 
+// Logger Class
 class Logger {
 	private logQueue: LogMessage[] = [];
 	private isProcessing = false;
@@ -72,9 +74,9 @@ class Logger {
 		while (this.logQueue.length > 0) {
 			const logEntry = this.logQueue.shift();
 			if (logEntry) {
-				const { deploymentName, workerPID, message } = logEntry;
-				this.store(deploymentName, message);
-				this.present(deploymentName, workerPID, message);
+				const { deploymentName, workerPID, message, level } = logEntry;
+				this.store(deploymentName, level, message);
+				this.present(deploymentName, workerPID, level, message);
 				await new Promise(resolve => setTimeout(resolve, 0));
 			}
 		}
@@ -87,55 +89,90 @@ class Logger {
 		workerPID: number,
 		message: string
 	): void {
-		this.logQueue.push({ deploymentName, workerPID, message });
+		const trimmed = message.trim();
+		if (!trimmed) return;
+		const level = detectLevel(trimmed);
+		this.logQueue.push({
+			deploymentName,
+			workerPID,
+			message: trimmed,
+			level
+		});
 		this.processQueue().catch(console.error);
 	}
 
-	private store(deploymentName: string, message: string): void {
+	/** Write a structured line to the log file. */
+	private store(
+		deploymentName: string,
+		level: LogLevel,
+		message: string
+	): void {
 		const timeStamp = new Date().toISOString();
-		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
+		// Format: <ISO timestamp> [LEVEL] - <name> | <message>
+		const logLine = `${timeStamp} [${level}] - ${deploymentName} | ${message}\n`;
 
 		if (!fs.existsSync(logFilePath)) {
 			fs.mkdirSync(logFilePath, { recursive: true });
 		}
-		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
+		fs.appendFileSync(logFileFullPath, logLine, { encoding: 'utf-8' });
 	}
 
+	/** Print a richly coloured line to stdout. */
 	private present(
 		deploymentName: string,
 		workerPID: number,
+		level: LogLevel,
 		message: string
 	): void {
-		message = message.trim();
 		const fixedWidth = 24;
-
 		let paddedName = deploymentName.padEnd(fixedWidth, ' ');
 		if (deploymentName.length > fixedWidth) {
-			paddedName = deploymentName.substring(0, fixedWidth - 2) + '_1';
+			paddedName = deploymentName.substring(0, fixedWidth - 2) + '…';
 		}
 
-		// Regular expression for splitting by '\n', '. ', or ' /'
-		const messageLines = message.split(/(?:\n|\. | \/)/);
-		const coloredName = assignColorToWorker(`${paddedName} |`, workerPID);
-		const formattedMessageLines = messageLines.map(
-			line => `${coloredName} ${line}`
-		);
-		const logMessage = formattedMessageLines.join('\n');
+		const coloredName = assignColorToWorker(paddedName, workerPID);
 
-		console.log(logMessage);
+		const levelColor = LEVEL_COLORS[level];
+		const levelTag = `${levelColor}${BOLD}[${level.padEnd(5)}]${RESET}`;
+
+		const timeStamp = `${DIM}${new Date().toISOString()}${RESET}`;
+
+		// Split multi-line messages and indent continuations
+		const lines = message.split('\n');
+		const indent = ' '.repeat(fixedWidth + 14); // align continuation lines
+		const formattedLines = lines.map((line, idx) => {
+			if (idx === 0) {
+				return `${timeStamp} ${levelTag} ${coloredName} ${DIM}|${RESET} ${line}`;
+			}
+			return `${indent}${DIM}│${RESET} ${line}`;
+		});
+
+		console.log(formattedLines.join('\n'));
 	}
 }
 
 const logger = new Logger();
 
+// Public API
 export function logProcessOutput(
 	proc: ChildProcess,
 	deploymentName: string
 ): void {
 	proc.stdout?.on('data', (data: Buffer) => {
-		logger.enqueueLog(deploymentName, proc.pid || 0, data.toString());
+		const text = data.toString();
+		// Split on newlines so each line is individually levelled
+		text.split('\n').forEach(line => {
+			const trimmed = line.trim();
+			if (trimmed)
+				logger.enqueueLog(deploymentName, proc.pid || 0, trimmed);
+		});
 	});
 	proc.stderr?.on('data', (data: Buffer) => {
-		logger.enqueueLog(deploymentName, proc.pid || 0, data.toString());
+		const text = data.toString();
+		text.split('\n').forEach(line => {
+			const trimmed = line.trim();
+			if (trimmed)
+				logger.enqueueLog(deploymentName, proc.pid || 0, trimmed);
+		});
 	});
 }

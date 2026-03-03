@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -15,6 +16,65 @@ import { CopyButton } from '@/components/ui/CopyButton';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const [email] = useState(() => localStorage.getItem('faas_user_email') ?? 'example@gmail.com');
+  const [vatId, setVatId] = useState(() => localStorage.getItem('faas_vat_id') ?? '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState<
+    { type: 'success' | 'error'; text: string } | null
+  >(
+    null,
+  );
+
+  const authToken =
+    localStorage.getItem('faas_token') ?? (import.meta.env.VITE_FAAS_TOKEN as string);
+  const maskedAuthToken = useMemo(() => {
+    if (!authToken) return 'local';
+    if (authToken.length <= 16) return authToken;
+    return `${authToken.slice(0, 18)}...${authToken.slice(-6)}`;
+  }, [authToken]);
+
+  const handleVatSave = () => {
+    localStorage.setItem('faas_vat_id', vatId.trim());
+    setFeedbackMessage({ type: 'success', text: 'Settings saved locally.' });
+  };
+
+  const handlePasswordUpdate = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFeedbackMessage(null);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setFeedbackMessage({ type: 'error', text: 'All password fields are required.' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setFeedbackMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setFeedbackMessage({ type: 'error', text: 'New password and confirmation do not match.' });
+      return;
+    }
+
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setFeedbackMessage({
+      type: 'success',
+      text: 'Password form validated (local mode, no remote update).',
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    if (!confirm('Delete local account data and sign out?')) return;
+    localStorage.removeItem('faas_token');
+    localStorage.removeItem('faas_user_email');
+    localStorage.removeItem('faas_vat_id');
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="flex-grow flex flex-col items-center justify-start p-4 bg-white min-h-[calc(100vh-80px)] animate-in fade-in duration-500">
@@ -29,6 +89,18 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+
+        {feedbackMessage && (
+          <div
+            className={`mb-6 border px-4 py-3 text-sm ${
+              feedbackMessage.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}
+          >
+            {feedbackMessage.text}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 items-start">
           {/* Col 1 */}
@@ -47,7 +119,7 @@ export default function SettingsPage() {
                   <div className="relative group">
                     <input
                       type="email"
-                      value="example@gmail.com"
+                      value={email}
                       readOnly
                       className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 text-sm outline-none font-semibold transition-colors"
                     />
@@ -66,12 +138,12 @@ export default function SettingsPage() {
                   <div className="relative">
                     <input
                       type="text"
-                      value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWF..."
+                      value={maskedAuthToken}
                       readOnly
                       className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 pr-10 text-sm outline-none font-mono truncate transition-colors"
                     />
                     <div className="absolute right-0 top-1.5">
-                      <CopyButton text="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+                      <CopyButton text={authToken ?? 'local'} />
                     </div>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-2 font-mono">
@@ -113,7 +185,7 @@ export default function SettingsPage() {
                 <div className="w-full h-px bg-slate-200 mt-2 mb-2"></div>
                 <button
                   type="button"
-                  onClick={() => alert('Account deletion not supported in local dev environment.')}
+                  onClick={handleDeleteAccount}
                   className="w-full flex items-center justify-center gap-2 border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs uppercase tracking-wider font-bold px-4 py-3 transition-colors"
                 >
                   <Trash2 size={16} strokeWidth={2.5} />
@@ -139,6 +211,8 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     placeholder="EU123456789"
+                    value={vatId}
+                    onChange={e => setVatId(e.target.value)}
                     className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 text-sm outline-none font-mono focus:border-slate-800 transition-colors placeholder:text-gray-300"
                   />
                   <p className="text-[11px] text-gray-600 mt-3 leading-relaxed">
@@ -147,7 +221,11 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <div className="flex justify-start">
-                  <button className="text-slate-800 border border-slate-300 px-3 py-2 text-xs uppercase tracking-widest font-bold hover:bg-slate-50 transition-colors hover:border-slate-800 hover:cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={handleVatSave}
+                    className="text-slate-800 border border-slate-300 px-3 py-2 text-xs uppercase tracking-widest font-bold hover:bg-slate-50 transition-colors hover:border-slate-800 hover:cursor-pointer"
+                  >
                     Save Changes
                   </button>
                 </div>
@@ -164,7 +242,7 @@ export default function SettingsPage() {
                 Security
               </div>
               <form
-                onSubmit={e => e.preventDefault()}
+                onSubmit={handlePasswordUpdate}
                 className="p-6 flex-grow flex flex-col gap-5"
               >
                 <p className="text-[12px] text-gray-600 mb-2 leading-relaxed">
@@ -177,6 +255,8 @@ export default function SettingsPage() {
                   <input
                     type="password"
                     autoComplete="current-password"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
                     className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 text-sm outline-none focus:border-slate-800 transition-colors"
                   />
                 </div>
@@ -187,6 +267,8 @@ export default function SettingsPage() {
                   <input
                     type="password"
                     autoComplete="new-password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
                     className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 text-sm outline-none focus:border-slate-800 transition-colors"
                   />
                 </div>
@@ -197,6 +279,8 @@ export default function SettingsPage() {
                   <input
                     type="password"
                     autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
                     className="w-full bg-transparent border-b border-slate-300 text-slate-800 px-0 py-2.5 text-sm outline-none focus:border-slate-800 transition-colors"
                   />
                 </div>

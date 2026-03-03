@@ -35,10 +35,10 @@ export default function DeployHubPage() {
   };
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-start p-6 pt-20 relative overflow-hidden animate-in fade-in duration-500 min-h-[calc(100vh-80px)] bg-slate-50/50">
+    <div className="grow flex flex-col items-center justify-start p-6 pt-20 relative overflow-hidden animate-in fade-in duration-500 min-h-[calc(100vh-80px)] bg-slate-50/50">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[10%] w-[500px] h-[500px] bg-[--color-primary]/[0.02] rounded-full blur-[80px]"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-blue-500/[0.02] rounded-full blur-[80px]"></div>
+        <div className="absolute top-[-10%] right-[10%] w-125 h-125 bg-[--color-primary]/2 rounded-full blur-[80px]"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-125 h-125 bg-blue-500/2 rounded-full blur-[80px]"></div>
       </div>
 
       <div className="max-w-4xl w-full z-10 flex flex-col gap-10">
@@ -50,7 +50,7 @@ export default function DeployHubPage() {
         </div>
 
         {/* Deployment Source Selection */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-[800px] mx-auto w-full">
+        <div className="grid md:grid-cols-2 gap-8 max-w-200 mx-auto w-full">
           {/* Deploy Repository */}
           <button
             onClick={() => navigate('/deploy/repository')}
@@ -66,7 +66,7 @@ export default function DeployHubPage() {
             </div>
 
             {/* Desktop absolute arrow */}
-            <div className="hidden sm:block absolute top-[40px] right-8 p-0 opacity-20 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute top-10 right-8 p-0 opacity-20 group-hover:opacity-100 transition-opacity">
               <ArrowRight
                 className="text-blue-500 group-hover:text-blue-500 transition-colors"
                 size={28}
@@ -87,7 +87,7 @@ export default function DeployHubPage() {
                 <h2 className="text-lg font-bold text-slate-900 mb-2 transition-colors">
                   Deploy Repository
                 </h2>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-[280px]">
+                <p className="text-slate-500 text-sm leading-relaxed max-w-70">
                   Connect your Git provider to import an existing project from a Git repository.
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default function DeployHubPage() {
             </div>
 
             {/* Desktop absolute arrow */}
-            <div className="hidden sm:block absolute top-[40px] right-8 p-0 opacity-20 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute top-10 right-8 p-0 opacity-20 group-hover:opacity-100 transition-opacity">
               <UploadCloud
                 className="text-blue-500 group-hover:text-blue-500 transition-colors"
                 size={28}
@@ -146,7 +146,7 @@ export default function DeployHubPage() {
                 <h2 className="text-lg font-bold text-slate-900 mb-2 transition-colors">
                   Deploy Zip
                 </h2>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-[280px]">
+                <p className="text-slate-500 text-sm leading-relaxed max-w-70">
                   Upload a zip file containing your function code and configuration manually.
                 </p>
               </div>
@@ -157,11 +157,13 @@ export default function DeployHubPage() {
             </div>
           </label>
         </div>
-        <div className="mt-8 text-center fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+
+        {/* Help */}
+        <div className="text-center">
           <p className="text-xs text-slate-400">
             Need help? Check out our{' '}
             <a
-              className="text-[--color-secondary] hover:underline hover:text-blue-500"
+              className="text-slate-500 font-medium hover:underline hover:text-blue-500 transition-colors"
               href="https://metacall.io/docs"
               target="_blank"
               rel="noreferrer"
@@ -170,7 +172,7 @@ export default function DeployHubPage() {
             </a>{' '}
             or join our{' '}
             <a
-              className="text-[--color-secondary] hover:underline hover:text-blue-500"
+              className="text-slate-500 font-medium hover:underline hover:text-blue-500 transition-colors"
               href="https://github.com/metacall"
               target="_blank"
               rel="noreferrer"
@@ -182,12 +184,12 @@ export default function DeployHubPage() {
         </div>
       </div>
 
-      {/* Floating chat icon from the HTML request */}
+      {/* Floating chat icon */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => navigate('/chat')}
           aria-label="Open chat"
-          className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 shadow-sm text-[--color-primary] hover:text-blue-500 rounded-full border-1 border-gray-200 transition-all duration-200 group"
+          className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 shadow-sm text-[--color-primary] hover:text-blue-500 rounded-full transition-all duration-200 group"
         >
           <svg
             className="w-6 h-6 group-hover:scale-110 transition-transform"

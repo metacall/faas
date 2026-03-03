@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
 import type { LogEntry } from '@/types';
 
@@ -6,34 +7,48 @@ interface LogsViewerProps {
   className?: string;
 }
 
-const LEVEL_CLASS: Record<LogEntry['level'], string> = {
-  info: 'text-blue-400',
-  success: 'text-green-400',
-  warn: 'text-amber-400',
-  error: 'text-red-400',
-  http: 'text-gray-400',
+// Level configuration
+const LEVEL_BADGE: Record<
+  LogEntry['level'],
+  { label: string; cls: string; rowCls: string }
+> = {
+  info:    { label: 'INFO ', cls: 'text-cyan-400 border-cyan-700',   rowCls: '' },
+  success: { label: 'OK   ', cls: 'text-green-400 border-green-700', rowCls: 'bg-green-950/20' },
+  warn:    { label: 'WARN ', cls: 'text-amber-400 border-amber-700', rowCls: 'bg-amber-950/20' },
+  error:   { label: 'ERROR', cls: 'text-red-400 border-red-700',     rowCls: 'bg-red-950/20' },
+  http:    { label: 'HTTP ', cls: 'text-slate-500 border-slate-700', rowCls: '' },
 };
 
-const LEVEL_PREFIX: Record<LogEntry['level'], string> = {
-  info: '[INFO]',
-  success: '[OK]  ',
-  warn: '[WARN]',
-  error: '[ERR] ',
-  http: '[HTTP]',
-};
-
+// Component
 export function LogsViewer({ logs, className }: LogsViewerProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new logs arrive, unless user has scrolled up
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
+
   if (logs.length === 0) {
     return (
       <div
         className={clsx(
-          'flex flex-col items-center justify-center p-12 bg-slate-900 text-slate-400 h-full w-full',
+          'flex flex-col items-center justify-center gap-3 bg-[#0d1117] text-slate-500 h-full w-full',
           className,
         )}
       >
-        <div className="font-mono text-sm">No telemetry signals detected.</div>
-        <div className="text-[10px] uppercase font-bold tracking-widest mt-2 opacity-50">
-          Standing by...
+        {/* blinking cursor */}
+        <div className="font-mono text-sm flex items-center gap-1.5">
+          <span className="inline-block w-2 h-4 bg-slate-500 animate-pulse" />
+          <span>No log entries yet.</span>
+        </div>
+        <div className="text-[10px] uppercase font-bold tracking-widest opacity-40">
+          Waiting for telemetry…
         </div>
       </div>
     );
@@ -41,31 +56,74 @@ export function LogsViewer({ logs, className }: LogsViewerProps) {
 
   return (
     <div
-      className={clsx('overflow-y-auto bg-slate-900 p-6 custom-scrollbar w-full h-full', className)}
+      ref={containerRef}
+      className={clsx(
+        'overflow-y-auto bg-[#0d1117] custom-scrollbar w-full h-full',
+        className,
+      )}
     >
-      <pre className="text-[13px] font-mono leading-relaxed space-y-1">
-        {logs.map((entry, i) => (
-          <div
-            key={i}
-            className="flex gap-4 hover:bg-white/5 px-2 py-0.5 -mx-2 rounded-sm transition-colors"
-          >
-            {entry.timestamp && (
-              <span className="shrink-0 text-slate-500 font-medium select-none">
-                {entry.timestamp}
-              </span>
-            )}
-            <span
+      {/* Top bar — mimics a terminal title bar */}
+      <div className="sticky top-0 z-10 flex items-center gap-1.5 px-4 py-2 bg-[#161b22] border-b border-white/6 select-none">
+        <span className="w-3 h-3 rounded-full bg-red-500/70" />
+        <span className="w-3 h-3 rounded-full bg-amber-400/70" />
+        <span className="w-3 h-3 rounded-full bg-green-500/70" />
+        <span className="ml-3 font-mono text-[11px] text-slate-500 tracking-widest uppercase">
+          deployment logs
+        </span>
+        <span className="ml-auto font-mono text-[10px] text-slate-600">
+          {logs.length} line{logs.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* Log rows */}
+      <div className="px-2 py-3 font-mono text-[12.5px] leading-6">
+        {logs.map((entry, i) => {
+          const badge = LEVEL_BADGE[entry.level];
+          return (
+            <div
+              key={i}
               className={clsx(
-                'shrink-0 select-none font-bold tracking-wider w-16',
-                LEVEL_CLASS[entry.level],
+                'group flex items-start gap-0 rounded-sm transition-colors hover:bg-white/4',
+                badge.rowCls,
               )}
             >
-              {LEVEL_PREFIX[entry.level]}
-            </span>
-            <span className="text-slate-300 break-all">{entry.message}</span>
-          </div>
-        ))}
-      </pre>
+              {/* Line number */}
+              <span className="shrink-0 w-10 text-right pr-3 text-slate-600 select-none text-[11px] leading-6 group-hover:text-slate-400 transition-colors">
+                {i + 1}
+              </span>
+
+              {/* Timestamp */}
+              <span className="shrink-0 w-20 pr-3 text-slate-600 select-none truncate leading-6 text-[11px]">
+                {entry.timestamp || '—'}
+              </span>
+
+              {/* Level badge */}
+              <span
+                className={clsx(
+                  'shrink-0 w-13 mr-3 px-1 border text-center text-[10px] font-bold uppercase tracking-wider leading-[1.3] rounded-xs mt-0.75',
+                  badge.cls,
+                )}
+              >
+                {badge.label}
+              </span>
+
+              {/* Message */}
+              <span
+                className={clsx('flex-1 break-all whitespace-pre-wrap leading-6', {
+                  'text-slate-300': entry.level === 'info',
+                  'text-green-300': entry.level === 'success',
+                  'text-amber-300': entry.level === 'warn',
+                  'text-red-300':   entry.level === 'error',
+                  'text-slate-500': entry.level === 'http',
+                })}
+              >
+                {entry.message}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }

@@ -14,7 +14,7 @@ class InvokeQueue {
 		return id;
 	}
 
-	public get(id: string): Invocation {
+	public get(id: string): Invocation | undefined {
 		const invoke = this.queue[id];
 		delete this.queue[id];
 		return invoke;
