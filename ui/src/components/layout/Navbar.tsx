@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Settings, LogOut, Menu, X, Eye } from 'lucide-react';
+import { Settings, LogOut, Menu, X, Eye, User } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const navBtnStyle = {
   color: 'var(--color-text-muted)',
@@ -22,14 +23,10 @@ function hoverOff(e: React.MouseEvent<HTMLButtonElement>) {
 export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isSettingsPage = location.pathname.startsWith('/settings');
-
-  const handleLogout = () => {
-    localStorage.removeItem('faas_token');
-    navigate('/', { replace: true });
-  };
 
   return (
     <header className="w-full bg-[--color-surface]">
@@ -46,8 +43,19 @@ export function Navbar() {
           <span className="font-mono leading-none text-xs text-blue-500">v0.6.0</span>
         </button>
 
-        {/* Desktop nav buttons */}
+        {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-3">
+          {/* Logged-in user */}
+          {user && (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 select-none"
+              title={user.email}
+            >
+              <User size={12} strokeWidth={1.8} />
+              <span className="max-w-[140px] truncate">{user.email}</span>
+            </div>
+          )}
+
           {isSettingsPage ? (
             <button
               onClick={() => navigate('/')}
@@ -68,7 +76,7 @@ export function Navbar() {
           )}
 
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold tracking-wide transition-all duration-150"
             style={navBtnStyle}
             onMouseEnter={hoverOn}
@@ -92,6 +100,14 @@ export function Navbar() {
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 shadow-sm transition-all duration-150">
           <div className="flex flex-col divide-y divide-gray-100 max-w-300 mx-auto">
+            {/* User email on mobile */}
+            {user && (
+              <div className="flex items-center gap-2 px-5 py-3 text-xs text-gray-400 font-mono">
+                <User size={13} strokeWidth={1.8} />
+                <span className="truncate">{user.email}</span>
+              </div>
+            )}
+
             {isSettingsPage ? (
               <button
                 onClick={() => {
@@ -114,10 +130,11 @@ export function Navbar() {
                 <Settings size={15} strokeWidth={1.8} /> Settings
               </button>
             )}
+
             <button
               onClick={() => {
                 setMenuOpen(false);
-                handleLogout();
+                logout();
               }}
               className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors text-left"
             >

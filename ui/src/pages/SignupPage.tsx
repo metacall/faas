@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
-const BASE_URL = (import.meta.env.VITE_FAAS_URL as string | undefined) ?? 'http://localhost:9000';
+import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SignupPage() {
+  const { signup } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [alias, setAlias] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,21 +35,10 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, alias }),
-      });
-      const data = (await res.json()) as { token?: string; error?: string };
-      if (!res.ok || !data.token) {
-        setError(data.error ?? 'Signup failed. Please try again.');
-        return;
-      }
-      localStorage.setItem('faas_token', data.token);
-      localStorage.setItem('faas_user_email', email);
-      navigate('/');
-    } catch {
-      setError('Unable to reach the FaaS server. Make sure it is running.');
+      await signup(email, password, alias);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -77,6 +69,7 @@ export default function SignupPage() {
         <h2 className="text-2xl font-semibold text-gray-800 mb-8">Signup</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email */}
           <div className="group">
             <label htmlFor="email" className="block text-sm font-medium text-gray-800 mb-1">
               Email
@@ -88,10 +81,12 @@ export default function SignupPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
+              autoComplete="email"
               className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
             />
           </div>
 
+          {/* Alias */}
           <div className="group">
             <label htmlFor="alias" className="block text-sm font-medium text-gray-800 mb-1">
               Alias
@@ -103,40 +98,68 @@ export default function SignupPage() {
               value={alias}
               onChange={e => setAlias(e.target.value)}
               required
+              autoComplete="username"
               className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
             />
           </div>
 
+          {/* Password */}
           <div className="group">
             <label htmlFor="password" className="block text-sm font-medium text-gray-800 mb-1">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full px-0 py-2 pr-8 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-0 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
+          {/* Confirm Password */}
           <div className="group">
             <label htmlFor="confirm" className="block text-sm font-medium text-gray-800 mb-1">
               Password confirmation
             </label>
-            <input
-              id="confirm"
-              type="password"
-              placeholder="••••••••"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              required
-              className="w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
-            />
+            <div className="relative">
+              <input
+                id="confirm"
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full px-0 py-2 pr-8 bg-transparent border-0 border-b border-gray-300 text-gray-800 placeholder-gray-500 outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-200"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowConfirm(v => !v)}
+                className="absolute right-0 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                aria-label={showConfirm ? 'Hide confirmation' : 'Show confirmation'}
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
+          {/* Terms */}
           <div className="flex items-start mt-6">
             <div className="flex items-center h-5">
               <input
@@ -184,7 +207,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full sm:w-auto text-gray-500 border border-gray-300 font-medium py-2.5 px-6 hover:bg-gray-500 hover:border-gray-500 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Creating account…' : 'Create Account'}
             </button>
           </div>
         </form>

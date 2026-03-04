@@ -280,7 +280,6 @@ export default function DashboardPage() {
             ) : (
               <span className="relative flex items-center justify-center">
                 <WifiOff size={20} className="text-red-400" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-white" />
               </span>
             )
           }

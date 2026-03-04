@@ -2,8 +2,9 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Spinner } from '@/components/ui/Spinner';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-// Auth pages (not lazy — they're small and needed immediately)
+// Auth pages — not lazy (needed immediately, small bundles)
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 
@@ -18,7 +19,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const PlanPage = lazy(() => import('@/pages/PlanPage'));
 const ChatPage = lazy(() => import('@/pages/ChatPage'));
 
-// Simple loading fallback
+// Loading fallback shown during lazy-route loading
 const PageLoader = () => (
   <div className="grow flex items-center justify-center min-h-[50vh]">
     <div className="flex flex-col items-center gap-3">
@@ -30,48 +31,94 @@ const PageLoader = () => (
   </div>
 );
 
+// Guards a route — while auth is rehydrating shows a spinner,
+// then redirects to /login if not authenticated.
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token =
-    localStorage.getItem('faas_token') ?? (import.meta.env.VITE_FAAS_TOKEN as string | undefined);
-  if (!token) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size={28} className="text-blue-500" />
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  return <>{children}</>;
+}
+
+// Redirects already-authenticated users away from /login and /signup
+function GuestRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size={28} className="text-blue-500" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public auth routes — rendered without AppShell */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+      <AuthProvider>
+        <Routes>
+          {/* Public auth routes */}
+          <Route
+            path="/login"
+            element={
+              <GuestRoute>
+                <LoginPage />
+              </GuestRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <GuestRoute>
+                <SignupPage />
+              </GuestRoute>
+            }
+          />
 
-        {/* All protected routes inside AppShell */}
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/deployments" element={<DeploymentsPage />} />
-                    <Route path="/deployments/:suffix" element={<DeploymentDetailPage />} />
-                    <Route path="/deployments/:suffix/logs" element={<LogsViewerPage />} />
-                    <Route path="/deploy/new" element={<DeployHubPage />} />
-                    <Route path="/deploy/wizard" element={<DeployWizardPage />} />
-                    <Route path="/deploy/repository" element={<DeployRepositoryPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/plans" element={<PlanPage />} />
-                    <Route path="/chat" element={<ChatPage />} />
-                  </Routes>
-                </Suspense>
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+          {/* All protected routes inside AppShell */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/deployments" element={<DeploymentsPage />} />
+                      <Route path="/deployments/:suffix" element={<DeploymentDetailPage />} />
+                      <Route path="/deployments/:suffix/logs" element={<LogsViewerPage />} />
+                      <Route path="/deploy/new" element={<DeployHubPage />} />
+                      <Route path="/deploy/wizard" element={<DeployWizardPage />} />
+                      <Route path="/deploy/repository" element={<DeployRepositoryPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/plans" element={<PlanPage />} />
+                      <Route path="/chat" element={<ChatPage />} />
+                    </Routes>
+                  </Suspense>
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

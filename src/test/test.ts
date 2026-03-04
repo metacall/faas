@@ -5,7 +5,7 @@ import { strict as assert } from 'assert';
 // test them without spinning up the FaaS server.
 // ---------------------------------------------------------------------------
 
-// ── detectLevel ─────────────────────────────────────────────────────────────
+// detectLevel
 type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'HTTP';
 
 function detectLevel(message: string): LogLevel {
@@ -17,7 +17,7 @@ function detectLevel(message: string): LogLevel {
 	return 'INFO';
 }
 
-// ── LEVEL_COLORS ────────────────────────────────────────────────────────────
+// LEVEL_COLORS
 const LEVEL_COLORS: Record<LogLevel, string> = {
 	INFO: '\x1b[36m',
 	WARN: '\x1b[33m',
@@ -26,7 +26,7 @@ const LEVEL_COLORS: Record<LogLevel, string> = {
 	HTTP: '\x1b[90m'
 };
 
-// ── assignColorToWorker (round-robin logic only) ────────────────────────────
+// assignColorToWorker (round-robin logic only)
 const ANSICode: number[] = [
 	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
 ];

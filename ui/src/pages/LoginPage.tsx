@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
-const BASE_URL = (import.meta.env.VITE_FAAS_URL as string | undefined) ?? 'http://localhost:9000';
+import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -15,21 +17,10 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = (await res.json()) as { token?: string; error?: string };
-      if (!res.ok || !data.token) {
-        setError(data.error ?? 'Login failed. Please try again.');
-        return;
-      }
-      localStorage.setItem('faas_token', data.token);
-      localStorage.setItem('faas_user_email', email);
-      navigate('/');
-    } catch {
-      setError('Unable to reach the FaaS server. Make sure it is running.');
+      await login(email, password);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -47,7 +38,7 @@ export default function LoginPage() {
         <div className="flex justify-center mb-12 space-x-8 text-sm font-medium tracking-wide">
           <button className="relative pb-2 text-blue-500 font-bold transition-colors cursor-default">
             Login
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></span>
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500" />
           </button>
           <Link
             to="/signup"
@@ -61,6 +52,7 @@ export default function LoginPage() {
           <div className="p-8 border border-gray-200 bg-white shadow-sm">
             <h2 className="text-xl font-semibold mb-8 text-slate-800">Login</h2>
 
+            {/* Email */}
             <div className="relative mb-8">
               <input
                 id="email"
@@ -69,6 +61,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Email"
                 required
+                autoComplete="email"
                 className="peer w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-slate-800 placeholder-transparent outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-300"
               />
               <label
@@ -79,15 +72,17 @@ export default function LoginPage() {
               </label>
             </div>
 
+            {/* Password */}
             <div className="relative mb-8">
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Password"
                 required
-                className="peer w-full px-0 py-2 bg-transparent border-0 border-b border-gray-300 text-slate-800 placeholder-transparent outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-300"
+                autoComplete="current-password"
+                className="peer w-full px-0 py-2 pr-8 bg-transparent border-0 border-b border-gray-300 text-slate-800 placeholder-transparent outline-none ring-0 focus:ring-0 focus:border-blue-500 transition-colors duration-300"
               />
               <label
                 htmlFor="password"
@@ -95,10 +90,19 @@ export default function LoginPage() {
               >
                 Password
               </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                tabIndex={-1}
+                className="absolute right-0 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
 
             {error && (
-              <div className="mb-4 text-xs text-red-500 ">
+              <div className="mb-4 py-2 text-xs text-red-600">
                 {error}
               </div>
             )}
@@ -109,7 +113,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="bg-white text-gray-500 px-8 py-2 border border-gray-300 hover:bg-gray-500 hover:border-gray-500 hover:text-white transition-all duration-300 text-sm font-medium uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? 'Logging in…' : 'Login'}
               </button>
             </div>
           </div>

@@ -1,73 +1,140 @@
-# React + TypeScript + Vite
+# MetaCall FaaS — UI Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A local developer dashboard for the [MetaCall FaaS](https://github.com/metacall/faas) platform, built with **React**, **TypeScript**, **Vite**, and **Tailwind CSS**.
 
-Currently, two official plugins are available:
+It lets you deploy, inspect, invoke, and observe your MetaCall functions — all from a clean web interface running alongside the local FaaS server.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Area | What you can do |
+|---|---|
+| **Dashboard** | Live server-status indicator, deployment summary, quick-action cards |
+| **Deployments** | Table of all active deployments with status badges and per-function drill-down |
+| **Deploy Hub** | Choose between package upload or Git repository deployment |
+| **Package Wizard** | Step-by-step wizard — drag-and-drop ZIP → validate → deploy |
+| **Repository Deploy** | Clone a GitHub/GitLab repo, pick a branch, deploy with one click |
+| **Deployment Detail** | Browse all exposed functions, invoke them live with the built-in tester |
+| **Logs Viewer** | Real-time log streaming per deployment, auto-scroll, copy support |
+| **Settings** | Server URL, auth token, environment configuration |
+| **Plans** | Subscription plan overview (billing mock) |
+| **Assistant** | Floating AI chat panel |
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| | |
+|---|---|
+| **Framework** | React  |
+| **Language** | TypeScript  |
+| **Bundler** | Vite |
+| **Styling** | Tailwind CSS |
+| **Routing** | React Router |
+| **Icons** | Lucide React |
+| **HTTP** | Axios |
+| **Auth** | JWT via `localStorage` |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+## Getting Started
+
+### Prerequisites
+
+- Node.js ≥ 20.1.0
+- npm ≥ 10.0.0
+- A running MetaCall FaaS server (default: `http://localhost:9000`)
+
+### 1. Install dependencies
+
+```bash
+cd faas/ui
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Configure environment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+cp .env .env.local
 ```
+
+Edit `.env.local`:
+
+```env
+# URL of your local FaaS server
+VITE_FAAS_URL=http://localhost:9000
+
+# Optional: pre-set a JWT token so you skip the login screen in dev
+VITE_FAAS_TOKEN=<your-jwt-token>
+```
+
+### 3. Start the dev server
+
+```bash
+npm run dev
+```
+
+The UI will be available at **http://localhost:5173**.
+
+> The FaaS backend must be running separately. See [`faas/README.md`](../README.md) for backend setup.
+
+---
+
+## Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Type-check and build for production (`dist/`) |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Serve the production build locally |
+
+---
+
+## Project Structure
+
+```
+faas/ui/
+├── public/              # Static assets
+├── src/
+│   ├── api/
+│   │   └── client.ts    # Typed Axios API client (all FaaS endpoints)
+│   ├── components/
+│   │   ├── layout/      # AppShell, Navbar, Sidebar, Footer
+│   │   └── ui/          # Button, Card, Badge, Spinner, DropZone, etc.
+│   ├── hooks/           # useServerStatus, custom React hooks
+│   ├── pages/           # One file per route/page
+│   ├── types/           # Shared TypeScript types
+│   ├── App.tsx          # Router + auth guard
+│   └── main.tsx         # Entry point
+├── .env                 # Default environment variables
+├── vite.config.ts
+└── package.json
+```
+
+---
+
+## Authentication
+
+The UI uses **JWT bearer tokens**. On first visit you are redirected to `/login`. Tokens are stored in `localStorage` under the key `faas_token`.
+
+For local development, set `VITE_FAAS_TOKEN` in `.env.local` to skip the login screen entirely.
+
+---
+
+## Connecting to the Backend
+
+All API calls go through `src/api/client.ts`. The base URL is read from `VITE_FAAS_URL` at build time. The client attaches the JWT automatically to every request.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for branch conventions, code style, commit format, and the pull request process.
+
+---
+
+## License
+
+Apache 2.0 — see [LICENSE](../../faas/LICENSE).

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import type { Deployment, Plans } from '@/types';
 
 const BASE_URL = (import.meta.env.VITE_FAAS_URL as string | undefined) ?? 'http://localhost:9000';
@@ -23,13 +23,17 @@ http.interceptors.request.use(config => {
   return config;
 });
 
-// On 401, clear the token and redirect to login
+// On 401, clear the token and redirect to login — but NOT when already on an auth page
 http.interceptors.response.use(
   res => res,
   err => {
     if (axios.isAxiosError(err) && err.response?.status === 401) {
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
-      window.location.href = '/login';
+      const onAuthPage =
+        window.location.pathname === '/login' || window.location.pathname === '/signup';
+      if (!onAuthPage) {
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.TOKEN);
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   },
@@ -126,5 +130,39 @@ export const api = {
   add: async (url: string, branch: string): Promise<{ id: string }> => {
     const res = await http.post<{ id: string }>('/api/repository/add', { url, branch, jsons: [] });
     return res.data;
+  },
+
+  /** Authenticate an existing user. Returns the JWT token string. */
+  login: async (email: string, password: string): Promise<string> => {
+    try {
+      const res = await http.post<{ token?: string; error?: string }>('/api/auth/login', {
+        email,
+        password,
+      });
+      if (!res.data.token) throw new Error(res.data.error ?? 'Login failed. Please try again.');
+      return res.data.token;
+    } catch (err) {
+      // Extract server-side error message from response body when available
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const serverMsg = axiosErr.response?.data?.error;
+      throw new Error(serverMsg ?? (err instanceof Error ? err.message : 'Login failed. Please try again.'));
+    }
+  },
+
+  /** Register a new user. Returns the JWT token string. */
+  signup: async (email: string, password: string, alias: string): Promise<string> => {
+    try {
+      const res = await http.post<{ token?: string; error?: string }>('/api/auth/signup', {
+        email,
+        password,
+        alias,
+      });
+      if (!res.data.token) throw new Error(res.data.error ?? 'Signup failed. Please try again.');
+      return res.data.token;
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const serverMsg = axiosErr.response?.data?.error;
+      throw new Error(serverMsg ?? (err instanceof Error ? err.message : 'Signup failed. Please try again.'));
+    }
   },
 };

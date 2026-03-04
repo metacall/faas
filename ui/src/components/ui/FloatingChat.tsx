@@ -40,8 +40,8 @@ export function FloatingChat() {
         onClick={() => setIsOpen(!isOpen)}
         className={`group relative w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
           isOpen
-            ? 'bg-slate-800 text-white hover:bg-slate-700'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
+            ? 'bg-blue-600 text-white hover:bg-blue-700'
+            : 'bg-gray-600 text-white hover:bg-gray-700'
         }`}
         aria-label="Toggle Chat"
       >
