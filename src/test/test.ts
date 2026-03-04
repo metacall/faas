@@ -63,7 +63,7 @@ function buildEnv(env: Record<string, string>): Record<string, string> {
 	return envStringified;
 }
 
-// safeInvoke: awaits sync or async functions, capturing errors instead of crashing
+// Helper: invoke a function that may be sync or async, just as the worker does.
 async function safeInvoke(
 	fn: (...args: unknown[]) => unknown,
 	args: unknown[]
@@ -275,7 +275,9 @@ describe('Fix: Environment Variable Injection', function () {
 		const input: Record<string, string> = {};
 		input['TEST_VAR'] = 'hello';
 		const env = buildEnv(input);
+		// process.env keys must still be present
 		assert.ok('PATH' in env || 'HOME' in env || 'USER' in env);
+		// User key takes priority
 		assert.strictEqual(env['TEST_VAR'], 'hello');
 	});
 
@@ -291,12 +293,12 @@ describe('Fix: Environment Variable Injection', function () {
 	});
 });
 
-// ===========================================================================
-// Suite 3: Lifecycle fix — Package Resolution (cwd)
-// ===========================================================================
-
+// Fix: Package Resolution (cwd)
+// Ensures that a child process spawned with cwd set to the deployment directory
+// correctly resolves require() calls from that directory.
+// We test this without metacall by spawning a vanilla node process.
 describe('Fix: Package Resolution (cwd)', function () {
-	this.timeout(10000);
+	this.timeout(10000); // allow time for child process
 
 	const testAppDir = path.resolve(
 		__dirname,
