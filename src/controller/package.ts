@@ -96,6 +96,12 @@ export const packageUpload = (
 				);
 			}
 
+			// Attach error handler immediately to prevent unhandled error events
+			// before the async mkdtemp callback fires
+			file.on('error', (error: Error) => {
+				errorHandler(getUploadError('file', error));
+			});
+
 			const appLocation = path.join(appsDirectory, resource.id);
 			resource.path = appLocation;
 
