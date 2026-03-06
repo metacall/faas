@@ -92,8 +92,12 @@ export function initializeAPI(): Express {
 		signup(req, res).catch(next);
 	});
 
-	// Protected route
-	app.use(requireAuth);
+	// Protected routes — only enforced when METACALL_AUTH_REQUIRED=true.
+	// Defaults to open for backward-compatibility with local dev and CI
+	// (metacall-deploy --dev does not send auth headers).
+	if (process.env.METACALL_AUTH_REQUIRED === 'true') {
+		app.use(requireAuth);
+	}
 
 	app.get('/validate', validate);
 	app.get('/api/account/deploy-enabled', validate);

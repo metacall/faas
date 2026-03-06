@@ -30,7 +30,7 @@ services:
         volumes:
             - ./logs:/metacall/logs
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:9000/api/readiness']
+            test: ['CMD', 'wget', '-qO-', 'http://localhost:9000/api/readiness']
             interval: 10s
             timeout: 5s
             retries: 10
