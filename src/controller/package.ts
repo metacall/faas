@@ -97,6 +97,15 @@ export const packageUpload = (
 		) => {
 			const { mimeType, filename } = info;
 
+			// Attach an error listener immediately so that if busboy emits an
+			// error on the FileStream (e.g. "Unexpected end of form") before the
+			// async mkdtemp callback fires and wires its own listener, the error
+			// is handled gracefully instead of crashing the Node.js process.
+			file.on('error', error => {
+				fileReject(error);
+				errorHandler(getUploadError('file', error));
+			});
+
 			if (
 				mimeType !== 'application/x-zip-compressed' &&
 				mimeType !== 'application/zip'
