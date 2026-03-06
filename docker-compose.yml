@@ -29,7 +29,7 @@ services:
       target: faas
     network_mode: host
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:9000/api/readiness"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/api/readiness"]
       interval: 2s
       timeout: 2s
       retries: 30
