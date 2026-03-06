@@ -9,7 +9,10 @@ import { findRunners } from '../utils/install';
 import { catchAsync } from './catch';
 
 //Directly from protocol package
-import { RepositoryFileListRequest, RepositoryBranchListRequest } from '@metacall/protocol';
+import {
+	RepositoryFileListRequest,
+	RepositoryBranchListRequest
+} from '@metacall/protocol';
 
 const repositoryName = (url: string): string =>
 	url
