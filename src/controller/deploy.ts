@@ -8,20 +8,12 @@ import AppError from '../utils/appError';
 import { deployProcess } from '../utils/deploy';
 import { installDependencies } from '../utils/install';
 import { catchAsync } from './catch';
-
-// TODO: Isn't this available inside protocol package? We MUST reuse it
-export type DeployBody = {
-	suffix: string; // name of deployment
-	resourceType: 'Package' | 'Repository';
-	release: string;
-	env: string[];
-	plan: string;
-	version: string;
-};
+// Now types are directly used and impirted fro protocol repo
+import { DeployCreateRequest } from '@metacall/protocol';
 
 export const deploy = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: DeployBody },
+		req: Omit<Request, 'body'> & { body: DeployCreateRequest },
 		res: Response,
 		next: NextFunction
 	) => {
@@ -40,10 +32,7 @@ export const deploy = catchAsync(
 
 			// Store the environment variables for when reloading the FaaS
 			const env: Record<string, string> = {};
-			for (const envVar of req.body.env as unknown as {
-				name: string;
-				value: string;
-			}[]) {
+			for (const envVar of req.body.env) {
 				env[envVar.name] = envVar.value;
 			}
 			const envFilePath = path.join(resource.path, `.env`);

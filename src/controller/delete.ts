@@ -7,16 +7,11 @@ import { Applications } from '../app';
 import { appsDirectory } from '../utils/config';
 import { catchAsync } from './catch';
 
-// TODO: Isn't this available inside protocol package? We MUST reuse it
-type DeleteBody = {
-	suffix: string; // name of deployment
-	prefix: string;
-	version: string;
-};
+import { DeployDeleteRequest } from '@metacall/protocol';
 
 export const deployDelete = catchAsync(
 	async (
-		req: Omit<Request, 'body'> & { body: DeleteBody },
+		req: Omit<Request, 'body'> & { body: DeployDeleteRequest },
 		res: Response,
 		_next: NextFunction
 	): Promise<Response> => {
