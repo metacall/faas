@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { rm } from 'fs/promises';
-import { join } from 'path';
 
 import { Applications } from '../app';
+import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
+import { safeResolve } from '../utils/safePath';
 import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
@@ -14,14 +15,24 @@ type DeleteBody = {
 	version: string;
 };
 
+/** Allowlist for deployment names — prevents path traversal via suffix. */
+const SAFE_SUFFIX = /^[a-zA-Z0-9._-]+$/;
+
 export const deployDelete = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: DeleteBody },
 		res: Response,
-		_next: NextFunction
+		next: NextFunction
 	): Promise<Response> => {
 		// Extract the suffix (application name) of the application from the request body
 		const { suffix } = req.body;
+
+		// Validate suffix against an allowlist to prevent path traversal
+		if (!suffix || !SAFE_SUFFIX.test(suffix)) {
+			next(new AppError('Invalid deployment name.', 400));
+			return res.end();
+		}
+
 		const application = Applications[suffix];
 
 		// Check if the application exists and it is running
@@ -37,8 +48,8 @@ export const deployDelete = catchAsync(
 		// Remove the application Applications object
 		delete Applications[suffix];
 
-		// Determine the location of the application
-		const appLocation = join(appsDirectory, suffix);
+		// Resolve and boundary-check the target path before deletion
+		const appLocation = safeResolve(appsDirectory, suffix);
 
 		// Delete the directory of the application
 		await rm(appLocation, { recursive: true, force: true });
