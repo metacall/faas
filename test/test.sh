@@ -308,6 +308,28 @@ test_deploy_from_repo "https://github.com/HeeManSu/auth-middleware-metacall" "he
 
 echo "Repository deployment tests completed."
 
+# Malformed payload test
+function test_malformed_upload() {
+	echo "Testing malformed package upload error handling..."
+
+	# Send an incomplete multipart request to intentionally trigger a parsing error (Unexpected end of form)
+	local response
+	response=$(curl -s -X POST "$BASE_URL/api/package/create" \
+		-H "Content-Type: multipart/form-data; boundary=------------------------abcdef123456" \
+		-d "--------------------------abcdef123456" \
+		-o /dev/null \
+		-w "%{http_code}")
+
+	if [[ "$response" != "400" ]]; then
+		echo "Malformed upload test failed. Expected HTTP 400 Bad Request, got $response"
+		exit 1
+	fi
+
+	echo "Malformed upload test passed. The Node.js process did not crash."
+}
+
+test_malformed_upload
+
 # Simultaneous deployment tests
 function test_simultaneous_deploy() {
 	echo "Testing simultaneous deployments..."
