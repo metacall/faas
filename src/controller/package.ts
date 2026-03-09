@@ -57,12 +57,22 @@ export const packageUpload = (
 		runners: []
 	};
 
-	let fileResolve: (value?: unknown | PromiseLike<unknown>) => void;
-	const filePromise = new Promise<unknown>(resolve => {
+	let requestSettled = false;
+	let fileResolve!: (value?: unknown | PromiseLike<unknown>) => void;
+	let fileReject!: (reason?: unknown) => void;
+	const filePromise = new Promise<unknown>((resolve, reject) => {
 		fileResolve = resolve;
+		fileReject = reject;
 	});
+	// Keep rejected upload promise from becoming an unhandled rejection
+	// when multipart parsing fails before the finish handler wires the chain.
+	void filePromise.catch((_error: unknown) => undefined);
 
 	const errorHandler = (error: AppError) => {
+		if (requestSettled) {
+			return;
+		}
+		requestSettled = true;
 		req.unpipe(bb);
 		next(error);
 	};
@@ -87,23 +97,31 @@ export const packageUpload = (
 		) => {
 			const { mimeType, filename } = info;
 
+			// Attach an error listener immediately so that if busboy emits an
+			// error on the FileStream (e.g. "Unexpected end of form") before the
+			// async mkdtemp callback fires and wires its own listener, the error
+			// is handled gracefully instead of crashing the Node.js process.
+			file.on('error', error => {
+				fileReject(error);
+				errorHandler(getUploadError('file', error));
+			});
+
 			if (
 				mimeType !== 'application/x-zip-compressed' &&
 				mimeType !== 'application/zip'
 			) {
+				file.resume();
 				return errorHandler(
-					new AppError('Please upload a zip file', 404)
+					new AppError('Please upload a zip file', 400)
 				);
 			}
 
-			const appLocation = path.join(appsDirectory, resource.id);
-			resource.path = appLocation;
-
 			// Create temporary directory for the blob
 			fs.mkdtemp(
-				path.join(os.tmpdir(), `metacall-faas-${resource.id}-`),
+				path.join(os.tmpdir(), `metacall-faas-upload-`),
 				(err, folder) => {
 					if (err !== null) {
+						file.resume();
 						return errorHandler(
 							new AppError(
 								'Failed to create temporary directory for the blob',
@@ -114,24 +132,26 @@ export const packageUpload = (
 
 					resource.blob = path.join(folder, filename);
 
-					// Create the app folder
-					ensureFolderExists(appLocation)
-						.then(() => {
-							// Create the write stream for storing the blob
-							file.pipe(
-								fs.createWriteStream(resource.blob as string)
-							).on('finish', () => {
-								fileResolve();
-							});
-						})
-						.catch((error: Error) => {
-							errorHandler(
-								new AppError(
-									`Failed to create folder for the resource at: ${appLocation} - ${error.toString()}`,
-									404
-								)
-							);
-						});
+					const writeStream = fs.createWriteStream(resource.blob);
+
+					file.on('error', error => {
+						fileReject(error);
+						writeStream.destroy(error);
+						errorHandler(getUploadError('file', error));
+					});
+
+					writeStream.on('error', error => {
+						fileReject(error);
+						file.unpipe(writeStream);
+						file.resume();
+						errorHandler(getUploadError('file', error));
+					});
+
+					writeStream.on('finish', () => {
+						fileResolve();
+					});
+
+					file.pipe(writeStream);
 				}
 			);
 		}
@@ -148,14 +168,23 @@ export const packageUpload = (
 	});
 
 	eventHandler('finish', () => {
+		if (requestSettled) {
+			return;
+		}
+
 		if (resource.blob === undefined) {
 			throw new Error('Invalid file upload, blob path is not defined');
 		}
+		if (resource.id === '') {
+			throw new Error('Invalid upload, resource id is not defined');
+		}
+
+		resource.path = path.join(appsDirectory, resource.id);
 
 		const deleteBlob = () => {
 			if (resource.blob !== undefined) {
 				fs.unlink(resource.blob, error => {
-					if (error !== null) {
+					if (error !== null && error.code !== 'ENOENT') {
 						errorHandler(
 							new AppError(
 								`Failed to delete the blob at: ${error.toString()}`,
@@ -169,16 +198,20 @@ export const packageUpload = (
 
 		const deleteFolder = () => {
 			if (resource.path !== undefined) {
-				fs.unlink(resource.path, error => {
-					if (error !== null) {
-						errorHandler(
-							new AppError(
-								`Failed to delete the path at: ${error.toString()}`,
-								500
-							)
-						);
+				fs.rm(
+					resource.path,
+					{ recursive: true, force: true },
+					error => {
+						if (error !== null) {
+							errorHandler(
+								new AppError(
+									`Failed to delete the path at: ${error.toString()}`,
+									500
+								)
+							);
+						}
 					}
-				});
+				);
 			}
 		};
 
@@ -206,6 +239,16 @@ export const packageUpload = (
 		const unzipAndResolve = () => {
 			return new Promise<void>((resolve, reject) => {
 				fs.createReadStream(resource.blob as string)
+					.on('error', error => {
+						deleteBlob();
+						deleteFolder();
+						reject(
+							new AppError(
+								`Failed to read the uploaded blob: ${error.toString()}`,
+								500
+							)
+						);
+					})
 					.pipe(Extract({ path: resource.path }))
 					.on('close', () => {
 						deleteBlob();
@@ -224,24 +267,74 @@ export const packageUpload = (
 			});
 		};
 
-		void filePromise.then(() => {
-			unzipAndResolve()
-				.then(() => {
-					resourceResolve(resource);
-					res.status(201).json({
-						id: resource.id
-					});
-				})
-				.catch(error => {
-					resourceReject(error);
-					errorHandler(error);
+		void filePromise
+			.then(() => ensureFolderExists(resource.path))
+			.then(() => unzipAndResolve())
+			.then(() => {
+				if (requestSettled) {
+					return;
+				}
+				requestSettled = true;
+				resourceResolve(resource);
+				res.status(201).json({
+					id: resource.id
 				});
-		});
+			})
+			.catch(error => {
+				resourceReject(error);
+				if (error instanceof AppError) {
+					errorHandler(error);
+				} else {
+					errorHandler(
+						new AppError(
+							`Package upload failed: ${String(error)}`,
+							500
+						)
+					);
+				}
+			});
 	});
 
 	eventHandler('close', () => {
 		// Do nothing
 	});
 
-	req.pipe(bb);
+	bb.on('error', error => {
+		fileReject(error);
+		errorHandler(
+			new AppError(`Invalid multipart form data: ${String(error)}`, 400)
+		);
+	});
+
+	req.on('aborted', () => {
+		fileReject(new Error('Request was aborted while uploading'));
+		errorHandler(
+			new AppError(
+				'Upload aborted before completing multipart payload',
+				400
+			)
+		);
+	});
+
+	req.on('error', error => {
+		fileReject(error);
+		errorHandler(
+			new AppError(
+				`Request stream failed while uploading package: ${error.message}`,
+				500
+			)
+		);
+	});
+
+	try {
+		req.pipe(bb);
+	} catch (error) {
+		fileReject(error);
+		errorHandler(
+			new AppError(
+				`Failed to initialize multipart parser: ${String(error)}`,
+				500
+			)
+		);
+	}
 };
