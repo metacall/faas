@@ -40,17 +40,23 @@ export const callFunction = (
 
 	// Enqueue the call with a specific id, in order to be able to resolve the
 	// promise later on when the message is received in the process message handler
+	const invokeId = invokeQueue.push({
+		resolve: (data: string) => {
+			application.pendingInvocations.delete(invokeId);
+			res.send(data);
+		},
+		reject: (error: string) => {
+			application.pendingInvocations.delete(invokeId);
+			res.status(500).send(error);
+		}
+	});
+
+	application.pendingInvocations.add(invokeId);
+
 	application.proc?.send({
 		type: WorkerMessageType.Invoke,
 		data: {
-			id: invokeQueue.push({
-				resolve: (data: string) => {
-					res.send(data);
-				},
-				reject: (error: string) => {
-					res.status(500).send(error);
-				}
-			}),
+			id: invokeId,
 			name: func,
 			args
 		}
