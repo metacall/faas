@@ -9,6 +9,7 @@ import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
 import { ensureFolderExists } from './utils/filesystem';
 import { printVersionAndExit } from './utils/version';
+import { seedDefaultUser } from './controller/auth';
 
 // Initialize the FaaS
 void (async (): Promise<void> => {
@@ -35,6 +36,9 @@ void (async (): Promise<void> => {
 		}
 
 		await autoDeployApps(appsDirectory);
+
+		// Seed default dev user if none exist
+		await seedDefaultUser();
 
 		const app = initializeAPI();
 		const port = process.env.PORT || 9000;
