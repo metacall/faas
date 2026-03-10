@@ -51,12 +51,10 @@ export const deploy = catchAsync(
 				.map(([key, value]) => `${key}=${value}`)
 				.join('\n');
 
-			fs.appendFileSync(envFilePath, envFileContent, 'utf-8');
-
+			fs.writeFileSync(envFilePath, envFileContent, 'utf-8');
 			await installDependencies(resource);
 
 			await deployProcess(resource, env);
-
 			return res.status(200).json({
 				prefix: hostname(),
 				suffix: resource?.id,
