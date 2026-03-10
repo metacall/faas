@@ -49,7 +49,8 @@ export const callFunction = (
 				},
 				reject: (error: string) => {
 					res.status(500).send(error);
-				}
+				},
+				suffix
 			}),
 			name: func,
 			args

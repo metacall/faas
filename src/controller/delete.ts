@@ -5,6 +5,7 @@ import { join } from 'path';
 
 import { Applications } from '../app';
 import { appsDirectory } from '../utils/config';
+import { invokeQueue } from '../utils/invoke';
 import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
@@ -30,6 +31,12 @@ export const deployDelete = catchAsync(
 				`Oops! It looks like the application '${suffix}' hasn't been deployed yet. Please deploy it before you delete it.`
 			);
 		}
+
+		// Reject pending invocations before killing the process
+		invokeQueue.rejectBySuffix(
+			suffix,
+			`Deployment '${suffix}' was deleted while processing requests`
+		);
 
 		// Retrieve the child process associated with the application and kill it
 		application.kill();
