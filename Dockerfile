@@ -55,8 +55,8 @@ FROM base AS test
 RUN apt-get update \
 	&& apt-get install ca-certificates git -y --no-install-recommends
 
-COPY package.json *.tgz ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY vitest.integration.config.ts ./
 COPY test/ test/

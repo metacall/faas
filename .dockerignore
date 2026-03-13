@@ -7,5 +7,4 @@
 !tsconfig.eslint.json
 !test
 !vitest.integration.config.ts
-!*.tgz
 

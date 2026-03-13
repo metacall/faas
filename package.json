@@ -134,7 +134,7 @@
 		]
 	},
 	"dependencies": {
-		"@metacall/protocol": "file:./metacall-protocol-0.1.27.tgz",
+		"@metacall/protocol": "^0.1.28",
 		"busboy": "^1.4.0",
 		"colors": "^1.4.0",
 		"dotenv": "^16.0.3",
