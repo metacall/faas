@@ -1,13 +1,14 @@
 {
 	"compilerOptions": {
 		"strict": true,
-		"lib": ["ES2020", "DOM", "DOM.Iterable"],
-		"target": "ES2019",
+		"lib": ["es2020", "dom"],
+		"moduleResolution": "node",
+		"target": "es2020",
 		"module": "CommonJS",
 		"outDir": "dist",
 		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"types": ["node"]
+		"declaration": true,
+		"forceConsistentCasingInFileNames": true
 	},
 	"include": ["types/*.ts", "src/**/*.ts"]
 }
