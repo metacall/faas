@@ -229,7 +229,7 @@ export const packageUpload = (
 			unzipAndResolve()
 				.then(async () => {
 					if (resource.runners.length === 0) {
-						resource.runners =  await findRunners(resource.path)
+						resource.runners = await findRunners(resource.path);
 					}
 					resourceResolve(resource);
 					res.status(201).json({
