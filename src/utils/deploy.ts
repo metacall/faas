@@ -47,10 +47,21 @@ export const deployProcess = async (
 	// Wait for load result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
+	let settled = false;
 
 	const promise = new Promise<void>((resolve, reject) => {
-		deployResolve = resolve;
-		deployReject = reject;
+		deployResolve = (value: void) => {
+			if (!settled) {
+				settled = true;
+				resolve(value);
+			}
+		};
+		deployReject = (reason: Error) => {
+			if (!settled) {
+				settled = true;
+				reject(reason);
+			}
+		};
 	});
 
 	proc.on('error', (err: Error) => {
