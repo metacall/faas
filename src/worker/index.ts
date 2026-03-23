@@ -90,10 +90,7 @@ const loadDeployment = (
 const handleDeployment = async (resource: Resource): Promise<Deployment> => {
 	// Check if the deploy comes with extra JSONs and store them
 	if (resource.jsons.length > 0) {
-		const jsonPaths = await createMetacallJsonFiles(
-			resource.path,
-			resource.jsons
-		);
+		await createMetacallJsonFiles(resource.path, resource.jsons);
 	}
 
 	// List all files except by the ignored ones
