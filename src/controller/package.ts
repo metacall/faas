@@ -168,19 +168,23 @@ export const packageUpload = (
 		};
 
 		const deleteFolder = () => {
-			if (resource.path !== undefined) {
-				fs.unlink(resource.path, error => {
-					if (error !== null) {
-						errorHandler(
-							new AppError(
-								`Failed to delete the path at: ${error.toString()}`,
-								500
-							)
-						);
-					}
-				});
+	if (resource.path !== undefined) {
+		fs.rm(
+			resource.path,
+			{ recursive: true, force: true },
+			error => {
+				if (error !== null) {
+					errorHandler(
+						new AppError(
+							`Failed to delete the path at: ${error.toString()}`,
+							500
+						)
+					);
+				}
 			}
-		};
+		);
+	}
+};
 
 		if (Applications[resource.id]) {
 			deleteBlob();
