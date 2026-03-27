@@ -21,9 +21,13 @@ const getUploadError = (
 		code: 500
 	});
 
-	const errorUploadMessage: Record<string, { message: string; code: number }> = {
+	const errorUploadMessage: Record<
+		string,
+		{ message: string; code: number }
+	> = {
 		file: {
-			message: 'Error while fetching the zip file, please upload it again',
+			message:
+				'Error while fetching the zip file, please upload it again',
 			code: 400
 		},
 		field: {
@@ -35,6 +39,7 @@ const getUploadError = (
 	};
 
 	const appError = errorUploadMessage[on.toString()] || internalError();
+
 	return new AppError(appError.message, appError.code);
 };
 
@@ -44,7 +49,6 @@ export const packageUpload = (
 	next: NextFunction
 ): void => {
 	const bb = busboy({ headers: req.headers });
-
 	const resource: Resource = {
 		id: '',
 		type: '',
@@ -54,7 +58,6 @@ export const packageUpload = (
 	};
 
 	let fileResolve: (value?: unknown | PromiseLike<unknown>) => void;
-
 	const filePromise = new Promise<unknown>(resolve => {
 		fileResolve = resolve;
 	});
@@ -64,10 +67,7 @@ export const packageUpload = (
 		next(error);
 	};
 
-	const eventHandler = <T>(
-		type: keyof busboy.BusboyEvents,
-		listener: T
-	) => {
+	const eventHandler = <T>(type: keyof busboy.BusboyEvents, listener: T) => {
 		bb.on(type, (...args: unknown[]) => {
 			try {
 				const fn = listener as unknown as (...args: unknown[]) => void;
@@ -99,10 +99,11 @@ export const packageUpload = (
 			const appLocation = path.join(appsDirectory, resource.id);
 			resource.path = appLocation;
 
+			// Create temporary directory for the blob
 			fs.mkdtemp(
 				path.join(os.tmpdir(), `metacall-faas-${resource.id}-`),
 				(err, folder) => {
-					if (err) {
+					if (err !== null) {
 						return errorHandler(
 							new AppError(
 								'Failed to create temporary directory for the blob',
@@ -113,8 +114,10 @@ export const packageUpload = (
 
 					resource.blob = path.join(folder, filename);
 
+					// Create the app folder
 					ensureFolderExists(appLocation)
 						.then(() => {
+							// Create the write stream for storing the blob
 							file.pipe(
 								fs.createWriteStream(resource.blob as string)
 							).on('finish', () => {
@@ -144,29 +147,30 @@ export const packageUpload = (
 		}
 	});
 
-	const deleteBlob = () => {
-		if (resource.blob !== undefined) {
-			fs.unlink(resource.blob, error => {
-				if (error) {
-					errorHandler(
-						new AppError(
-							`Failed to delete the blob at: ${error.toString()}`,
-							500
-						)
-					);
-				}
-			});
+	eventHandler('finish', () => {
+		if (resource.blob === undefined) {
+			throw new Error('Invalid file upload, blob path is not defined');
 		}
-	};
 
-	// ✅ FIXED PART (this is your actual contribution)
-	const deleteFolder = () => {
-		if (resource.path !== undefined) {
-			fs.rm(
-				resource.path,
-				{ recursive: true, force: true },
-				error => {
-					if (error) {
+		const deleteBlob = () => {
+			if (resource.blob !== undefined) {
+				fs.unlink(resource.blob, error => {
+					if (error !== null) {
+						errorHandler(
+							new AppError(
+								`Failed to delete the blob at: ${error.toString()}`,
+								500
+							)
+						);
+					}
+				});
+			}
+		};
+
+		const deleteFolder = () => {
+			if (resource.path !== undefined) {
+				fs.unlink(resource.path, error => {
+					if (error !== null) {
 						errorHandler(
 							new AppError(
 								`Failed to delete the path at: ${error.toString()}`,
@@ -174,17 +178,9 @@ export const packageUpload = (
 							)
 						);
 					}
-				}
-			);
-		}
-	};
-
-	eventHandler('finish', () => {
-		if (!resource.blob) {
-			throw new Error(
-				'Invalid file upload, blob path is not defined'
-			);
-		}
+				});
+			}
+		};
 
 		if (Applications[resource.id]) {
 			deleteBlob();
@@ -196,11 +192,10 @@ export const packageUpload = (
 			);
 		}
 
-		let resourceResolve: (value: Resource) => void;
+		let resourceResolve: (value: Resource | PromiseLike<Resource>) => void;
 		let resourceReject: (reason?: unknown) => void;
 
 		Applications[resource.id] = new Application();
-
 		Applications[resource.id].resource = new Promise<Resource>(
 			(resolve, reject) => {
 				resourceResolve = resolve;
