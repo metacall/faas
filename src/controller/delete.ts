@@ -24,26 +24,32 @@ export const deployDelete = catchAsync(
 		const { suffix } = req.body;
 		const application = Applications[suffix];
 
-		// Check if the application exists and it is running
-		if (!application?.proc) {
-			return res.send(
-				`Oops! It looks like the application '${suffix}' hasn't been deployed yet. Please deploy it before you delete it.`
-			);
+		// Check if the application exists at all (in memory)
+		if (!application) {
+			return res.status(404).json({
+				error: `Application '${suffix}' not found.`
+			});
 		}
 
-		// Retrieve the child process associated with the application and kill it
-		application.kill();
+		// Kill the child process if it exists (graceful cleanup)
+		// Note: application.proc may be undefined if deployment failed,
+		// but we still want to clean up the resource
+		if (application.proc) {
+			application.kill();
+		}
 
-		// Remove the application Applications object
+		// Remove the application from the Applications object
 		delete Applications[suffix];
 
 		// Determine the location of the application
 		const appLocation = join(appsDirectory, suffix);
 
-		// Delete the directory of the application
+		// Delete the directory of the application (force removal regardless of state)
 		await rm(appLocation, { recursive: true, force: true });
 
-		// Send response based on whether there was an error during deletion
-		return res.send('Deploy Delete Succeed');
+		// Send response
+		return res.status(200).json({
+			message: 'Application deleted successfully'
+		});
 	}
 );
