@@ -256,10 +256,10 @@ describe('Fix: Asynchronous Function Execution', function () {
 	});
 });
 
-// Fix: Issue #13 - Allow Deletion of Undeployed Applications
+// Fix: Allow Deletion of Undeployed Applications
 // Ensures that applications can be deleted regardless of their deployment state,
 // preventing state locks when deployments fail or are incomplete.
-describe('Fix: Issue #13 - Undeployed App Deletion', function () {
+describe('Fix: Undeployed App Deletion', function () {
 	// Helper: Mock Response object for testing delete handler
 	interface MockResponse {
 		statusCode?: number;
