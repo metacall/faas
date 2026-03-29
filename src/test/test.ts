@@ -1,6 +1,12 @@
 import { strict as assert } from 'assert';
 import { ChildProcess, spawn } from 'child_process';
+import { mkdir, rm, writeFile } from 'fs/promises';
+import { hostname } from 'os';
 import path from 'path';
+import request from 'supertest';
+import { Application, Applications } from '../app';
+import { initializeAPI } from '../api';
+import { appsDirectory } from '../utils/config';
 
 // Helper: build the envStringified object the same way deployProcess does.
 // This is a pure-function extraction of the logic we fixed, so we can unit-test
@@ -253,5 +259,62 @@ describe('Fix: Asynchronous Function Execution', function () {
 			['world']
 		);
 		assert.strictEqual(r2.result, false);
+	});
+});
+
+// Fix: Static Route Early Returns
+// Ensures validation failures stop request processing before sendFile runs.
+describe('Fix: Static Route Early Returns', function () {
+	const suffix = 'static-app';
+	const host = hostname();
+	const fileName = 'hello.txt';
+	const routePath = `/${host}/${suffix}/v1/static/.metacall/faas/apps/${suffix}/${fileName}`;
+	const appPath = path.join(appsDirectory, suffix);
+	const filePath = path.join(appPath, fileName);
+
+	afterEach(async () => {
+		delete Applications[suffix];
+		await rm(appPath, { recursive: true, force: true });
+	});
+
+	it('should return a 404 with the real suffix when the app is not deployed', async () => {
+		const app = initializeAPI();
+		const response = await request(app).get(routePath);
+
+		assert.strictEqual(response.status, 404);
+		assert.match(
+			response.text,
+			new RegExp(`application '${suffix}' hasn't been deployed yet`)
+		);
+	});
+
+	it('should return a 404 when the static file is missing', async () => {
+		const app = initializeAPI();
+		Applications[suffix] = {
+			proc: {} as ChildProcess
+		} as Application;
+		await mkdir(appPath, { recursive: true });
+
+		const response = await request(app).get(routePath);
+
+		assert.strictEqual(response.status, 404);
+		assert.strictEqual(
+			response.text,
+			'The file you are looking for might not be available or the application may not be deployed.'
+		);
+	});
+
+	it('should serve the requested file when the app is deployed and the file exists', async () => {
+		const app = initializeAPI();
+		Applications[suffix] = {
+			proc: {} as ChildProcess
+		} as Application;
+		await mkdir(appPath, { recursive: true });
+		await writeFile(filePath, 'hello from static route', 'utf8');
+
+		const response = await request(app).get(routePath);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual(response.text, 'hello from static route');
 	});
 });
