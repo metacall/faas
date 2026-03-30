@@ -16,15 +16,11 @@ interface PIDToColorCodeMapType {
 	[key: string]: number;
 }
 
-interface AssignedColorCodesType {
-	[key: string]: boolean;
-}
-
 // Maps a PID to a color code
 const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 
-// Tracks whether a color code is assigned
-const assignedColorCodes: AssignedColorCodesType = {};
+// Round-robin counter for deterministic, wrap-around color assignment
+let nextColorIndex = 0;
 
 const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
@@ -38,24 +34,15 @@ const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 // 	return Math.max(...workerLengths) + maxIndexWidth;
 // };
 
-// TODO: There is a problem with this code, looking randomly for an unique code
-// will end in an endless loop whenever all color codes are allocated, we should
-// use a better way of managing this
 const assignColorToWorker = (
 	deploymentName: string,
 	workerPID: number
 ): string => {
 	if (!PIDToColorCodeMap[workerPID]) {
-		let colorCode: number;
-
-		// Keep looking for unique code
-		do {
-			colorCode = ANSICode[Math.floor(Math.random() * ANSICode.length)];
-		} while (assignedColorCodes[colorCode]);
-
-		// Assign the unique code and mark it as used
-		PIDToColorCodeMap[workerPID] = colorCode;
-		assignedColorCodes[colorCode] = true;
+		// Assign the next color in sequence; wraps around when all 16 are used
+		PIDToColorCodeMap[workerPID] =
+			ANSICode[nextColorIndex % ANSICode.length];
+		nextColorIndex++;
 	}
 	const assignColorCode = PIDToColorCodeMap[workerPID];
 	return `\x1b[38;5;${assignColorCode}m${deploymentName}\x1b[0m`;

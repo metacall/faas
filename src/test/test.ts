@@ -255,3 +255,80 @@ describe('Fix: Asynchronous Function Execution', function () {
 		assert.strictEqual(r2.result, false);
 	});
 });
+
+// Fix: Logger Color Assignment (Issue #116)
+// Ensures the round-robin color assignment never enters an infinite loop
+// and wraps around safely when all 16 ANSI codes are exhausted.
+describe('Fix: Logger Color Assignment', function () {
+	// Replicate the round-robin logic from src/utils/logger.ts so we can
+	// unit-test it without importing module-private state (same pattern as
+	// buildEnv and safeInvoke above).
+	const ANSICode: number[] = [
+		166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184,
+		172
+	];
+
+	function createColorAssigner(): (pid: number) => number {
+		const pidMap: Record<number, number> = {};
+		let nextIndex = 0;
+		return (pid: number): number => {
+			if (!pidMap[pid]) {
+				pidMap[pid] = ANSICode[nextIndex % ANSICode.length];
+				nextIndex++;
+			}
+			return pidMap[pid];
+		};
+	}
+
+	it('should assign unique colors to the first 16 workers', () => {
+		const assign = createColorAssigner();
+		const colors = new Set<number>();
+		for (let pid = 1; pid <= 16; pid++) {
+			colors.add(assign(pid));
+		}
+		assert.strictEqual(
+			colors.size,
+			16,
+			'All 16 workers should have distinct colors'
+		);
+	});
+
+	it('should wrap around and NOT hang when a 17th worker is added', () => {
+		const assign = createColorAssigner();
+		// Allocate all 16
+		for (let pid = 1; pid <= 16; pid++) {
+			assign(pid);
+		}
+		// 17th must not block; it should reuse the first color
+		const color17 = assign(17);
+		const color1 = assign(1);
+		assert.strictEqual(
+			color17,
+			color1,
+			'17th worker should wrap around to the first color'
+		);
+	});
+
+	it('should return the same color for the same PID on repeated calls', () => {
+		const assign = createColorAssigner();
+		const first = assign(42);
+		const second = assign(42);
+		assert.strictEqual(
+			first,
+			second,
+			'Same PID must always map to the same color'
+		);
+	});
+
+	it('should handle a large number of workers without blocking', () => {
+		const assign = createColorAssigner();
+		// 100 workers — must complete without hanging
+		for (let pid = 1; pid <= 100; pid++) {
+			const color = assign(pid);
+			assert.ok(
+				ANSICode.includes(color),
+				`Color for PID ${pid} must be a valid ANSI code`
+			);
+		}
+	});
+});
