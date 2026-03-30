@@ -1,3 +1,4 @@
+import cors from 'cors';
 import { callFunction } from './controller/call';
 import { deployDelete } from './controller/delete';
 import { deploy } from './controller/deploy';
@@ -21,7 +22,10 @@ import AppError from './utils/appError';
 
 export function initializeAPI(): Express {
 	const app = express();
+
 	const host = hostname();
+
+	app.use(cors());
 
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
