@@ -16,7 +16,7 @@ on:
       repo:
         description: "Repository from which we should clone metacall/protocol"
         required: false
-        default: "metacall/faas"
+        default: "metacall/protocol"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
