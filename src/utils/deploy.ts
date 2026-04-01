@@ -47,14 +47,29 @@ export const deployProcess = async (
 	// Wait for load result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
+	let settled = false;
 
 	const promise = new Promise<void>((resolve, reject) => {
 		deployResolve = resolve;
 		deployReject = reject;
 	});
 
+	const safeResolve = (): void => {
+		if (!settled) {
+			settled = true;
+			deployResolve();
+		}
+	};
+
+	const safeReject = (err: Error): void => {
+		if (!settled) {
+			settled = true;
+			deployReject(err);
+		}
+	};
+
 	proc.on('error', (err: Error) => {
-		deployReject(err);
+		safeReject(err);
 	});
 
 	proc.on('message', (payload: WorkerMessageUnknown) => {
@@ -66,7 +81,7 @@ export const deployProcess = async (
 
 				application.proc = proc;
 				application.deployment = deployment;
-				deployResolve();
+				safeResolve();
 				break;
 			}
 
@@ -78,6 +93,7 @@ export const deployProcess = async (
 
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
+				if (!invokeQueue.has(invokeResult.id)) break;
 				const invoke = invokeQueue.get(invokeResult.id);
 				invoke.resolve(JSON.stringify(invokeResult.result));
 				break;
@@ -91,7 +107,7 @@ export const deployProcess = async (
 	proc.on('exit', code => {
 		// The application may have been ended unexpectedly,
 		// probably segmentation fault (exit code 139 in Linux)
-		deployReject(
+		safeReject(
 			new Error(
 				`Deployment '${resource.id}' process exited with code: ${
 					code || 'unknown'
@@ -99,10 +115,10 @@ export const deployProcess = async (
 			)
 		);
 
-		// TODO: How to implement the exit properly? We cannot reject easily
-		// the promise from the call if the process exits during the call.
-		// Also if exits during the call it will try to call deployReject
-		// which is completely out of scope and the promise was fullfilled already
+		// Drain all pending invocations so their HTTP responses don't hang
+		invokeQueue.drain(
+			`Worker process for '${resource.id}' exited unexpectedly (code: ${code || 'unknown'})`
+		);
 	});
 
 	return promise;
