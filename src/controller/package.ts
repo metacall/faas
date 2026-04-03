@@ -89,7 +89,8 @@ export const packageUpload = (
 
 			if (
 				mimeType !== 'application/x-zip-compressed' &&
-				mimeType !== 'application/zip'
+				mimeType !== 'application/zip' &&
+				mimeType !== 'application/octet-stream'
 			) {
 				return errorHandler(
 					new AppError('Please upload a zip file', 404)
