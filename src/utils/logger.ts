@@ -1,6 +1,7 @@
 import { ChildProcess } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import { promises as fs } from 'fs';
+
+import { logFileFullPath, logsDirectory } from './config';
 
 interface LogMessage {
 	deploymentName: string;
@@ -25,10 +26,6 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 
 // Tracks whether a color code is assigned
 const assignedColorCodes: AssignedColorCodesType = {};
-
-const logFilePath = path.join(__dirname, '../../logs/');
-const logFileName = 'app.log';
-const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 
 // TODO: Implement this properly?
 // const maxWorkerWidth = (maxIndexWidth = 3): number => {
@@ -73,7 +70,7 @@ class Logger {
 			const logEntry = this.logQueue.shift();
 			if (logEntry) {
 				const { deploymentName, workerPID, message } = logEntry;
-				this.store(deploymentName, message);
+				await this.store(deploymentName, message);
 				this.present(deploymentName, workerPID, message);
 				await new Promise(resolve => setTimeout(resolve, 0));
 			}
@@ -91,14 +88,21 @@ class Logger {
 		this.processQueue().catch(console.error);
 	}
 
-	private store(deploymentName: string, message: string): void {
+	private async store(
+		deploymentName: string,
+		message: string
+	): Promise<void> {
 		const timeStamp = new Date().toISOString();
 		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
 
-		if (!fs.existsSync(logFilePath)) {
-			fs.mkdirSync(logFilePath, { recursive: true });
+		try {
+			await fs.mkdir(logsDirectory, { recursive: true });
+			await fs.appendFile(logFileFullPath, logMessage, {
+				encoding: 'utf-8'
+			});
+		} catch (error) {
+			console.error('Failed to write log:', error);
 		}
-		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
 
 	private present(
