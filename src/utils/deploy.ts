@@ -47,10 +47,21 @@ export const deployProcess = async (
 	// Wait for load result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
+	let isSettled = false;
 
 	const promise = new Promise<void>((resolve, reject) => {
-		deployResolve = resolve;
-		deployReject = reject;
+		deployResolve = (value: void) => {
+			if (!isSettled) {
+				isSettled = true;
+				resolve(value);
+			}
+		};
+		deployReject = (reason: Error) => {
+			if (!isSettled) {
+				isSettled = true;
+				reject(reason);
+			}
+		};
 	});
 
 	proc.on('error', (err: Error) => {
@@ -79,7 +90,9 @@ export const deployProcess = async (
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
 				const invoke = invokeQueue.get(invokeResult.id);
-				invoke.resolve(JSON.stringify(invokeResult.result));
+				if (invoke) {
+					invoke.resolve(JSON.stringify(invokeResult.result));
+				}
 				break;
 			}
 
@@ -88,21 +101,25 @@ export const deployProcess = async (
 		}
 	});
 
-	proc.on('exit', code => {
-		// The application may have been ended unexpectedly,
-		// probably segmentation fault (exit code 139 in Linux)
+	proc.on('error', err => {
 		deployReject(
 			new Error(
-				`Deployment '${resource.id}' process exited with code: ${
-					code || 'unknown'
-				}`
+				`Deployment '${resource.id}' process failed to start: ${err.message}`
 			)
 		);
+	});
 
-		// TODO: How to implement the exit properly? We cannot reject easily
-		// the promise from the call if the process exits during the call.
-		// Also if exits during the call it will try to call deployReject
-		// which is completely out of scope and the promise was fullfilled already
+	proc.on('exit', code => {
+		// Reject only if deployment handshake has not completed yet.
+		if (!isSettled) {
+			deployReject(
+				new Error(
+					`Deployment '${resource.id}' process exited with code: ${
+						code || 'unknown'
+					}`
+				)
+			);
+		}
 	});
 
 	return promise;

@@ -78,9 +78,15 @@ const loadDeployment = (
 		deployment.packages[json.language_id as LanguageId] =
 			inspect[json.language_id];
 
-		// Store the functions
+		// Store the functions only callable values
 		Object.keys(exports).forEach(func => {
-			functions[func] = exports[func];
+			if (typeof exports[func] === 'function') {
+				functions[func] = exports[func];
+			} else {
+				console.warn(
+					`[Worker] export '${func}' is not callable, skipping.`
+				);
+			}
 		});
 	}
 
@@ -144,6 +150,14 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 
 			void (async () => {
 				try {
+					if (typeof functions[fn.name] !== 'function') {
+						throw new Error(
+							`Function '${fn.name}' is not loaded or not callable. ` +
+								`Available functions: [${Object.keys(
+									functions
+								).join(', ')}]`
+						);
+					}
 					const result = await functions[fn.name](...fn.args);
 					if (process.send) {
 						process.send({
