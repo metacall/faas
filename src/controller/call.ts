@@ -26,7 +26,8 @@ export const callFunction = (
 	}
 
 	const { suffix, func } = req.params;
-	const args = Object.values(req.body);
+	const args =
+		req.body && typeof req.body === 'object' ? Object.values(req.body) : [];
 	const application = Applications[suffix];
 
 	// Check if the application exists and it is running
