@@ -4,7 +4,7 @@ import path, { join } from 'path';
 import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
-import { exec } from '../utils/exec';
+import { execFile } from '../utils/exec';
 import { findRunners } from '../utils/install';
 import { catchAsync } from './catch';
 
@@ -17,6 +17,18 @@ type FetchFilesFromRepoBody = {
 // TODO: Isn't this available inside protocol package? We MUST reuse it
 type FetchBranchListBody = {
 	url: string;
+};
+
+const isValidRepositoryUrl = (repositoryUrl: string): boolean => {
+	// Accept common git URL formats used in local/dev flows
+	return /^(https:\/\/|ssh:\/\/|git@)[A-Za-z0-9._:/@-]+(\.git)?$/.test(
+		repositoryUrl
+	);
+};
+
+const isValidBranchName = (branchName: string): boolean => {
+	// Keep branch names strict to avoid malformed command arguments
+	return /^[A-Za-z0-9._/-]+$/.test(branchName);
 };
 
 const repositoryName = (url: string): string =>
@@ -67,9 +79,19 @@ export const repositoryBranchList = catchAsync(
 	) => {
 		try {
 			const { url } = req.body;
+			const repositoryUrl = url?.trim();
+
+			if (!repositoryUrl || !isValidRepositoryUrl(repositoryUrl)) {
+				return next(new AppError('Invalid repository URL.', 400));
+			}
 
 			// list remote branches for the repository
-			const { stdout } = await exec(`git ls-remote --heads ${url}`);
+			// execFile avoids shell interpolation, args are passed as an array
+			const { stdout } = await execFile('git', [
+				'ls-remote',
+				'--heads',
+				repositoryUrl
+			]);
 
 			// Parse branches from the command output
 			const branches = stdout
@@ -81,7 +103,7 @@ export const repositoryBranchList = catchAsync(
 			return res.status(200).json({ branches });
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
-			next(new AppError(`Error fetching branch list: ${message}`, 500));
+			next(new AppError(`Error fetching branch list: ${message}`, 400));
 		}
 	}
 );
@@ -93,30 +115,49 @@ export const repositoryFileList = catchAsync(
 		next: NextFunction
 	) => {
 		const { url, branch } = req.body;
-		const repoDir = repositoryName(url);
-		const repoPath = path.join(appsDirectory, repoDir);
+		const repositoryUrl = url?.trim();
+		const branchName = branch?.trim();
+
+		if (!repositoryUrl || !isValidRepositoryUrl(repositoryUrl)) {
+			return next(new AppError('Invalid repository URL.', 400));
+		}
+
+		if (!branchName || !isValidBranchName(branchName)) {
+			return next(new AppError('Invalid branch name.', 400));
+		}
+
+		const repositoryDirectoryName = repositoryName(repositoryUrl);
+		const repositoryPath = path.join(
+			appsDirectory,
+			repositoryDirectoryName
+		);
 
 		try {
 			// Delete existing repo folder if it exists
-			await repositoryDelete(appsDirectory, url);
+			await repositoryDelete(appsDirectory, repositoryUrl);
 
 			// Clone the repository with the requested branch so ls-tree can resolve it
-			await exec(
-				`git clone --depth=1 --no-checkout --branch ${branch} ${url} ${repoPath}`
-			);
+			await execFile('git', [
+				'clone',
+				'--depth=1',
+				'--no-checkout',
+				'--branch',
+				branchName,
+				repositoryUrl,
+				repositoryPath
+			]);
 
 			// List files in the specified branch
-			const { stdout } = await exec(
-				`git ls-tree -r ${branch} --name-only`,
-				{
-					cwd: repoPath
-				}
+			const { stdout } = await execFile(
+				'git',
+				['ls-tree', '-r', branchName, '--name-only'],
+				{ cwd: repositoryPath }
 			);
 
 			const files = stdout.trim().split('\n').filter(Boolean);
 
 			// Clean up the cloned repository
-			await fs.rm(repoPath, { recursive: true, force: true });
+			await fs.rm(repositoryPath, { recursive: true, force: true });
 
 			return res.status(200).json({ files });
 		} catch (err) {
@@ -124,7 +165,7 @@ export const repositoryFileList = catchAsync(
 			return next(
 				new AppError(
 					`Error fetching file list from repository: ${message}`,
-					500
+					400
 				)
 			);
 		}
@@ -138,6 +179,17 @@ export const repositoryClone = catchAsync(
 		next: NextFunction
 	) => {
 		const { branch, url } = req.body;
+		const repositoryUrl = url?.trim();
+		const branchName = branch?.trim();
+
+		if (!repositoryUrl || !isValidRepositoryUrl(repositoryUrl)) {
+			return next(new AppError('Invalid repository URL.', 400));
+		}
+
+		if (!branchName || !isValidBranchName(branchName)) {
+			return next(new AppError('Invalid branch name.', 400));
+		}
+
 		const resource: Resource = {
 			id: '',
 			path: '',
@@ -146,7 +198,7 @@ export const repositoryClone = catchAsync(
 		};
 
 		try {
-			await repositoryDelete(appsDirectory, url);
+			await repositoryDelete(appsDirectory, repositoryUrl);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			return next(
@@ -159,20 +211,23 @@ export const repositoryClone = catchAsync(
 
 		try {
 			// Clone the repository into the specified directory
-			await exec(
-				`git clone --single-branch --depth=1 --branch ${branch} ${url} ${join(
-					appsDirectory,
-					repositoryName(url)
-				)}`
-			);
+			await execFile('git', [
+				'clone',
+				'--single-branch',
+				'--depth=1',
+				'--branch',
+				branchName,
+				repositoryUrl,
+				join(appsDirectory, repositoryName(repositoryUrl))
+			]);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			return next(
-				new AppError(`Error cloning repository: ${message}`, 500)
+				new AppError(`Error cloning repository: ${message}`, 400)
 			);
 		}
 
-		const id = repositoryName(req.body.url);
+		const id = repositoryName(repositoryUrl);
 
 		resource.id = id;
 		resource.path = join(appsDirectory, id);

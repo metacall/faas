@@ -54,4 +54,15 @@ FROM base AS test
 
 RUN apt-get update \
 	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
-	&& npm install -g @metacall/deploy
+	&& npm install -g @metacall/deploy \
+	&& node -e " \
+		const fs = require('fs'); \
+		const file = '/usr/local/lib/node_modules/@metacall/deploy/node_modules/@metacall/protocol/dist/protocol.js'; \
+		const code = fs.readFileSync(file, 'utf8'); \
+		const patched = code.replace( \
+			'const res = await axios_1.default.post(getURL(\'/api/package/create\')', \
+			'fd.getLengthSync = () => NaN; fd.getLength = (cb) => cb(new Error()); const res = await axios_1.default.post(getURL(\'/api/package/create\')' \
+		); \
+		if (code === patched) { console.error('Patch target not found'); process.exit(1); } \
+		fs.writeFileSync(file, patched); \
+	"
