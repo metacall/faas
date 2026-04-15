@@ -54,4 +54,11 @@ FROM base AS test
 
 RUN apt-get update \
 	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
-	&& npm install -g metacall/deploy#master
+	&& git clone --depth=1 https://github.com/VanshikaSabharwal/deploy.git /tmp/metacall-deploy \
+	&& cd /tmp/metacall-deploy \
+	&& npm install --ignore-scripts \
+	&& ./node_modules/.bin/tsc \
+	&& npm pack \
+	&& npm install -g --ignore-scripts /tmp/metacall-deploy/*.tgz \
+	&& rm -rf /tmp/metacall-deploy
+	
