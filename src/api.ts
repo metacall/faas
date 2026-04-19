@@ -1,3 +1,4 @@
+import healthRouter from './routes/health';
 import { callFunction } from './controller/call';
 import { deployDelete } from './controller/delete';
 import { deploy } from './controller/deploy';
@@ -75,6 +76,8 @@ export function initializeAPI(): Express {
 			return res.status(200).json([]);
 		}
 	);
+
+	app.use(healthRouter);
 
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {
