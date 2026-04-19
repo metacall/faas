@@ -148,6 +148,28 @@ function test_python_base_app() {
 	local url=$1
 	[[ $(curl -s $url/number) = 100 ]] || exit 1
 	[[ $(curl -s $url/text) = '"asd"' ]] || exit 1
+
+	# Regression test for issue #64: sending bad args must NOT crash the server.
+	# The function 'number' takes 0 arguments; passing one should return HTTP 500
+	# with an error message, and the server must remain alive afterwards.
+	local bad_status
+	bad_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+		-H "Content-Type: application/json" \
+		-d '{"x":1}' \
+		"$url/number")
+	if [[ "$bad_status" != "500" ]]; then
+		echo "Bad-request test failed: expected HTTP 500, got $bad_status"
+		exit 1
+	fi
+
+	# Server must still be responsive after the bad request
+	local readiness
+	readiness=$(check_readiness)
+	if [[ "$readiness" != "200" ]]; then
+		echo "Server is down after bad request (issue #64 regression): readiness returned $readiness"
+		exit 1
+	fi
+	echo "Bad-request regression test (issue #64) passed."
 }
 
 # Test function for python-dependency-app

@@ -155,16 +155,16 @@ process.on('message', (payload: WorkerMessageUnknown) => {
 						});
 					}
 				} catch (err) {
-					// We must inform the master about the error or handle it gracefully.
-					// Since there wasn't an explicit InvokeError type, we'll mimic the old
-					// behavior but at least prevent the worker from crashing silently.
+					// Send a dedicated InvokeError message so the master process
+					// can reject the pending HTTP request with a proper error response
+					// instead of crashing or silently hanging.
 					console.error(`Error executing function ${fn.name}:`, err);
 					if (process.send) {
 						process.send({
-							type: WorkerMessageType.InvokeResult,
+							type: WorkerMessageType.InvokeError,
 							data: {
 								id: fn.id,
-								result: { error: String(err) }
+								error: String(err)
 							}
 						});
 					}
