@@ -1,5 +1,7 @@
 import { strict as assert } from 'assert';
 import { ChildProcess, spawn } from 'child_process';
+import * as fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 // Helper: build the envStringified object the same way deployProcess does.
@@ -253,5 +255,56 @@ describe('Fix: Asynchronous Function Execution', function () {
 			['world']
 		);
 		assert.strictEqual(r2.result, false);
+	});
+});
+
+// Fix: deleteFolder must use fs.rm instead of fs.unlink (#119)
+// fs.unlink only works on files; calling it on a directory fails with EISDIR
+// fs.rm with { recursive: true, force: true } correctly removes directory trees hehe
+describe('Fix: deleteFolder should use fs.rm to remove directories [#119]', function () {
+	it('should remove a directory tree with fs.rm', done => {
+		const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'faas-test-rm-'));
+		const nested = path.join(tmpDir, 'sub');
+		fs.mkdirSync(nested);
+		fs.writeFileSync(path.join(nested, 'file.txt'), 'data');
+
+		fs.rm(
+			tmpDir,
+			{ recursive: true, force: true },
+			(error: Error | null) => {
+				assert.strictEqual(
+					error,
+					null,
+					'fs.rm should succeed on a dir'
+				);
+				assert.strictEqual(
+					fs.existsSync(tmpDir),
+					false,
+					'Directory should be removed'
+				);
+				done();
+			}
+		);
+	});
+
+	it('should fail to remove a directory with fs.unlink (proving the bug)', done => {
+		const tmpDir = fs.mkdtempSync(
+			path.join(os.tmpdir(), `faas-test-unlink-`)
+		);
+
+		fs.unlink(tmpDir, (error: NodeJS.ErrnoException | null) => {
+			assert.notStrictEqual(
+				error,
+				null,
+				'fs.unlink should fail on a directory'
+			);
+			assert.ok(
+				error?.code === 'EISDIR' || error?.code === 'EPERM',
+				`Expected EISDIR or EPERM, got: ${error?.code ?? 'null'}`
+			);
+			// Clean up
+			fs.rmSync(tmpDir, { recursive: true, force: true });
+			done();
+		});
 	});
 });
