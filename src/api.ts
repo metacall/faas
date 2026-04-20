@@ -1,4 +1,5 @@
 import healthRouter from './routes/health';
+import deleteRouter from './routes/delete';
 import { requestLogger } from './middleware/requestLogger';
 import { callFunction } from './controller/call';
 import { deployDelete } from './controller/delete';
@@ -80,6 +81,7 @@ export function initializeAPI(): Express {
 	);
 
 	app.use(healthRouter);
+	app.use(deleteRouter);
 
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {
