@@ -1,12 +1,17 @@
 import { strict as assert } from 'assert';
 import { ChildProcess, spawn } from 'child_process';
 import { mkdir, rm, writeFile } from 'fs/promises';
+import { createServer, get as httpGet, IncomingMessage } from 'http';
 import { hostname } from 'os';
 import path from 'path';
-import request from 'supertest';
 import { Application, Applications } from '../app';
 import { initializeAPI } from '../api';
 import { appsDirectory } from '../utils/config';
+
+type RouteResponse = {
+	status: number;
+	text: string;
+};
 
 // Helper: build the envStringified object the same way deployProcess does.
 // This is a pure-function extraction of the logic we fixed, so we can unit-test
@@ -21,6 +26,62 @@ function buildEnv(env: Record<string, string>): Record<string, string> {
 		}
 	}
 	return envStringified;
+}
+
+async function getResponse(
+	app: ReturnType<typeof initializeAPI>,
+	routePath: string
+): Promise<RouteResponse> {
+	const server = createServer(app);
+	await new Promise<void>((resolve, reject) => {
+		const onError = (err: Error) => {
+			server.off('error', onError);
+			reject(err);
+		};
+		server.once('error', onError);
+		server.listen(0, '127.0.0.1', () => {
+			server.off('error', onError);
+			resolve();
+		});
+	});
+
+	try {
+		const address = server.address();
+		if (!address || typeof address === 'string') {
+			throw new Error('Failed to bind test server');
+		}
+
+		return await new Promise<RouteResponse>((resolve, reject) => {
+			const req = httpGet(
+				`http://127.0.0.1:${address.port}${routePath}`,
+				(response: IncomingMessage) => {
+					let body = '';
+					response.setEncoding('utf8');
+					response.on('data', (chunk: string) => {
+						body += chunk;
+					});
+					response.on('end', () => {
+						resolve({
+							status: response.statusCode ?? 500,
+							text: body
+						});
+					});
+				}
+			);
+
+			req.on('error', reject);
+		});
+	} finally {
+		await new Promise<void>((resolve, reject) => {
+			server.close(err => {
+				if (err) {
+					reject(err);
+					return;
+				}
+				resolve();
+			});
+		});
+	}
 }
 
 // Helper: invoke a function that may be sync or async, just as the worker does.
@@ -279,7 +340,7 @@ describe('Fix: Static Route Early Returns', function () {
 
 	it('should return a 404 with the real suffix when the app is not deployed', async () => {
 		const app = initializeAPI();
-		const response = await request(app).get(routePath);
+		const response = await getResponse(app, routePath);
 
 		assert.strictEqual(response.status, 404);
 		assert.match(
@@ -295,7 +356,7 @@ describe('Fix: Static Route Early Returns', function () {
 		} as Application;
 		await mkdir(appPath, { recursive: true });
 
-		const response = await request(app).get(routePath);
+		const response = await getResponse(app, routePath);
 
 		assert.strictEqual(response.status, 404);
 		assert.strictEqual(
@@ -312,7 +373,7 @@ describe('Fix: Static Route Early Returns', function () {
 		await mkdir(appPath, { recursive: true });
 		await writeFile(filePath, 'hello from static route', 'utf8');
 
-		const response = await request(app).get(routePath);
+		const response = await getResponse(app, routePath);
 
 		assert.strictEqual(response.status, 200);
 		assert.strictEqual(response.text, 'hello from static route');
