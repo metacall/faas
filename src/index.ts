@@ -9,6 +9,7 @@ import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
 import { ensureFolderExists } from './utils/filesystem';
 import { printVersionAndExit } from './utils/version';
+import { errorHandler } from './middleware/errorHandler';
 
 // Initialize the FaaS
 void (async (): Promise<void> => {
@@ -37,6 +38,7 @@ void (async (): Promise<void> => {
 		await autoDeployApps(appsDirectory);
 
 		const app = initializeAPI();
+		app.use(errorHandler);
 		const port = process.env.PORT || 9000;
 
 		app.listen(port, () => {
