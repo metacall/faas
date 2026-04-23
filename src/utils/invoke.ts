@@ -19,6 +19,16 @@ class InvokeQueue {
 		delete this.queue[id];
 		return invoke;
 	}
+
+	public rejectAll(ids: string[], error: string): void {
+		for (const id of ids) {
+			const invoke = this.queue[id];
+			if (invoke) {
+				invoke.reject(error);
+				delete this.queue[id];
+			}
+		}
+	}
 }
 
 export const invokeQueue = new InvokeQueue();
