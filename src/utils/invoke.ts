@@ -19,6 +19,10 @@ class InvokeQueue {
 		delete this.queue[id];
 		return invoke;
 	}
+
+	public pendingIds(): string[] {
+		return Object.keys(this.queue);
+	}
 }
 
 export const invokeQueue = new InvokeQueue();
