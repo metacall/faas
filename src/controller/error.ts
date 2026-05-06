@@ -18,5 +18,9 @@ export const globalError = (
 		);
 	}
 
-	return res.status(err.statusCode).send(err.message);
+	return res.status(err.statusCode).json({
+		error: err.status,
+		message: err.message,
+		statusCode: err.statusCode
+	});
 };
