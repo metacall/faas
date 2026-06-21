@@ -26,6 +26,9 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 // Tracks whether a color code is assigned
 const assignedColorCodes: AssignedColorCodesType = {};
 
+// When all the 16 codes are allocated it cycles through colors to avoid infinite loop
+let colorIndex = 0;
+
 const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
 const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
@@ -38,20 +41,14 @@ const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 // 	return Math.max(...workerLengths) + maxIndexWidth;
 // };
 
-// TODO: There is a problem with this code, looking randomly for an unique code
-// will end in an endless loop whenever all color codes are allocated, we should
-// use a better way of managing this
 const assignColorToWorker = (
 	deploymentName: string,
 	workerPID: number
 ): string => {
 	if (!PIDToColorCodeMap[workerPID]) {
-		let colorCode: number;
-
-		// Keep looking for unique code
-		do {
-			colorCode = ANSICode[Math.floor(Math.random() * ANSICode.length)];
-		} while (assignedColorCodes[colorCode]);
+		// Assigns the next color of the palette, cycling back when all 16 are used
+		const colorCode = ANSICode[colorIndex % ANSICode.length];
+		colorIndex++;
 
 		// Assign the unique code and mark it as used
 		PIDToColorCodeMap[workerPID] = colorCode;
