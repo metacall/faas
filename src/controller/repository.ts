@@ -4,7 +4,7 @@ import path, { join } from 'path';
 import { Application, Applications, Resource } from '../app';
 import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
-import { exec } from '../utils/exec';
+import { execFile } from '../utils/execFile';
 import { findRunners } from '../utils/install';
 import { catchAsync } from './catch';
 
@@ -68,8 +68,12 @@ export const repositoryBranchList = catchAsync(
 		try {
 			const { url } = req.body;
 
-			// list remote branches for the repository
-			const { stdout } = await exec(`git ls-remote --heads ${url}`);
+			// list remote branches for the repository using execFile (no shell)
+			const { stdout } = await execFile('git', [
+				'ls-remote',
+				'--heads',
+				url
+			]);
 
 			// Parse branches from the command output
 			const branches = stdout
@@ -101,16 +105,21 @@ export const repositoryFileList = catchAsync(
 			await repositoryDelete(appsDirectory, url);
 
 			// Clone the repository with the requested branch so ls-tree can resolve it
-			await exec(
-				`git clone --depth=1 --no-checkout --branch ${branch} ${url} ${repoPath}`
-			);
+			await execFile('git', [
+				'clone',
+				'--depth=1',
+				'--no-checkout',
+				'--branch',
+				branch,
+				url,
+				repoPath
+			]);
 
 			// List files in the specified branch
-			const { stdout } = await exec(
-				`git ls-tree -r ${branch} --name-only`,
-				{
-					cwd: repoPath
-				}
+			const { stdout } = await execFile(
+				'git',
+				['ls-tree', '-r', branch, '--name-only'],
+				{ cwd: repoPath }
 			);
 
 			const files = stdout.trim().split('\n').filter(Boolean);
@@ -159,12 +168,15 @@ export const repositoryClone = catchAsync(
 
 		try {
 			// Clone the repository into the specified directory
-			await exec(
-				`git clone --single-branch --depth=1 --branch ${branch} ${url} ${join(
-					appsDirectory,
-					repositoryName(url)
-				)}`
-			);
+			await execFile('git', [
+				'clone',
+				'--single-branch',
+				'--depth=1',
+				'--branch',
+				branch,
+				url,
+				join(appsDirectory, repositoryName(url))
+			]);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			return next(
