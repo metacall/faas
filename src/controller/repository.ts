@@ -6,6 +6,7 @@ import AppError from '../utils/appError';
 import { appsDirectory } from '../utils/config';
 import { exec } from '../utils/exec';
 import { findRunners } from '../utils/install';
+import { safeResolve } from '../utils/safePath';
 import { catchAsync } from './catch';
 
 // TODO: Isn't this available inside protocol package? We MUST reuse it
@@ -28,11 +29,13 @@ const repositoryName = (url: string): string =>
 		.toLowerCase();
 
 const repositoryDelete = async <Path extends string>(
-	path: Path,
+	basePath: Path,
 	url: string
 ): Promise<void> => {
 	const folder = repositoryName(url);
-	const repoFilePath = join(path, folder);
+
+	// Use safeResolve to prevent path traversal
+	const repoFilePath = safeResolve(String(basePath), folder);
 
 	await fs.rm(repoFilePath, { recursive: true, force: true });
 };
