@@ -8,9 +8,10 @@ interface LogMessage {
 	message: string;
 }
 
+// Shuffle the array randomly on startup (equal randomness is not relevant that's why we use this sort trick)
 const ANSICode: number[] = [
 	166, 154, 142, 118, 203, 202, 190, 215, 214, 32, 6, 4, 220, 208, 184, 172
-];
+].sort(() => Math.random() - 0.5);
 
 interface PIDToColorCodeMapType {
 	[key: string]: number;
@@ -19,7 +20,7 @@ interface PIDToColorCodeMapType {
 // Maps a PID to a color code
 const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 
-// Round-robin counter for color assignment
+// Counter for color assignment
 let colorIndex = 0;
 
 const logFilePath = path.join(__dirname, '../../logs/');
@@ -31,9 +32,8 @@ const assignColorToWorker = (
 	workerPID: number
 ): string => {
 	if (!PIDToColorCodeMap[workerPID]) {
-		// Use round-robin to cycle through colors safely
-		const colorCode = ANSICode[colorIndex % ANSICode.length];
-		colorIndex++;
+		// Cycle through colors safely
+		const colorCode = ANSICode[(colorIndex++) % ANSICode.length];
 		PIDToColorCodeMap[workerPID] = colorCode;
 	}
 	const assignColorCode = PIDToColorCodeMap[workerPID];
