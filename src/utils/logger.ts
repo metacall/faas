@@ -41,7 +41,7 @@ const assignColorToWorker = (
 ): string => {
 	if (!PIDToColorCodeMap[workerPID]) {
 		// Cycle through colors safely
-		const colorCode = ANSICode[(colorIndex++) % ANSICode.length];
+		const colorCode = ANSICode[colorIndex++ % ANSICode.length];
 		PIDToColorCodeMap[workerPID] = colorCode;
 	}
 	const assignColorCode = PIDToColorCodeMap[workerPID];
