@@ -27,6 +27,14 @@ const logFilePath = path.join(__dirname, '../../logs/');
 const logFileName = 'app.log';
 const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
 
+// TODO: Implement this properly?
+// const maxWorkerWidth = (maxIndexWidth = 3): number => {
+// 	const workerLengths = Object.keys(Applications).map(
+// 		worker => worker.length
+// 	);
+// 	return Math.max(...workerLengths) + maxIndexWidth;
+// };
+
 const assignColorToWorker = (
 	deploymentName: string,
 	workerPID: number
