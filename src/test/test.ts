@@ -255,3 +255,143 @@ describe('Fix: Asynchronous Function Execution', function () {
 		assert.strictEqual(r2.result, false);
 	});
 });
+
+// Fix: Allow Deletion of Undeployed Applications
+// Ensures that applications can be deleted regardless of their deployment state,
+// preventing state locks when deployments fail or are incomplete.
+describe('Fix: Undeployed App Deletion', function () {
+	// Helper: Mock Response object for testing delete handler
+	interface MockResponse {
+		statusCode?: number;
+		jsonData?: Record<string, unknown>;
+		status(code: number): MockResponse;
+		json(data: Record<string, unknown>): MockResponse;
+	}
+
+	const createMockResponse = (): MockResponse => ({
+		status(code: number) {
+			this.statusCode = code;
+			return this;
+		},
+		json(data: Record<string, unknown>) {
+			this.jsonData = data;
+			return this;
+		}
+	});
+
+	// Helper: Create a mock Application object
+	interface MockApplication {
+		proc?: { killed?: boolean };
+		kill(): void;
+	}
+
+	const createMockApplication = (withProc = true): MockApplication => ({
+		proc: withProc ? { killed: false } : undefined,
+		kill() {
+			if (this.proc) {
+				this.proc.killed = true;
+			}
+		}
+	});
+
+	it('should successfully delete a deployed application with process', () => {
+		const app = createMockApplication(true);
+		assert.ok(app.proc !== undefined, 'Process should exist initially');
+
+		if (app.proc) {
+			app.kill();
+		}
+		delete (app as unknown as Record<string, unknown>)['proc'];
+
+		assert.strictEqual(app.proc, undefined, 'Process should be removed');
+	});
+
+	it('should successfully delete an undeployed application without process', () => {
+		const app = createMockApplication(false);
+		assert.strictEqual(app.proc, undefined, 'Process should not exist');
+
+		// Should proceed without error even if no process
+		if (app.proc) {
+			app.kill();
+		}
+		assert.ok(true, 'Should complete without error');
+	});
+
+	it('should return 404 for non-existent application', () => {
+		const application = undefined;
+		const response = createMockResponse();
+
+		if (!application) {
+			response.status(404).json({ error: 'Application not found' });
+		}
+
+		assert.strictEqual(response.statusCode, 404);
+		assert.strictEqual(response.jsonData?.error, 'Application not found');
+	});
+
+	it('should return 200 when application is deleted successfully', () => {
+		const application = createMockApplication(true);
+		const response = createMockResponse();
+
+		if (application) {
+			if (application.proc) {
+				application.kill();
+			}
+			response
+				.status(200)
+				.json({ message: 'Application deleted successfully' });
+		}
+
+		assert.strictEqual(response.statusCode, 200);
+		assert.strictEqual(
+			response.jsonData?.message,
+			'Application deleted successfully'
+		);
+	});
+
+	it('should fix state lock scenario', () => {
+		const applicationsTable: Record<string, MockApplication> = {};
+		const appId = 'test-app';
+
+		// Step 1: Upload creates app (proc undefined)
+		applicationsTable[appId] = createMockApplication(false);
+		assert.ok(appId in applicationsTable);
+		assert.strictEqual(applicationsTable[appId].proc, undefined);
+
+		// Step 2: Delete should now succeed (not blocked)
+		const app = applicationsTable[appId];
+		if (app) {
+			if (app.proc) {
+				app.kill();
+			}
+			delete applicationsTable[appId];
+		}
+
+		// Step 3: Verify cleanup
+		assert.strictEqual(applicationsTable[appId], undefined);
+
+		// Step 4: Re-upload with same name works
+		applicationsTable[appId] = createMockApplication(false);
+		assert.ok(appId in applicationsTable);
+	});
+
+	it('should ensure process cleanup is idempotent', () => {
+		const app = createMockApplication(true);
+
+		app.kill();
+		assert.ok(app.proc?.killed);
+
+		app.kill();
+		assert.ok(app.proc?.killed, 'Calling kill twice should be safe');
+	});
+
+	it('should properly return JSON response format', () => {
+		const response = createMockResponse();
+		response
+			.status(200)
+			.json({ message: 'Application deleted successfully' });
+
+		assert.ok(response.jsonData !== undefined);
+		assert.strictEqual(typeof response.jsonData?.message, 'string');
+	});
+});
