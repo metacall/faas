@@ -25,7 +25,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 # FaaS base URL
-BASE_URL="http://localhost:9000"
+BASE_URL="${FAAS_URL:-http://localhost:9000}"
 
 # Function to check readiness
 function check_readiness() {
