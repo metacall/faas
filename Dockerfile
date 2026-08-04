@@ -17,8 +17,7 @@
 #	limitations under the License.
 #
 
-# TODO: Remove --platform=linux/amd64 once we add support to it in metacall/distributable-linux
-FROM --platform=linux/amd64 node:20-bookworm-slim AS base
+FROM node:20-bookworm-slim AS base
 
 # Image descriptor
 LABEL copyright.name="Vicente Eduardo Ferrer Garcia" \
@@ -54,4 +53,11 @@ FROM base AS test
 
 RUN apt-get update \
 	&& apt-get install curl ca-certificates jq git expect -y --no-install-recommends \
-	&& npm install -g @metacall/deploy
+	&& git clone --depth=1 https://github.com/metacall/deploy.git /tmp/metacall-deploy \
+	&& cd /tmp/metacall-deploy \
+	&& npm install --ignore-scripts \
+	&& npm run build \
+	&& npm pack \
+	&& npm install -g --ignore-scripts /tmp/metacall-deploy/*.tgz \
+	&& rm -rf /tmp/metacall-deploy
+	
