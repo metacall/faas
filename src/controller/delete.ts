@@ -26,7 +26,7 @@ export const deployDelete = catchAsync(
 
 		// Check if the application exists and it is running
 		if (!application?.proc) {
-			return res.send(
+			return res.json(
 				`Oops! It looks like the application '${suffix}' hasn't been deployed yet. Please deploy it before you delete it.`
 			);
 		}
@@ -44,6 +44,6 @@ export const deployDelete = catchAsync(
 		await rm(appLocation, { recursive: true, force: true });
 
 		// Send response based on whether there was an error during deletion
-		return res.send('Deploy Delete Succeed');
+		return res.json('Deploy Delete Succeed');
 	}
 );
