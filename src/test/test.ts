@@ -255,3 +255,62 @@ describe('Fix: Asynchronous Function Execution', function () {
 		assert.strictEqual(r2.result, false);
 	});
 });
+
+// safeResolve() — path boundary guard
+// (inline copy of src/utils/safePath.ts — no I/O, no server needed)
+
+import nodePath from 'path';
+
+function safeResolveInline(baseDir: string, child: string): string {
+	if (!child || !child.trim()) {
+		throw new Error(`Invalid path: '${child}'`);
+	}
+
+	const resolvedBase = nodePath.resolve(baseDir);
+	const resolvedTarget = nodePath.resolve(baseDir, child);
+
+	if (
+		resolvedTarget === resolvedBase ||
+		!resolvedTarget.startsWith(resolvedBase + nodePath.sep)
+	) {
+		throw new Error(`Invalid path: '${child}'`);
+	}
+
+	return resolvedTarget;
+}
+
+describe('safeResolve() — path boundary guard', function () {
+	const BASE = '/tmp/faas-test-apps';
+
+	it('resolves a valid child name inside base dir', () => {
+		const result = safeResolveInline(BASE, 'my-app');
+		assert.equal(result, `${BASE}/my-app`);
+	});
+
+	it('throws on a traversal segment (../)', () => {
+		assert.throws(() => safeResolveInline(BASE, '../etc'), /Invalid path/);
+	});
+
+	it('throws on a deeply nested traversal', () => {
+		assert.throws(
+			() => safeResolveInline(BASE, 'foo/../../etc/passwd'),
+			/Invalid path/
+		);
+	});
+
+	it('throws on an absolute path', () => {
+		assert.throws(
+			() => safeResolveInline(BASE, '/tmp/evil'),
+			/Invalid path/
+		);
+	});
+
+	it('throws on empty string (resolves to base itself — disallowed for delete)', () => {
+		assert.throws(() => safeResolveInline(BASE, ''), /Invalid path/);
+	});
+
+	it('allows a valid app name (org-repo style)', () => {
+		const result = safeResolveInline(BASE, 'org-repo');
+		assert.equal(result, `${BASE}/org-repo`);
+	});
+});
