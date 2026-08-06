@@ -207,6 +207,22 @@ run_tests "python-dependency-app" test_python_dependency_app
 run_tests "nodejs-dependency-app" test_nodejs_dependency_app
 run_tests "nodejs-env-app" test_nodejs_env_app
 
+# Test logs endpoint returns real logs instead of stub
+echo "Testing logs API endpoint."
+
+logs_prefix=$(getPrefix "nodejs-base-app")
+logs_response=$(curl -s -X POST \
+	-H "Content-Type: application/json" \
+	-d '{"suffix":"nodejs-base-app","prefix":"'"$logs_prefix"'","type":"deploy","container":"node","version":"v1"}' \
+	$BASE_URL/api/deploy/logs)
+
+if [[ "$logs_response" == "TODO: Implement Logs..." ]]; then
+	echo "Logs API test failed: still returning stub response."
+	exit 1
+fi
+
+echo "Logs API test passed."
+
 echo "Integration tests for package deployment passed without errors."
 
 function test_deploy_from_repo() {

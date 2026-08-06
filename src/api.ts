@@ -46,7 +46,7 @@ export function initializeAPI(): Express {
 	app.post('/api/repository/add', repositoryClone);
 
 	app.post('/api/deploy/create', deploy);
-	app.post('/api/deploy/logs', logs);
+	app.post('/api/deploy/logs', (req, res) => void logs(req, res));
 	app.post('/api/deploy/delete', deployDelete);
 
 	app.get('/api/inspect', inspect);

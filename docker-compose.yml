@@ -34,7 +34,7 @@ services:
       timeout: 2s
       retries: 30
     volumes:
-      - ./logs:/metacall/logs
+      - ./logs:/root/.metacall/faas/logs
 
   test:
     image: metacall/faas:test
