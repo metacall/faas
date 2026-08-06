@@ -43,12 +43,46 @@ const getUploadError = (
 	return new AppError(appError.message, appError.code);
 };
 
+interface PackageUploadState {
+	requestSettled: boolean;
+}
+
+export const handlePackageUploadError = (
+	req: Pick<Request, 'unpipe'>,
+	res: Pick<Response, 'headersSent'>,
+	bb: NodeJS.WritableStream,
+	next: NextFunction,
+	state: PackageUploadState,
+	error: AppError,
+	log: (message: string, error: AppError) => void = (
+		message: string,
+		loggedError: AppError
+	) => {
+		console.error(message, loggedError);
+	}
+): void => {
+	if (state.requestSettled || res.headersSent) {
+		log(
+			'Ignoring package upload async error after response was already settled',
+			error
+		);
+		return;
+	}
+
+	state.requestSettled = true;
+	req.unpipe(bb);
+	next(error);
+};
+
 export const packageUpload = (
 	req: Request,
 	res: Response,
 	next: NextFunction
 ): void => {
 	const bb = busboy({ headers: req.headers });
+	const state: PackageUploadState = {
+		requestSettled: false
+	};
 	const resource: Resource = {
 		id: '',
 		type: '',
@@ -63,8 +97,7 @@ export const packageUpload = (
 	});
 
 	const errorHandler = (error: AppError) => {
-		req.unpipe(bb);
-		next(error);
+		handlePackageUploadError(req, res, bb, next, state, error);
 	};
 
 	const eventHandler = <T>(type: keyof busboy.BusboyEvents, listener: T) => {
@@ -228,6 +261,7 @@ export const packageUpload = (
 			unzipAndResolve()
 				.then(() => {
 					resourceResolve(resource);
+					state.requestSettled = true;
 					res.status(201).json({
 						id: resource.id
 					});
