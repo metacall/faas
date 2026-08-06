@@ -1,3 +1,5 @@
+import healthRouter from './routes/health';
+import { requestLogger } from './middleware/requestLogger';
 import { callFunction } from './controller/call';
 import { deployDelete } from './controller/delete';
 import { deploy } from './controller/deploy';
@@ -25,6 +27,7 @@ export function initializeAPI(): Express {
 
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
+	app.use(requestLogger);
 
 	app.get('/api/readiness', (_req: Request, res: Response) =>
 		res.sendStatus(200)
@@ -75,6 +78,8 @@ export function initializeAPI(): Express {
 			return res.status(200).json([]);
 		}
 	);
+
+	app.use(healthRouter);
 
 	// For all the additional unimplemented routes
 	app.all('*', (req: Request, res: Response, next: NextFunction) => {
