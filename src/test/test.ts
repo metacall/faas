@@ -255,3 +255,44 @@ describe('Fix: Asynchronous Function Execution', function () {
 		assert.strictEqual(r2.result, false);
 	});
 });
+
+// Fix: Directory Cleanup — deleteFolder (Issue #119)
+// Ensures that fs.rm (not fs.unlink) is used to delete directories.
+// fs.unlink only works on files; calling it on a directory fails with EISDIR/EPERM.
+describe('Fix: Directory Cleanup (deleteFolder)', function () {
+	const os = require('os');
+	const fs = require('fs');
+
+	it('should remove a directory tree with fs.rm (the fix)', done => {
+		const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'faas-test-'));
+		// Create a nested file so it's a non-empty dir
+		const nested = path.join(tmpDir, 'sub');
+		fs.mkdirSync(nested);
+		fs.writeFileSync(path.join(nested, 'file.txt'), 'test');
+
+		fs.rm(tmpDir, { recursive: true, force: true }, (error: Error | null) => {
+			assert.strictEqual(error, null, 'fs.rm should succeed on directories');
+			assert.strictEqual(
+				fs.existsSync(tmpDir),
+				false,
+				'Directory should be fully removed'
+			);
+			done();
+		});
+	});
+
+	it('should fail to remove a directory with fs.unlink (proving fix is needed)', done => {
+		const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'faas-test-'));
+
+		fs.unlink(tmpDir, (error: Error | null) => {
+			assert.notStrictEqual(
+				error,
+				null,
+				'fs.unlink should fail on directories'
+			);
+			// Clean up
+			fs.rmSync(tmpDir, { recursive: true, force: true });
+			done();
+		});
+	});
+});
