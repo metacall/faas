@@ -58,6 +58,8 @@ export const autoDeployApps = async (appsDir: string): Promise<void> => {
 			await deployProcess(resource, env);
 			succeeded++;
 		} catch (err) {
+			// Kill the process if it spawned but failed to initialize
+			Applications[resource.id]?.kill();
 			delete Applications[resource.id];
 			// eslint-disable-next-line no-console
 			console.warn(
