@@ -14,6 +14,7 @@ export class Application {
 	public resource?: Promise<Resource>;
 	public proc?: ChildProcess;
 	public deployment?: Deployment;
+	public pendingInvocations: Set<string> = new Set();
 
 	public kill(): void {
 		this.proc?.kill();

@@ -47,6 +47,7 @@ export const deployProcess = async (
 	// Wait for load result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
+	let deployed = false;
 
 	const promise = new Promise<void>((resolve, reject) => {
 		deployResolve = resolve;
@@ -66,6 +67,7 @@ export const deployProcess = async (
 
 				application.proc = proc;
 				application.deployment = deployment;
+				deployed = true;
 				deployResolve();
 				break;
 			}
@@ -88,21 +90,24 @@ export const deployProcess = async (
 		}
 	});
 
-	proc.on('exit', code => {
-		// The application may have been ended unexpectedly,
-		// probably segmentation fault (exit code 139 in Linux)
-		deployReject(
-			new Error(
-				`Deployment '${resource.id}' process exited with code: ${
-					code || 'unknown'
-				}`
-			)
-		);
+	proc.on('exit', (code: number | null) => {
+		const exitMessage = `Worker process for '${resource.id}' exited with code: ${code ?? 'unknown'}`;
 
-		// TODO: How to implement the exit properly? We cannot reject easily
-		// the promise from the call if the process exits during the call.
-		// Also if exits during the call it will try to call deployReject
-		// which is completely out of scope and the promise was fullfilled already
+		if (!deployed) {
+			// Process exited before the deployment handshake completed
+			deployReject(new Error(exitMessage));
+		} else {
+			// Process exited after a successful deploy — reject any in-flight invocations
+			// so their HTTP responses are not left hanging indefinitely
+			const application = Applications[resource.id];
+			if (application?.pendingInvocations.size > 0) {
+				invokeQueue.rejectAll(
+					[...application.pendingInvocations],
+					exitMessage
+				);
+				application.pendingInvocations.clear();
+			}
+		}
 	});
 
 	return promise;
