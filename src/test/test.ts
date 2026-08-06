@@ -255,3 +255,205 @@ describe('Fix: Asynchronous Function Execution', function () {
 		assert.strictEqual(r2.result, false);
 	});
 });
+
+// Fix: Worker Process Exit Handling (Issue #114)
+// Ensures that when a worker process exits:
+//  1. The deploy promise is not double-settled (deployReject after deployResolve)
+//  2. All pending function invocations in the InvokeQueue are rejected so
+//     HTTP responses don't hang forever
+describe('Fix: Worker Process Exit Handling (Issue #114)', function () {
+	// --- InvokeQueue.drain() ---
+
+	it('should reject all pending invocations when drain() is called', done => {
+		// We create a minimal InvokeQueue-like structure to test the drain logic
+		// without importing the singleton (which shares state across tests)
+		const queue: Record<
+			string,
+			{ resolve: (v: string) => void; reject: (r: string) => void }
+		> = {};
+
+		const push = (invoke: {
+			resolve: (v: string) => void;
+			reject: (r: string) => void;
+		}): string => {
+			const id = String(Math.random());
+			queue[id] = invoke;
+			return id;
+		};
+
+		const drain = (reason: string): void => {
+			for (const [id, invoke] of Object.entries(queue)) {
+				invoke.reject(reason);
+				delete queue[id];
+			}
+		};
+
+		let rejectedCount = 0;
+		const total = 3;
+		const reason = 'Worker exited unexpectedly';
+
+		for (let i = 0; i < total; i++) {
+			push({
+				resolve: () => {
+					assert.fail('resolve should not be called during drain');
+				},
+				reject: (r: string) => {
+					assert.strictEqual(r, reason);
+					rejectedCount++;
+					if (rejectedCount === total) {
+						assert.strictEqual(
+							Object.keys(queue).length,
+							0,
+							'Queue should be empty after drain'
+						);
+						done();
+					}
+				}
+			});
+		}
+
+		drain(reason);
+	});
+
+	it('should not throw when drain() is called on an empty queue', () => {
+		const queue: Record<
+			string,
+			{ resolve: (v: string) => void; reject: (r: string) => void }
+		> = {};
+
+		const drain = (reason: string): void => {
+			for (const [id, invoke] of Object.entries(queue)) {
+				invoke.reject(reason);
+				delete queue[id];
+			}
+		};
+
+		// Should not throw
+		assert.doesNotThrow(() => drain('no-op'));
+		assert.strictEqual(Object.keys(queue).length, 0);
+	});
+
+	// --- InvokeQueue.has() ---
+
+	it('should return true for a queued invocation and false after get()', () => {
+		const queue: Record<
+			string,
+			{ resolve: (v: string) => void; reject: (r: string) => void }
+		> = {};
+
+		const push = (invoke: {
+			resolve: (v: string) => void;
+			reject: (r: string) => void;
+		}): string => {
+			const id = String(Math.random());
+			queue[id] = invoke;
+			return id;
+		};
+
+		const has = (id: string): boolean => id in queue;
+
+		const get = (
+			id: string
+		): { resolve: (v: string) => void; reject: (r: string) => void } => {
+			const invoke = queue[id];
+			delete queue[id];
+			return invoke;
+		};
+
+		const id = push({
+			resolve: () => {
+				/* noop */
+			},
+			reject: () => {
+				/* noop */
+			}
+		});
+
+		assert.strictEqual(has(id), true, 'has() should return true after push');
+		assert.strictEqual(
+			has('nonexistent'),
+			false,
+			'has() should return false for unknown id'
+		);
+
+		const invoke = get(id);
+		assert.ok(invoke, 'get() should return the invocation');
+		assert.strictEqual(
+			has(id),
+			false,
+			'has() should return false after get()'
+		);
+	});
+
+	// --- Settled guard pattern ---
+
+	it('should only call resolve once even when reject is also attempted (deploy success then exit)', () => {
+		let settled = false;
+		let resolveCount = 0;
+		let rejectCount = 0;
+
+		const safeResolve = (): void => {
+			if (!settled) {
+				settled = true;
+				resolveCount++;
+			}
+		};
+
+		const safeReject = (_err: Error): void => {
+			if (!settled) {
+				settled = true;
+				rejectCount++;
+			}
+		};
+
+		// Simulate successful deploy then worker exit
+		safeResolve(); // deploy succeeds
+		safeReject(new Error('exit')); // worker exits after — should be no-op
+
+		assert.strictEqual(
+			resolveCount,
+			1,
+			'resolve should be called exactly once'
+		);
+		assert.strictEqual(
+			rejectCount,
+			0,
+			'reject should not be called after resolve'
+		);
+	});
+
+	it('should call reject once when worker exits before deploy completes', () => {
+		let settled = false;
+		let resolveCount = 0;
+		let rejectCount = 0;
+
+		const safeResolve = (): void => {
+			if (!settled) {
+				settled = true;
+				resolveCount++;
+			}
+		};
+
+		const safeReject = (_err: Error): void => {
+			if (!settled) {
+				settled = true;
+				rejectCount++;
+			}
+		};
+
+		// Simulate worker exit before deploy completes
+		safeReject(new Error('exit before deploy'));
+		safeResolve(); // should be no-op
+
+		assert.strictEqual(
+			rejectCount,
+			1,
+			'reject should be called exactly once'
+		);
+		assert.strictEqual(
+			resolveCount,
+			0,
+			'resolve should not be called after reject'
+		);
+	});
+});

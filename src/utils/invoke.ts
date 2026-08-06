@@ -19,6 +19,17 @@ class InvokeQueue {
 		delete this.queue[id];
 		return invoke;
 	}
+
+	public has(id: string): boolean {
+		return id in this.queue;
+	}
+
+	public drain(reason: string): void {
+		for (const [id, invoke] of Object.entries(this.queue)) {
+			invoke.reject(reason);
+			delete this.queue[id];
+		}
+	}
 }
 
 export const invokeQueue = new InvokeQueue();
