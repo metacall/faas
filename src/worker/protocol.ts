@@ -3,7 +3,8 @@ export enum WorkerMessageType {
 	Load = 'LoadFunctions',
 	MetaData = 'GetApplicationMetadata',
 	Invoke = 'CallFunction',
-	InvokeResult = 'FunctionInvokeResult'
+	InvokeResult = 'FunctionInvokeResult',
+	InvokeError = 'FunctionInvokeError'
 }
 
 export interface WorkerMessage<T> {

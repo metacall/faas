@@ -47,6 +47,7 @@ export const deployProcess = async (
 	// Wait for load result
 	let deployResolve: (value: void) => void;
 	let deployReject: (reason: Error) => void;
+	let isDeploySettled = false;
 
 	const promise = new Promise<void>((resolve, reject) => {
 		deployResolve = resolve;
@@ -54,7 +55,10 @@ export const deployProcess = async (
 	});
 
 	proc.on('error', (err: Error) => {
-		deployReject(err);
+		if (!isDeploySettled) {
+			isDeploySettled = true;
+			deployReject(err);
+		}
 	});
 
 	proc.on('message', (payload: WorkerMessageUnknown) => {
@@ -66,6 +70,7 @@ export const deployProcess = async (
 
 				application.proc = proc;
 				application.deployment = deployment;
+				isDeploySettled = true;
 				deployResolve();
 				break;
 			}
@@ -79,7 +84,23 @@ export const deployProcess = async (
 				// Get the invocation id in order to retrieve the callbacks
 				// for resolving the call, this deletes the invocation object
 				const invoke = invokeQueue.get(invokeResult.id);
-				invoke.resolve(JSON.stringify(invokeResult.result));
+				if (invoke) {
+					invoke.resolve(JSON.stringify(invokeResult.result));
+				}
+				break;
+			}
+
+			case WorkerMessageType.InvokeError: {
+				const invokeError = payload.data as {
+					id: string;
+					error: string;
+				};
+
+				// Reject the pending HTTP request with the error from the worker
+				const invoke = invokeQueue.get(invokeError.id);
+				if (invoke) {
+					invoke.reject(invokeError.error);
+				}
 				break;
 			}
 
@@ -89,21 +110,27 @@ export const deployProcess = async (
 	});
 
 	proc.on('exit', code => {
-		// The application may have been ended unexpectedly,
-		// probably segmentation fault (exit code 139 in Linux)
-		deployReject(
-			new Error(
-				`Deployment '${resource.id}' process exited with code: ${
-					code || 'unknown'
-				}`
-			)
-		);
+		// Reject any in-flight function calls that are still waiting for a
+		// response. This prevents HTTP requests from hanging indefinitely
+		// when the worker process exits unexpectedly (e.g. segmentation fault,
+		// native crash from a bad argument passed to a MetaCall function).
+		const errorMessage = `Worker process for deployment '${resource.id}' exited with code: ${code ?? 'unknown'}`;
 
-		// TODO: How to implement the exit properly? We cannot reject easily
-		// the promise from the call if the process exits during the call.
-		// Also if exits during the call it will try to call deployReject
-		// which is completely out of scope and the promise was fullfilled already
+		for (const id of invokeQueue.pendingIds()) {
+			const invoke = invokeQueue.get(id);
+			if (invoke) {
+				invoke.reject(errorMessage);
+			}
+		}
+
+		// Only reject the deploy promise if deployment hadn't completed yet
+		// (i.e. the process exited before sending MetaData back).
+		if (!isDeploySettled) {
+			isDeploySettled = true;
+			deployReject(new Error(errorMessage));
+		}
 	});
 
 	return promise;
 };
+
