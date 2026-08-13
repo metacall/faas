@@ -1,6 +1,17 @@
 import { strict as assert } from 'assert';
 import { ChildProcess, spawn } from 'child_process';
+import { mkdir, rm, writeFile } from 'fs/promises';
+import { createServer, get as httpGet, IncomingMessage } from 'http';
+import { hostname } from 'os';
 import path from 'path';
+import { Application, Applications } from '../app';
+import { initializeAPI } from '../api';
+import { appsDirectory } from '../utils/config';
+
+type RouteResponse = {
+	status: number;
+	text: string;
+};
 
 // Helper: build the envStringified object the same way deployProcess does.
 // This is a pure-function extraction of the logic we fixed, so we can unit-test
@@ -15,6 +26,62 @@ function buildEnv(env: Record<string, string>): Record<string, string> {
 		}
 	}
 	return envStringified;
+}
+
+async function getResponse(
+	app: ReturnType<typeof initializeAPI>,
+	routePath: string
+): Promise<RouteResponse> {
+	const server = createServer(app);
+	await new Promise<void>((resolve, reject) => {
+		const onError = (err: Error) => {
+			server.off('error', onError);
+			reject(err);
+		};
+		server.once('error', onError);
+		server.listen(0, '127.0.0.1', () => {
+			server.off('error', onError);
+			resolve();
+		});
+	});
+
+	try {
+		const address = server.address();
+		if (!address || typeof address === 'string') {
+			throw new Error('Failed to bind test server');
+		}
+
+		return await new Promise<RouteResponse>((resolve, reject) => {
+			const req = httpGet(
+				`http://127.0.0.1:${address.port}${routePath}`,
+				(response: IncomingMessage) => {
+					let body = '';
+					response.setEncoding('utf8');
+					response.on('data', (chunk: string) => {
+						body += chunk;
+					});
+					response.on('end', () => {
+						resolve({
+							status: response.statusCode ?? 500,
+							text: body
+						});
+					});
+				}
+			);
+
+			req.on('error', reject);
+		});
+	} finally {
+		await new Promise<void>((resolve, reject) => {
+			server.close(err => {
+				if (err) {
+					reject(err);
+					return;
+				}
+				resolve();
+			});
+		});
+	}
 }
 
 // Helper: invoke a function that may be sync or async, just as the worker does.
@@ -253,5 +320,62 @@ describe('Fix: Asynchronous Function Execution', function () {
 			['world']
 		);
 		assert.strictEqual(r2.result, false);
+	});
+});
+
+// Fix: Static Route Early Returns
+// Ensures validation failures stop request processing before sendFile runs.
+describe('Fix: Static Route Early Returns', function () {
+	const suffix = 'static-app';
+	const host = hostname();
+	const fileName = 'hello.txt';
+	const routePath = `/${host}/${suffix}/v1/static/.metacall/faas/apps/${suffix}/${fileName}`;
+	const appPath = path.join(appsDirectory, suffix);
+	const filePath = path.join(appPath, fileName);
+
+	afterEach(async () => {
+		delete Applications[suffix];
+		await rm(appPath, { recursive: true, force: true });
+	});
+
+	it('should return a 404 with the real suffix when the app is not deployed', async () => {
+		const app = initializeAPI();
+		const response = await getResponse(app, routePath);
+
+		assert.strictEqual(response.status, 404);
+		assert.match(
+			response.text,
+			new RegExp(`application '${suffix}' hasn't been deployed yet`)
+		);
+	});
+
+	it('should return a 404 when the static file is missing', async () => {
+		const app = initializeAPI();
+		Applications[suffix] = {
+			proc: {} as ChildProcess
+		} as Application;
+		await mkdir(appPath, { recursive: true });
+
+		const response = await getResponse(app, routePath);
+
+		assert.strictEqual(response.status, 404);
+		assert.strictEqual(
+			response.text,
+			'The file you are looking for might not be available or the application may not be deployed.'
+		);
+	});
+
+	it('should serve the requested file when the app is deployed and the file exists', async () => {
+		const app = initializeAPI();
+		Applications[suffix] = {
+			proc: {} as ChildProcess
+		} as Application;
+		await mkdir(appPath, { recursive: true });
+		await writeFile(filePath, 'hello from static route', 'utf8');
+
+		const response = await getResponse(app, routePath);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual(response.text, 'hello from static route');
 	});
 });
