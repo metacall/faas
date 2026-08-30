@@ -169,7 +169,7 @@ export const packageUpload = (
 
 		const deleteFolder = () => {
 			if (resource.path !== undefined) {
-				fs.unlink(resource.path, error => {
+				fs.rm(resource.path, { recursive: true, force: true }, error => {
 					if (error !== null) {
 						errorHandler(
 							new AppError(
