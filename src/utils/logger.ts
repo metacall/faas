@@ -1,12 +1,8 @@
 import { ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-
-interface LogMessage {
-	deploymentName: string;
-	workerPID: number;
-	message: string;
-}
+import { Resource } from '../app';
+import { logsDirectory } from './config';
 
 // Shuffle the array randomly on startup (equal randomness is not relevant that's why we use this sort trick)
 const ANSICode: number[] = [
@@ -23,18 +19,6 @@ const PIDToColorCodeMap: PIDToColorCodeMapType = {};
 // Counter for color assignment
 let colorIndex = 0;
 
-const logFilePath = path.join(__dirname, '../../logs/');
-const logFileName = 'app.log';
-const logFileFullPath = path.resolve(path.join(logFilePath, logFileName));
-
-// TODO: Implement this properly?
-// const maxWorkerWidth = (maxIndexWidth = 3): number => {
-// 	const workerLengths = Object.keys(Applications).map(
-// 		worker => worker.length
-// 	);
-// 	return Math.max(...workerLengths) + maxIndexWidth;
-// };
-
 const assignColorToWorker = (
 	deploymentName: string,
 	workerPID: number
@@ -48,53 +32,89 @@ const assignColorToWorker = (
 	return `\x1b[38;5;${assignColorCode}m${deploymentName}\x1b[0m`;
 };
 
-class Logger {
-	private logQueue: LogMessage[] = [];
-	private isProcessing = false;
+export interface ProcessLogHandle {
+	close(): Promise<void>;
+}
 
-	private async processQueue(): Promise<void> {
-		if (this.isProcessing || this.logQueue.length === 0) return;
-		this.isProcessing = true;
+class DeploymentLogger implements ProcessLogHandle {
+	private tail: Promise<void> = Promise.resolve();
+	private accepting = true;
+	private closePromise?: Promise<void>;
 
-		while (this.logQueue.length > 0) {
-			const logEntry = this.logQueue.shift();
-			if (logEntry) {
-				const { deploymentName, workerPID, message } = logEntry;
-				this.store(deploymentName, message);
-				this.present(deploymentName, workerPID, message);
-				await new Promise(resolve => setTimeout(resolve, 0));
-			}
+	private readonly proc: ChildProcess;
+	private readonly resource: Resource;
+	private readonly logDirectory: string;
+	private readonly logFile: string;
+	private readonly onStdoutData: (data: Buffer) => void;
+	private readonly onStderrData: (data: Buffer) => void;
+	private readonly onProcessClose: () => void;
+
+	constructor(proc: ChildProcess, resource: Resource) {
+		this.proc = proc;
+		this.resource = resource;
+		this.logDirectory = path.join(logsDirectory, resource.id);
+		this.logFile = path.join(this.logDirectory, 'app.log');
+
+		this.onStdoutData = (data: Buffer) => {
+			this.enqueue(data.toString());
+		};
+		this.onStderrData = (data: Buffer) => {
+			this.enqueue(data.toString());
+		};
+		this.onProcessClose = () => {
+			void this.close();
+		};
+
+		this.proc.stdout?.on('data', this.onStdoutData);
+		this.proc.stderr?.on('data', this.onStderrData);
+		this.proc.on('close', this.onProcessClose);
+	}
+
+	private enqueue(message: string): void {
+		if (!this.accepting) {
+			return;
 		}
 
-		this.isProcessing = false;
+		this.tail = this.tail.then(async () => {
+			await this.store(message);
+			this.present(message);
+		});
 	}
 
-	public enqueueLog(
-		deploymentName: string,
-		workerPID: number,
-		message: string
-	): void {
-		this.logQueue.push({ deploymentName, workerPID, message });
-		this.processQueue().catch(console.error);
+	public close(): Promise<void> {
+		if (!this.closePromise) {
+			this.accepting = false;
+			this.detachListeners();
+			this.closePromise = this.tail;
+		}
+		return this.closePromise;
 	}
 
-	private store(deploymentName: string, message: string): void {
+	private detachListeners(): void {
+		this.proc.stdout?.off('data', this.onStdoutData);
+		this.proc.stderr?.off('data', this.onStderrData);
+		this.proc.off('close', this.onProcessClose);
+	}
+
+	private async store(message: string): Promise<void> {
 		const timeStamp = new Date().toISOString();
-		const logMessage = `${timeStamp} - ${deploymentName} | ${message}\n`;
+		const logMessage = `${timeStamp} - ${message}\n`;
 
-		if (!fs.existsSync(logFilePath)) {
-			fs.mkdirSync(logFilePath, { recursive: true });
+		try {
+			await fs.promises.mkdir(this.logDirectory, { recursive: true });
+			await fs.promises.appendFile(this.logFile, logMessage, {
+				encoding: 'utf-8'
+			});
+		} catch (err) {
+			console.error(err);
 		}
-		fs.appendFileSync(logFileFullPath, logMessage, { encoding: 'utf-8' });
 	}
 
-	private present(
-		deploymentName: string,
-		workerPID: number,
-		message: string
-	): void {
+	private present(message: string): void {
 		message = message.trim();
 		const fixedWidth = 24;
+		const deploymentName = this.resource.id;
+		const workerPID = this.proc.pid || 0;
 
 		let paddedName = deploymentName.padEnd(fixedWidth, ' ');
 		if (deploymentName.length > fixedWidth) {
@@ -113,16 +133,9 @@ class Logger {
 	}
 }
 
-const logger = new Logger();
-
 export function logProcessOutput(
 	proc: ChildProcess,
-	deploymentName: string
-): void {
-	proc.stdout?.on('data', (data: Buffer) => {
-		logger.enqueueLog(deploymentName, proc.pid || 0, data.toString());
-	});
-	proc.stderr?.on('data', (data: Buffer) => {
-		logger.enqueueLog(deploymentName, proc.pid || 0, data.toString());
-	});
+	resource: Resource
+): ProcessLogHandle {
+	return new DeploymentLogger(proc, resource);
 }

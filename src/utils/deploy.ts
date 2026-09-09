@@ -29,20 +29,26 @@ export const deployProcess = async (
 		}
 	}
 
+	const application = Applications[resource.id];
+	if (!application) {
+		throw new Error(`Application '${resource.id}' is not registered`);
+	}
+
 	const proc = spawn('metacall', [desiredPath], {
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
 		cwd: resource.path, // Current working directory resolution
 		env: envStringified // Environment variable injection
 	});
 
+	// Attach logger before sending load message so no early output is missed
+	const logger = logProcessOutput(proc, resource);
+	application.logger = logger;
+
 	// Send load message with the deploy information
 	proc.send({
 		type: WorkerMessageType.Load,
 		data: resource
 	});
-
-	// Pipe the stdout and stderr to the logger
-	logProcessOutput(proc, resource.id);
 
 	// Wait for load result
 	let deployResolve: (value: void) => void;
@@ -60,8 +66,17 @@ export const deployProcess = async (
 	proc.on('message', (payload: WorkerMessageUnknown) => {
 		switch (payload.type) {
 			case WorkerMessageType.MetaData: {
+				if (Applications[resource.id] !== application) {
+					proc.kill();
+					void logger.close();
+					return deployReject(
+						new Error(
+							`Application '${resource.id}' changed during deployment`
+						)
+					);
+				}
+
 				// Get the deploy data and store the process and app into our tables
-				const application = Applications[resource.id];
 				const deployment = payload.data as Deployment;
 
 				application.proc = proc;

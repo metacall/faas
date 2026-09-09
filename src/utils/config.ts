@@ -21,3 +21,4 @@ export const configDir = (name: string): string => {
 export const basePath = configDir(join('metacall', 'faas'));
 
 export const appsDirectory = join(basePath, 'apps');
+export const logsDirectory = join(basePath, 'logs');

@@ -1,5 +1,6 @@
 import { Deployment, MetaCallJSON } from '@metacall/protocol/deployment';
 import { ChildProcess } from 'child_process';
+import { ProcessLogHandle } from './utils/logger';
 
 export interface Resource {
 	id: string;
@@ -14,6 +15,7 @@ export class Application {
 	public resource?: Promise<Resource>;
 	public proc?: ChildProcess;
 	public deployment?: Deployment;
+	public logger?: ProcessLogHandle;
 
 	public kill(): void {
 		this.proc?.kill();
