@@ -100,6 +100,17 @@ function run_tests() {
 	fi
 
 	echo "Inspection test passed."
+
+	# Test logs
+	echo "Testing logs functionality."
+
+	logs_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"suffix":"'"$app"'"}' $BASE_URL/api/deploy/logs)
+	if [[ $logs_status != "200" ]]; then
+		echo "Logs test failed."
+		exit 1
+	fi
+
+	echo "Logs test passed."
 }
 
 # Function to test delete functionality

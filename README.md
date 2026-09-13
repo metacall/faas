@@ -55,3 +55,13 @@ docker compose build
 docker compose up test
 docker compose down
 ```
+
+### Fetching Logs
+
+You can view the runtime logs of your deployed functions by sending a POST request to the `/api/deploy/logs` endpoint with your deployment suffix:
+
+```sh
+curl -X POST http://localhost:9000/api/deploy/logs \
+  -H "Content-Type: application/json" \
+  -d '{"suffix": "<your-deployment-suffix>"}'
+```
