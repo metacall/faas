@@ -30,17 +30,51 @@ export const logs = (req: Request, res: Response): Response => {
 		// Read the entire log file
 		const logFileContent = fs.readFileSync(logFilePath, 'utf-8');
 
-		// Filter out logs that belong to the requested deployment suffix
-		const applicationLogs = logFileContent
-			.split('\n')
-			.filter(line => line.includes(` - ${suffix} | `))
-			.map(line => {
-				// Strip the local FaaS timestamp and prefix to match the real FaaS log format as closely as possible
-				const separatorIndex = line.indexOf('| ');
-				return separatorIndex !== -1
-					? line.substring(separatorIndex + 2)
-					: line;
-			})
+		// Header lines are written by logger.ts as:
+		//   <ISO timestamp> - <deploymentName> | <first line of message>
+		// Continuation lines of a multiline message (stack traces, JSON dumps,
+		// ...) carry no header, so filter + strip per physical line would drop
+		// them. Instead, re-group logical entries on the read side: a line
+		// starting with a header opens a new entry when its deployment name
+		// matches the requested suffix, any other line continues the current
+		// matching entry. This keeps the on-disk format (and existing
+		// logs/app.log) unchanged.
+		const headerRegex =
+			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z - (.+?) \| ?(.*)$/;
+		const entries: string[][] = [];
+		let current: string[] | null = null;
+
+		const lines = logFileContent.split(/\r?\n/);
+		// Drop the artifact of a trailing newline, blank lines inside an
+		// entry are preserved as continuation lines.
+		if (lines.length > 0 && lines[lines.length - 1] === '') {
+			lines.pop();
+		}
+
+		for (const line of lines) {
+			const match = line.match(headerRegex);
+			if (match) {
+				// New header always flushes the previous matching entry.
+				if (current !== null) {
+					entries.push(current);
+					current = null;
+				}
+				const [, deploymentName, payload] = match;
+				if (deploymentName === suffix) {
+					// Strip the timestamp - deploymentName | prefix from the
+					// header line only, seed the entry with its payload.
+					current = [payload];
+				}
+			} else if (current !== null) {
+				current.push(line);
+			}
+		}
+		if (current !== null) {
+			entries.push(current);
+		}
+
+		const applicationLogs = entries
+			.map(entry => entry.join('\n'))
 			.join('\n');
 
 		return res.send(applicationLogs);
