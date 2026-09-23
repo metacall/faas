@@ -9,6 +9,16 @@ npm install
 npm start
 ```
 
+### Options
+
+| Option       | Description                                                                  |
+| ------------ | ---------------------------------------------------------------------------- |
+| `--port <n>` | Port to listen on (also `--port=<n>`). Overrides `PORT`, defaults to `9000`. |
+| `--prune`    | Delete all existing deployments before starting.                             |
+| `--version`  | Print the version and exit.                                                  |
+
+For example: `node dist/index.js --port 8080`, or `PORT=8080 npm start`.
+
 ### About Project
 
 MetaCall organization has its own cloud platform known as [MetaCall Hub](https://metacall.io/), a production-ready and high-performance FaaS/Cloud platform where you can deploy services, web apps, and lambdas in seconds. However, the `Real` version of MetaCall FaaS is commercialized and requires a plan to deploy your polyglot applications, which can be found [Here](https://metacall.io/pricing/).

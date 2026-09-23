@@ -8,6 +8,7 @@ import { initializeAPI } from './api';
 import { autoDeployApps } from './utils/autoDeploy';
 import { appsDirectory } from './utils/config';
 import { ensureFolderExists } from './utils/filesystem';
+import { getPort } from './utils/port';
 import { printVersionAndExit } from './utils/version';
 
 // Initialize the FaaS
@@ -20,6 +21,14 @@ void (async (): Promise<void> => {
 
 		dotenv.config();
 		colors.enable();
+
+		let port: number;
+		try {
+			port = getPort(args);
+		} catch (e) {
+			console.error((e as Error).message);
+			process.exit(1);
+		}
 
 		await ensureFolderExists(appsDirectory);
 
@@ -37,7 +46,6 @@ void (async (): Promise<void> => {
 		await autoDeployApps(appsDirectory);
 
 		const app = initializeAPI();
-		const port = process.env.PORT || 9000;
 
 		app.listen(port, () => {
 			console.log(`Server is running on the port ${port}`);
