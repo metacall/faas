@@ -19,12 +19,33 @@ export type DeployBody = {
 	version: string;
 };
 
+// Applications with a deploy request in progress.
+const deploysInFlight = new Set<string>();
+
+// A failed deploy leaves the uploaded app registered: it blocks re-uploading the
+// name but can't be inspected or deleted. Drop it and its files so a retry works.
+export const discardFailedDeploy = async (suffix: string): Promise<void> => {
+	const application = Applications[suffix];
+	if (!application || application.deployment) return;
+
+	const resource = await application.resource?.catch(() => undefined);
+	application.kill();
+	delete Applications[suffix];
+
+	if (resource?.path) {
+		await fs.promises.rm(resource.path, { recursive: true, force: true });
+	}
+};
+
 export const deploy = catchAsync(
 	async (
 		req: Omit<Request, 'body'> & { body: DeployBody },
 		res: Response,
 		next: NextFunction
 	) => {
+		// Only the request that started the deploy cleans it up
+		let ownsDeploy = false;
+
 		try {
 			const application = Applications[req.body.suffix];
 
@@ -35,6 +56,15 @@ export const deploy = catchAsync(
 					400
 				);
 			}
+
+			if (deploysInFlight.has(req.body.suffix)) {
+				throw new AppError(
+					`Application '${req.body.suffix}' is already being deployed.`,
+					409
+				);
+			}
+			deploysInFlight.add(req.body.suffix);
+			ownsDeploy = true;
 
 			const resource = await application.resource;
 
@@ -63,7 +93,10 @@ export const deploy = catchAsync(
 				version: 'v1'
 			});
 		} catch (err) {
+			if (ownsDeploy) await discardFailedDeploy(req.body.suffix);
 			return next(err);
+		} finally {
+			if (ownsDeploy) deploysInFlight.delete(req.body.suffix);
 		}
 	}
 );

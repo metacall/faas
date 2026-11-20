@@ -15,14 +15,20 @@ import { validate } from './controller/validate';
 
 import { hostname } from 'os';
 
+import { Plans } from '@metacall/protocol/plan';
 import express, { Express, NextFunction, Request, Response } from 'express';
 
 import AppError from './utils/appError';
+import { createCors } from './utils/cors';
+
+export const LOCAL_SUBSCRIPTIONS: string[] = Object.values(Plans);
 
 export function initializeAPI(): Express {
 	const app = express();
 	const host = hostname();
 
+	// Allowed origins: FAAS_CORS_ORIGINS
+	app.use(createCors());
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 
@@ -51,16 +57,17 @@ export function initializeAPI(): Express {
 
 	app.get('/api/inspect', inspect);
 
+	// No billing here: every plan is available (one subscription each).
 	app.get(
 		'/api/billing/list-subscriptions',
 		(_req: Request, res: Response) => {
-			return res.status(200).json(['Essential', 'Essential']);
+			return res.status(200).json(LOCAL_SUBSCRIPTIONS);
 		}
 	);
 	app.post(
 		'/api/billing/list-subscriptions',
 		(_req: Request, res: Response) => {
-			return res.status(200).json(['Essential', 'Essential']);
+			return res.status(200).json(LOCAL_SUBSCRIPTIONS);
 		}
 	);
 	app.get(
